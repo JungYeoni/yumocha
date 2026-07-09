@@ -1,0 +1,26 @@
+name: Sync Labels
+
+on:
+  workflow_dispatch:  # 수동 실행
+  push:
+    branches: [main]
+    paths:
+      - ".github/labels.yml"
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 라벨 동기화
+        uses: crazy-max/ghaction-github-labeler@v5
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          yaml-file: .github/labels.yml
+          skip-delete: false  # 정의에 없는 기존 라벨 삭제
+          dry-run: false

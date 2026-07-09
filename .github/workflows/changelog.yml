@@ -1,0 +1,31 @@
+name: Changelog 자동 업데이트
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 전체 git 히스토리 필요
+
+      - name: git-cliff 설치
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+
+      - name: git-cliff로 CHANGELOG 생성
+        run: git-cliff --config cliff.toml --verbose --output CHANGELOG.md
+
+      - name: CHANGELOG 커밋 & 푸시
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: CHANGELOG 자동 업데이트 [skip ci]"
+          file_pattern: CHANGELOG.md

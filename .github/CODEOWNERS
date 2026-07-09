@@ -1,0 +1,24 @@
+# CODEOWNERS — 역할별 파일 소유권 정의
+# 형식: <파일 패턴>  <GitHub 사용자명 또는 팀>
+
+# 프로젝트 설정 / Claude 지침
+CLAUDE.md                    @project-owner
+.claude/                     @project-owner
+
+# 피처 엔지니어링
+src/features/                @feature-owner
+
+# 모델링 / 평가
+src/modeling/                @data-scientist-owner
+src/evaluation/              @data-scientist-owner
+
+# 시각화 / 노트북
+src/visualization/           @visualization-owner
+notebooks/                   @visualization-owner
+
+# GitHub 설정 (팀 리드 또는 저장소 관리자가 승인)
+.github/                     @repo-admin
+
+# 의존성 / 빌드 설정
+pyproject.toml               @repo-admin
+requirements.txt             @repo-admin

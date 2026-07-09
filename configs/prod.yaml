@@ -1,0 +1,9 @@
+# prod.yaml — 운영·최종 제출 환경 오버라이드
+# base.yaml 위에 덮어쓰는 값만 작성
+
+model:
+  cv_folds: 5
+
+output:
+  figure_dpi: 300
+  figure_format: "pdf"   # 최종 제출은 벡터 형식

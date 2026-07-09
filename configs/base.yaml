@@ -1,0 +1,39 @@
+# base.yaml — 모든 환경에서 공통으로 적용되는 기본 설정
+# dev.yaml / prod.yaml 에서 필요한 값만 오버라이드
+
+project:
+  name: "da-template"
+  version: "0.1.0"
+  random_seed: 42
+
+data:
+  raw_dir: "data/raw"
+  interim_dir: "data/interim"
+  processed_dir: "data/processed"
+  # 대용량 파일 청크 처리 기준 (바이트)
+  chunk_size: 100_000
+
+split:
+  test_size: 0.2
+  val_size: 0.1       # train 내에서 추가 분리
+  stratify: true      # 분류 문제에서 클래스 비율 유지
+  # 시계열 분할 시 날짜 기준 사용 (date_split_col 지정 필요)
+  date_split_col: null
+
+features:
+  lag_windows: [1, 7, 14, 30]
+  rolling_windows: [7, 14, 30, 90]
+  drop_na_threshold: 0.3   # 결측치 비율이 이 이상인 컬럼은 경고
+
+model:
+  cv_folds: 5
+  scoring: "f1_macro"     # 분류 기본값; 회귀는 "neg_rmse" 로 변경
+  n_jobs: -1
+
+output:
+  results_dir: "results"
+  figures_dir: "results/figures"
+  model_dir: "results/models"
+  report_dir: "reports"
+  figure_dpi: 300
+  figure_format: "png"     # "png" 또는 "pdf"

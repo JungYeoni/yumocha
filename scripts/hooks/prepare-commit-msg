@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# 브랜치명의 이슈 번호를 커밋 제목 끝에 자동으로 추가한다
+# 브랜치 예: feat/20260626_#41_persona-generation → 제목에 (#41) 추가
+
+COMMIT_MSG_FILE="$1"
+COMMIT_SOURCE="$2"
+
+# merge, squash, fixup 커밋은 건드리지 않음
+[[ "$COMMIT_SOURCE" == "merge" || "$COMMIT_SOURCE" == "squash" || "$COMMIT_SOURCE" == "commit" ]] && exit 0
+
+# 브랜치명에서 이슈 번호 추출
+BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
+ISSUE_NUM=$(echo "$BRANCH" | grep -oE '#[0-9]+' | head -1)
+
+[[ -z "$ISSUE_NUM" ]] && exit 0
+
+# 이미 포함되어 있으면 skip
+grep -qF "$ISSUE_NUM" "$COMMIT_MSG_FILE" && exit 0
+
+# 첫 줄 제목에 이슈 번호 추가
+sed -i '' "1s/$/ ($ISSUE_NUM)/" "$COMMIT_MSG_FILE"

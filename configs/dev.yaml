@@ -1,0 +1,14 @@
+# dev.yaml — 개발 환경 오버라이드
+# base.yaml 위에 덮어쓰는 값만 작성
+
+data:
+  raw_dir: "data/raw"
+
+split:
+  test_size: 0.2
+
+model:
+  cv_folds: 3            # 개발 중에는 빠른 반복을 위해 fold 수 축소
+
+output:
+  figure_dpi: 120        # 개발 중 미리보기용 낮은 해상도

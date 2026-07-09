@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "da-template"
+version = "0.1.0"
+description = "데이터분석·ML 프로젝트 템플릿"
+requires-python = ">=3.11"
+dependencies = [
+    # 데이터
+    "pandas>=2.0",
+    "numpy>=1.26",
+    "polars>=0.20",
+    # 통계
+    "scipy>=1.11",
+    "statsmodels>=0.14",
+    # 머신러닝
+    "scikit-learn>=1.4",
+    "xgboost>=2.0",
+    "lightgbm>=4.0",
+    # 시각화
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "plotly>=5.18",
+    "streamlit>=1.30",
+    # 설정
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+# GIS 패키지는 시스템 라이브러리(GDAL 등) 필요 — 별도 설치
+gis = [
+    "geopandas>=0.14",
+    "folium>=0.15",
+    "shapely>=2.0",
+]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.3",
+    "pre-commit>=3.7",
+    "ipykernel>=6.28",
+    "nbconvert>=7.14",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"

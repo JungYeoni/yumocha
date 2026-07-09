@@ -1,0 +1,55 @@
+# git-cliff 설정 — da-template 전용
+# conventional commit + 프로젝트 PR 접두사 반영
+
+[changelog]
+header = """
+# 변경 이력 (Changelog)\n
+"""
+body = """
+{% if version %}\
+## {{ version | trim_start_matches(pat="v") }} — {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+## 미출시 변경사항
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group }}
+{% for commit in commits %}
+- {{ commit.message | upper_first }} ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/JungYeoni/da-template/commit/{{ commit.id }}))\
+{% endfor %}
+{% endfor %}\n
+"""
+footer = ""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = false
+split_commits = false
+
+# 커밋 타입 → 섹션 매핑
+commit_parsers = [
+    { message = "^feat",       group = "새 기능" },
+    { message = "^fix",        group = "버그 수정" },
+    { message = "^docs",       group = "문서" },
+    { message = "^refactor",   group = "리팩터링" },
+    { message = "^test",       group = "테스트" },
+    { message = "^ci",         group = "CI/CD" },
+    { message = "^chore",      group = "기타" },
+    { message = "^perf",       group = "성능" },
+    # PR 접두사 스타일도 인식
+    { message = "^\\[Experiment\\]", group = "실험" },
+    { message = "^\\[Feature\\]",    group = "새 기능" },
+    { message = "^\\[Fix\\]",        group = "버그 수정" },
+    { message = "^\\[Docs\\]",       group = "문서" },
+    { message = "^\\[Refactor\\]",   group = "리팩터링" },
+    { message = "^\\[Chore\\]",      group = "기타" },
+    # [skip ci] 메시지 제외
+    { message = "\\[skip ci\\]",     skip = true },
+]
+
+filter_commits = false
+tag_pattern = "v[0-9].*"
+skip_tags = ""
+ignore_tags = ""
+topo_order = false
+sort_commits = "newest"
