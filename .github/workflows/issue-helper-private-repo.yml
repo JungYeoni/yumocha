@@ -1,0 +1,24 @@
+name: Issue Helper - Private Repository
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  generate-comment:
+    if: github.event.action == 'opened' || (github.event.action == 'edited' && github.event.changes.title)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate Branch & Commit Comment
+        uses: Cassiiopeia/github-issue-helper@deploy
+        with:
+          token: ${{ secrets.PERSONAL_TOKEN }} # 수정된 부분: private repo용 PAT 사용
+          branch_prefix: 'feat/' # 수정된 부분: 팀 규칙에 맞게 변경 가능
+          max_branch_length: 100 # 수정된 부분
+          commit_template: 'feat: ${issueTitle} #${issueNumber}' # 수정된 부분
+          comment_marker: '<!-- SUH-ISSUE-HELPER-COMMENT -->' # 수정된 부분
