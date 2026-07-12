@@ -27,6 +27,7 @@ dependencies = [
     # 설정
     "pyyaml>=6.0",
     "python-dotenv>=1.0",
+    "openpyxl>=3.1.5",
 ]
 
 [project.optional-dependencies]
