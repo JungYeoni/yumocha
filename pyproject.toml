@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "da-template"
+name = "yumocha"
 version = "0.1.0"
-description = "데이터분석·ML 프로젝트 템플릿"
+description = "출생환경지표분석프로젝트"
 requires-python = ">=3.11"
 dependencies = [
     # 데이터
