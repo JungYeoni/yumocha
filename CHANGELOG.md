@@ -16,6 +16,7 @@
 
 ### 기타
 
+- CLAUDE.md 재발명 금치 원칙 추가 ([89844ce](https://github.com/JungYeoni/da-template/commit/89844ce4305d64db0a65b9be0e689c5e5f4ac5ba))
 - 워크플로우 설정 추가 ([9719c11](https://github.com/JungYeoni/da-template/commit/9719c116e3dbc36c0e6691bd242e9ac2e6b27deb))
 - 의존성 설치 ([aea5afe](https://github.com/JungYeoni/da-template/commit/aea5afe6488bc60022c8f37e54a82e91e443b286))
 - 필요한 패키지 설치 ([d32b78e](https://github.com/JungYeoni/da-template/commit/d32b78e3d54f73e8887868f50ef3d2a58e3f69a9))
@@ -27,6 +28,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([d915b7e](https://github.com/JungYeoni/da-template/commit/d915b7e96e28a50b5acb51387d449b45e5a5bba1))
 - 세부사업 영역분류 계획서에 사전학습 임베딩 기반 분류 방식 추가 ([e941a56](https://github.com/JungYeoni/da-template/commit/e941a562a1eeae91befcb29716e12c44d97bdadb))
 - CHANGELOG 자동 업데이트 [skip ci] ([35096ab](https://github.com/JungYeoni/da-template/commit/35096ab8e67a218cc690751076fc103dfc6df1e4))
 - 세부사업 영역분류 계획 및 멘토링 피드백 문서 추가 ([5e7bb8e](https://github.com/JungYeoni/da-template/commit/5e7bb8ebdfaf04b65fec262829a1c115985ff37a))
