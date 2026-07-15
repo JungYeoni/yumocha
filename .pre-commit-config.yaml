@@ -5,3 +5,10 @@ repos:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+  - repo: local
+    hooks:
+      - id: issue-number-from-branch
+        name: 브랜치 이슈번호 커밋 제목에 자동 추가
+        entry: scripts/hooks/prepare-commit-msg
+        language: script
+        stages: [prepare-commit-msg]
