@@ -27,6 +27,8 @@
 
 ### 문서
 
+- 세부사업 영역분류 계획 및 멘토링 피드백 문서 추가 ([5e7bb8e](https://github.com/JungYeoni/da-template/commit/5e7bb8ebdfaf04b65fec262829a1c115985ff37a))
+- CHANGELOG 자동 업데이트 [skip ci] ([b89e0b7](https://github.com/JungYeoni/da-template/commit/b89e0b7c5c972ee757c5790643fb79fa960bff32))
 - 컬럼정렬 파일에 맞춰 계획 문서 업데이트 ([92190b7](https://github.com/JungYeoni/da-template/commit/92190b79e190b98f72028001dfddbdf6e069e5b2))
 - CHANGELOG 자동 업데이트 [skip ci] ([1d3745e](https://github.com/JungYeoni/da-template/commit/1d3745e5f085380bb3341ee21074ddd23472de3e))
 - 저장 경로 수정 (#3) ([7279ff7](https://github.com/JungYeoni/da-template/commit/7279ff77890941aa0fee45dbd27bb1dbe8eb4387))
