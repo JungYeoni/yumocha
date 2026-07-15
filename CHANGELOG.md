@@ -27,6 +27,8 @@
 
 ### 문서
 
+- 컬럼정렬 파일에 맞춰 계획 문서 업데이트 ([92190b7](https://github.com/JungYeoni/da-template/commit/92190b79e190b98f72028001dfddbdf6e069e5b2))
+- CHANGELOG 자동 업데이트 [skip ci] ([1d3745e](https://github.com/JungYeoni/da-template/commit/1d3745e5f085380bb3341ee21074ddd23472de3e))
 - 저장 경로 수정 (#3) ([7279ff7](https://github.com/JungYeoni/da-template/commit/7279ff77890941aa0fee45dbd27bb1dbe8eb4387))
 - 20260712_EDA_2024_서울_시도분리정제 레포트 업데이트 (#3) ([e446de2](https://github.com/JungYeoni/da-template/commit/e446de20b5945cce90a08ee475f6c63be487b6a2))
 - 작업 중 발견된 사항 계획 문서에 추가 (#3) ([b9fc6f6](https://github.com/JungYeoni/da-template/commit/b9fc6f66d447c0750672a7486939ec924e830f5f))
