@@ -16,6 +16,8 @@
 
 ### 기타
 
+- Openai 추가 (#5) ([44ef941](https://github.com/JungYeoni/da-template/commit/44ef941d1c66eca3c36d171f49e64fe27265b7d3))
+- Upstage Solara API 설정 파일 (#5) ([47de032](https://github.com/JungYeoni/da-template/commit/47de032f07af3c550f56ead7a2edc7d82eabfa58))
 - CLAUDE.md 재발명 금치 원칙 추가 ([89844ce](https://github.com/JungYeoni/da-template/commit/89844ce4305d64db0a65b9be0e689c5e5f4ac5ba))
 - 워크플로우 설정 추가 ([9719c11](https://github.com/JungYeoni/da-template/commit/9719c116e3dbc36c0e6691bd242e9ac2e6b27deb))
 - 의존성 설치 ([aea5afe](https://github.com/JungYeoni/da-template/commit/aea5afe6488bc60022c8f37e54a82e91e443b286))
@@ -24,10 +26,17 @@
 
 ### 리팩터링
 
+- 샘플로 진행했던 서울시 정제 파일 아카이브 폴더로 이동 (#5) ([223b6a8](https://github.com/JungYeoni/da-template/commit/223b6a83169a19858e6f2442852e48d469904582))
 - 주요내용 이어붙이기 로직 제거 (#3) ([b83e347](https://github.com/JungYeoni/da-template/commit/b83e347a36d71186667520a29ae44839df4d18da))
 
 ### 문서
 
+- 작업 내용 레포트 업데이트 (#5) ([b920650](https://github.com/JungYeoni/da-template/commit/b920650451c3480ffa318dff9bd76d45b30052da))
+- 2024년 작업 내용에 맞춰 계획문서 업데이트 (#5) ([4ecacce](https://github.com/JungYeoni/da-template/commit/4ecacce0eb71ed00b69acdbc12d7e4aba03d3c55))
+- 계획서 변경사항 업데이트 (#5) ([33b40e8](https://github.com/JungYeoni/da-template/commit/33b40e867e78d1c1fea7b8d8a9ecbe3d749a6bbe))
+- 계획 문서 보강 및 전처리 순서 명시 (#5) ([26562f6](https://github.com/JungYeoni/da-template/commit/26562f61663a51f6b3c94289e5ba2e24df841af3))
+- 작업 과정 문서화 (#5) ([5b3b02f](https://github.com/JungYeoni/da-template/commit/5b3b02f18899139917c51733b2bece493f6c8374))
+- CHANGELOG 자동 업데이트 [skip ci] ([0be4bfe](https://github.com/JungYeoni/da-template/commit/0be4bfe696709bbfc8a04b679474cf6a9ab320cc))
 - CHANGELOG 자동 업데이트 [skip ci] ([d915b7e](https://github.com/JungYeoni/da-template/commit/d915b7e96e28a50b5acb51387d449b45e5a5bba1))
 - 세부사업 영역분류 계획서에 사전학습 임베딩 기반 분류 방식 추가 ([e941a56](https://github.com/JungYeoni/da-template/commit/e941a562a1eeae91befcb29716e12c44d97bdadb))
 - CHANGELOG 자동 업데이트 [skip ci] ([35096ab](https://github.com/JungYeoni/da-template/commit/35096ab8e67a218cc690751076fc103dfc6df1e4))
@@ -53,11 +62,24 @@
 
 ### 버그 수정
 
+- CodeRabbit 리뷰 반영 - LLM 재실행 순서 개선 및 문서 정합성 수정 (#5) ([94e276e](https://github.com/JungYeoni/da-template/commit/94e276e61bf9d0ef88103c597b12d0a8d39e33e6))
+- Long 변환 시 전년도 행 증감액/증감율 중복 제거 (#5) ([6bb4a58](https://github.com/JungYeoni/da-template/commit/6bb4a589d260254b824ac48beae59ba8b7f063b8))
+- 주요내용 정제 PUA/괄호라벨 버그 수정 및 long 변환 완료 (#5) ([953f65f](https://github.com/JungYeoni/da-template/commit/953f65fcfa9b968206056e4bb2ebe035709dfea2))
+- 2024 서울 노트북 classify_row를 #5 최종 로직과 동기화 ([ef17a93](https://github.com/JungYeoni/da-template/commit/ef17a937e4dfb4b79ae9db849659ef1e49cd6fb8))
+- 커널 재시작 (#5) ([b457e61](https://github.com/JungYeoni/da-template/commit/b457e6108121d9ae989781dc2ec19e13a3e21c8b))
+- CodeRabbit 리뷰 반영 - 저장 스키마 버그 및 문서 불일치 수정 (#5) ([d58069d](https://github.com/JungYeoni/da-template/commit/d58069d10754c2cae6e7a2bd22bc727b8bf93de0))
 - QA 불일치 목록이 아닌 검증결과로 수정 (#3) ([d489095](https://github.com/JungYeoni/da-template/commit/d48909583d934d48f04415222a36afb471a4e9d9))
 - CodeRabbit 리뷰 반영 (#3) ([e08a8b6](https://github.com/JungYeoni/da-template/commit/e08a8b613a2543f54894073baf68e850c90eab19))
 
 ### 새 기능
 
+- 주요내용 정제 작업 추가 (#5) ([a1cd405](https://github.com/JungYeoni/da-template/commit/a1cd405e1641146ad0def6416e8dfcc3911c6ce1))
+- 시도_지역코드_매핑 파일 (#5) ([60ccde4](https://github.com/JungYeoni/da-template/commit/60ccde41cc9fc516ae55326bac267572ac7727f2))
+- 세부사업명 오탈자·중복 후보 탐지 로직 추가 및 텍스트 정제 범위 확장 (#5) ([eb6d019](https://github.com/JungYeoni/da-template/commit/eb6d019f609b867f46af40a15692001485b9894a))
+- 전국 예산합 검증 결과 문서 생성 (#5) ([76d4b4d](https://github.com/JungYeoni/da-template/commit/76d4b4dc6b9de3fa59f166775e4491d89a04464e))
+- 2024년 전국 시도 최종스키마에 맞춰 작업 (#5) ([1ab8020](https://github.com/JungYeoni/da-template/commit/1ab80201d778fa3d5a81adeff1b26a1dabfcc69e))
+- 시도_지역코드_매핑 데이터 파일 생성 (#5) ([3db3e5c](https://github.com/JungYeoni/da-template/commit/3db3e5cb7b0c0f5bde75c0cf5d68fcc8294e766a))
+- 2024년도 전체 시도 분리·정제 파이프라인 진행 (이슈 #5) ([7af5ee3](https://github.com/JungYeoni/da-template/commit/7af5ee3a02eae1186b655d2840170821cbbabdfe))
 - 저장 경로에 시도명 하위폴더 추가 (#3) ([62950d4](https://github.com/JungYeoni/da-template/commit/62950d48ced0fac6cc18057049ab6ae4b0b959d7))
 
 
