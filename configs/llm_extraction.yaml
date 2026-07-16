@@ -1,0 +1,52 @@
+# llm_extraction.yaml — 주요내용 텍스트 정제 (업스테이지 Solar API)
+# 이슈 #5 관련. LLM은 "정제문장"(오탈자·이상한 공백 정리) 생성만 담당한다.
+# 지원대상/지원내용 분리는 이미 검증된 정규식(support_pattern_broad, extract_via_regex)의
+# 결과 컬럼을 그대로 쓴다 — 정규식으로 걸러지는 행에 LLM을 또 쓰는 건 실익이 없고
+# 위험(과잉 분리)만 늘리기 때문. 주요내용이 결측인 행은 API 호출 자체를 하지 않고
+# 정제 결과도 결측으로 유지한다.
+
+upstage:
+  base_url: "https://api.upstage.ai/v1/solar"
+  model: "solar-pro3" # response_format(json_schema)은 solar-pro3/solar-pro-2에서만 지원
+  temperature: 0 # 재현성을 위해 고정
+
+sample:
+  size: 20
+  random_state: 42
+
+# response_format: json_schema로 API 단에서 출력 구조를 강제 (정제문장 1개 필드만 요구)
+response_schema:
+  name: "cleaned_sentence"
+  schema:
+    type: "object"
+    properties:
+      정제문장:
+        type: "string"
+    required: ["정제문장"]
+    additionalProperties: false
+
+prompt:
+  template: |
+    당신은 OCR로 추출된 행정 문서 텍스트의 보존형 교정기다. "세부사업명(참고용)"은 문맥 이해용일 뿐이고, 실제로 교정할 대상은 "원문" 텍스트뿐이다.
+
+    다음 원문에서 아래 항목만 수정한다.
+    - 단어 내부에 잘못 삽입된 공백
+    - 줄바꿈으로 끊긴 단어
+    - 명백하게 연속 중복된 라벨(예: "지원대상 : 지원대상 : ...")
+    - 명백한 OCR 문자 오류
+
+    절대 변경하지 않는다.
+    - 숫자, 금액, 비율, 날짜, 횟수
+    - 기관명, 지역명, 사업명, 법령명
+    - 정보의 순서와 의미
+    - 원문에 없는 내용을 추가하거나, 원문에 있는 내용을 삭제하지 않는다
+    - 요약·재구성·의역하지 않는다
+
+    확신할 수 없는 표현은 수정하지 않고 원문 그대로 둔다. 고칠 게 전혀 없으면 원문을 그대로 반환한다.
+
+    설명이나 마크다운을 출력하지 말고 아래 JSON 객체 하나만 출력한다.
+
+    {{"정제문장": "..."}}
+
+    세부사업명(참고용): {name}
+    원문: {content}
