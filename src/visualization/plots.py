@@ -14,6 +14,9 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+# Seaborn은 font.family를 sans-serif로 초기화하므로 폰트보다 먼저 적용한다.
+sns.set_style("whitegrid")
+
 # 전역 스타일 설정
 plt.rcParams.update(
     {
@@ -27,7 +30,6 @@ plt.rcParams.update(
     }
 )
 PALETTE = sns.color_palette("colorblind")
-sns.set_style("whitegrid")
 
 
 def save_figure(fig: plt.Figure, path: str | Path, formats: list[str] | None = None) -> None:
