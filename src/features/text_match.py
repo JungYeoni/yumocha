@@ -8,11 +8,10 @@ from itertools import combinations
 import pandas as pd
 from rapidfuzz import fuzz
 
+from src.features.text_patterns import CONTENT_LABEL_PATTERN, PAREN_LABEL_PATTERN
 
 MATCH_NORMALIZE_PATTERN = re.compile(r"[\s,./\-()]")
-LABEL_PATTERN = r"지원대상|지원내용|사업대상|사업내용|주요내용|전달체계|목적|대상|내용"
-PAREN_LABEL_PATTERN = re.compile(rf"\(\s*({LABEL_PATTERN})\s*\)")
-BULLET_BEFORE_LABEL_PATTERN = re.compile(rf"[•·]\s*(?=({LABEL_PATTERN})\s*[:：])")
+BULLET_BEFORE_LABEL_PATTERN = re.compile(rf"[•·]\s*(?=({CONTENT_LABEL_PATTERN})\s*[:：])")
 STRICT_SUPPORT_PATTERN = re.compile(
     r"^지원대상\s*[:：]\s*(.*?)\s*지원내용\s*[:：]\s*(.*)$",
     re.DOTALL,

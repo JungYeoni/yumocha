@@ -7,8 +7,8 @@ from pathlib import Path
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
+from src.features.text_patterns import PUA_PATTERN
 
-PUA_PATTERN = re.compile(r"[\uE000-\uF8FF]")
 SIDO_TITLE_PATTERN = re.compile(r"붙\s*임\s*\(([^)]+)\)")
 MAJOR_CATEGORY_PATTERN = re.compile(r"^[Ⅰ-Ⅿ]")
 MEDIUM_CATEGORY_PATTERN = re.compile(r"^\d+\.")

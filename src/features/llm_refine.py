@@ -10,13 +10,10 @@ from typing import Any
 
 import pandas as pd
 
+from src.features.text_patterns import PAREN_LABEL_PATTERN, PUA_PATTERN
 
 LOGGER = logging.getLogger(__name__)
 
-PUA_PATTERN = re.compile(r"[\uE000-\uF8FF]")
-PAREN_LABEL_PATTERN = re.compile(
-    r"\((지원대상|지원내용|사업대상|사업내용|주요내용|전달체계|목적|대상|내용)\)"
-)
 NUMBER_PATTERN = re.compile(r"\d+")
 
 
