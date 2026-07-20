@@ -1,0 +1,144 @@
+import json
+from types import SimpleNamespace
+from unittest.mock import Mock
+
+import pandas as pd
+import pytest
+
+from src.features.llm_refine import (
+    call_llm_once,
+    clean_sentence,
+    extract_numbers,
+    needs_llm_rerun,
+    numbers_preserved,
+)
+
+
+def make_client_response(content):
+    response = SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content))])
+    create = Mock(return_value=response)
+    client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+    return client, create
+
+
+@pytest.fixture
+def llm_config():
+    return {
+        "upstage": {
+            "model": "solar-pro3",
+            "temperature": 0,
+        },
+        "prompt": {
+            "template": "사업명: {name}\n주요내용: {content}",
+        },
+        "response_schema": {
+            "name": "refined_text",
+            "schema": {"type": "object"},
+        },
+    }
+
+
+def test_call_llm_once_returns_cleaned_sentence(llm_config):
+    raw = json.dumps({"정제문장": "공백을 정리한 문장"}, ensure_ascii=False)
+    client, create = make_client_response(raw)
+
+    result = call_llm_once(
+        "사업 A",
+        "공백을  정리한 문장",
+        client=client,
+        llm_config=llm_config,
+    )
+
+    assert result == "공백을 정리한 문장"
+    create.assert_called_once_with(
+        model="solar-pro3",
+        messages=[
+            {
+                "role": "user",
+                "content": "사업명: 사업 A\n주요내용: 공백을  정리한 문장",
+            }
+        ],
+        temperature=0,
+        response_format={
+            "type": "json_schema",
+            "json_schema": llm_config["response_schema"],
+        },
+    )
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "JSON 아님",
+        json.dumps({"다른키": "값"}, ensure_ascii=False),
+        json.dumps({"정제문장": 123}, ensure_ascii=False),
+        None,
+    ],
+)
+def test_call_llm_once_returns_none_for_invalid_response(llm_config, raw):
+    client, _ = make_client_response(raw)
+
+    result = call_llm_once(
+        "사업 A",
+        "원문",
+        client=client,
+        llm_config=llm_config,
+    )
+
+    assert result is None
+
+
+def test_clean_sentence_keeps_missing_value_without_calling_llm():
+    call_once = Mock()
+
+    result = clean_sentence("사업 A", pd.NA, call_once=call_once)
+
+    assert result is None
+    call_once.assert_not_called()
+
+
+def test_clean_sentence_retries_once_and_returns_result():
+    call_once = Mock(side_effect=[None, "정제 결과"])
+
+    result = clean_sentence("사업 A", "원문", call_once=call_once)
+
+    assert result == "정제 결과"
+    assert call_once.call_count == 2
+
+
+def test_clean_sentence_returns_original_after_failures():
+    call_once = Mock(side_effect=RuntimeError("API 오류"))
+
+    result = clean_sentence("사업 A", "원문", call_once=call_once)
+
+    assert result == "원문"
+    assert call_once.call_count == 2
+
+
+def test_clean_sentence_rejects_invalid_attempt_count():
+    with pytest.raises(ValueError, match="1 이상"):
+        clean_sentence("사업 A", "원문", call_once=Mock(), max_attempts=0)
+
+
+def test_extract_numbers_preserves_order():
+    assert extract_numbers("만 0~1세, 월 30만원씩 3개월") == ["0", "1", "30", "3"]
+    assert extract_numbers(None) == []
+
+
+def test_numbers_preserved_compares_sequences():
+    assert numbers_preserved("월 30만원, 3개월", "월 30만 원, 3개월")
+    assert not numbers_preserved("월 30만원, 3개월", "월 300만원, 3개월")
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (None, False),
+        ("정상 문장", False),
+        ("\uf09f지원대상: 서울시민", True),
+        ("(지원대상) 서울시민", True),
+        ("(사업내용) 돌봄서비스 제공", True),
+    ],
+)
+def test_needs_llm_rerun(text, expected):
+    assert needs_llm_rerun(text) is expected
