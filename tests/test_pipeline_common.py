@@ -264,6 +264,58 @@ def test_build_subtotal_qa_keeps_error_rate_missing_for_zero_subtotal():
     assert result.loc[0, "차이"] == 10.0
     assert pd.isna(result.loc[0, "오차율(%)"])
     assert result.loc[0, "결과"] == "불일치"
+    assert result.loc[0, "허용기준결과"] == "판정불가"
+
+
+@pytest.mark.parametrize(
+    ("leaf_budget", "expected_rate", "expected_result"),
+    [
+        (110.0, 10.0, "허용"),
+        (90.0, -10.0, "허용"),
+        (110.01, 10.01, "초과"),
+        (89.99, -10.01, "초과"),
+    ],
+)
+def test_build_subtotal_qa_applies_absolute_rate_tolerance(
+    leaf_budget,
+    expected_rate,
+    expected_result,
+):
+    source = pd.DataFrame(
+        {
+            "지역": ["서울", "서울"],
+            "대분류": ["공통", "공통"],
+            "중분류": ["돌봄", "돌봄"],
+            "사업행구분": ["중분류_소계", "세부사업"],
+            "예산_num": [100.0, leaf_budget],
+        }
+    )
+
+    result = build_subtotal_qa(source, budget_col="예산_num")
+
+    assert result.loc[0, "오차율(%)"] == expected_rate
+    assert result.loc[0, "허용기준결과"] == expected_result
+
+
+def test_build_subtotal_qa_supports_custom_rate_tolerance():
+    source = pd.DataFrame(
+        {
+            "지역": ["서울", "서울"],
+            "대분류": ["공통", "공통"],
+            "중분류": ["돌봄", "돌봄"],
+            "사업행구분": ["중분류_소계", "세부사업"],
+            "예산_num": [100.0, 106.0],
+        }
+    )
+
+    result = build_subtotal_qa(
+        source,
+        budget_col="예산_num",
+        rate_tolerance=5.0,
+    )
+
+    assert result.loc[0, "오차율(%)"] == 6.0
+    assert result.loc[0, "허용기준결과"] == "초과"
 
 
 def test_build_subtotal_qa_rejects_duplicate_subtotals():
@@ -279,6 +331,9 @@ def test_build_subtotal_qa_validates_arguments():
 
     with pytest.raises(ValueError, match="0 이상"):
         build_subtotal_qa(source, budget_col="예산_num", tolerance=-1)
+
+    with pytest.raises(ValueError, match="rate_tolerance는 0 이상"):
+        build_subtotal_qa(source, budget_col="예산_num", rate_tolerance=-1)
 
     with pytest.raises(ValueError, match="하나 이상의 컬럼"):
         build_subtotal_qa(source, budget_col="예산_num", group_cols=())

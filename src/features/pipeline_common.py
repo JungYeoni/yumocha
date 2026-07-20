@@ -190,15 +190,19 @@ def build_subtotal_qa(
     budget_col: str,
     group_cols: tuple[str, ...] = ("지역", "대분류", "중분류"),
     tolerance: float = 0,
+    rate_tolerance: float = 10.0,  # 허용 오차율 상한
     row_type_col: str = "사업행구분",
 ) -> pd.DataFrame:
     """원본 중분류 소계와 세부사업 예산 합계를 비교한다.
 
-    ``budget_col``은 숫자 변환이 완료된 컬럼이어야 한다. 한쪽 그룹이 없거나
-    비교값이 결측인 경우는 일치로 처리하지 않는다.
+    ``budget_col``은 숫자 변환이 완료된 컬럼이어야 한다. ``rate_tolerance``는
+    절대 오차율의 허용 상한이다. 한쪽 그룹이 없거나 비교값이 결측인 경우는
+    허용 여부를 판정하지 않는다.
     """
     if tolerance < 0:
         raise ValueError("tolerance는 0 이상이어야 합니다.")
+    if rate_tolerance < 0:
+        raise ValueError("rate_tolerance는 0 이상이어야 합니다.")
 
     if not group_cols:
         raise ValueError("group_cols에는 하나 이상의 컬럼이 필요합니다.")
@@ -248,7 +252,22 @@ def build_subtotal_qa(
     )
     qa["차이"] = qa["leaf_합계"] - qa["원본_소계값"]
     subtotal_denominator = qa["원본_소계값"].mask(qa["원본_소계값"].eq(0))
+
     qa["오차율(%)"] = qa["차이"].div(subtotal_denominator).mul(100).round(2)
+
+    qa["허용기준결과"] = "판정불가"
+
+    rate_comparable = qa["QA_병합상태"].eq("양쪽존재") & qa["오차율(%)"].notna()
+
+    qa.loc[
+        rate_comparable & qa["오차율(%)"].abs().le(rate_tolerance),
+        "허용기준결과",
+    ] = "허용"
+
+    qa.loc[
+        rate_comparable & qa["오차율(%)"].abs().gt(rate_tolerance),
+        "허용기준결과",
+    ] = "초과"
 
     comparable = (
         qa["QA_병합상태"].eq("양쪽존재") & qa["원본_소계값"].notna() & qa["leaf_합계"].notna()
@@ -265,6 +284,7 @@ def build_subtotal_qa(
             "오차율(%)",
             "QA_병합상태",
             "결과",
+            "허용기준결과",
         ]
     ]
 
