@@ -26,6 +26,8 @@
 
 ### 리팩터링
 
+- Address pipeline utility review feedback (#13) ([9919759](https://github.com/JungYeoni/da-template/commit/99197590efcfd949694166b0b2827f6736b9e12f))
+- 연도별 정제 공통 유틸 모듈화 (#13) ([dbeedae](https://github.com/JungYeoni/da-template/commit/dbeedae47f7037b2aa898e773de63bf1e1ef2669))
 - 2021 정제 파이프라인 연도 설정 보완 (#9) ([8f82a9f](https://github.com/JungYeoni/da-template/commit/8f82a9fef7c84157e19c36bbafb32b4bff11a7c6))
 - 정제와 예산변동 노트북 분리 (#7) ([d47ffa4](https://github.com/JungYeoni/da-template/commit/d47ffa41c7fcdc86180b8f990e92da36e5356e31))
 - 연도별 시도 정제 경로 설정 통합 (#7) ([a832815](https://github.com/JungYeoni/da-template/commit/a832815962efed9a75a120a9e023b5d87577ea8f))
@@ -35,6 +37,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([7205886](https://github.com/JungYeoni/da-template/commit/7205886624f208b846bed58d236874680f0706d8))
 - 2021 시행계획 분리·정제 결과 보고서 작성 #9 ([4f0e7d6](https://github.com/JungYeoni/da-template/commit/4f0e7d692f977e08723f90ed1051f12e823304b3))
 - CHANGELOG 자동 업데이트 [skip ci] ([10d40e5](https://github.com/JungYeoni/da-template/commit/10d40e56d17497fe7d7e59f970132b9f47b9ae36))
 - 2차 멘토링 내용 바탕으로 계획 문서 및 분석방법론 업데이트 ([1ab298a](https://github.com/JungYeoni/da-template/commit/1ab298a49864dd33f07a25fb9401113655b325b7))
@@ -92,6 +95,8 @@
 
 ### 새 기능
 
+- Add subtotal QA error rate (#13) ([e0b476b](https://github.com/JungYeoni/da-template/commit/e0b476baac7a3b029ab2e5af1cb1ec94db6f4a90))
+- 행 분류. 계층 전파, 숫자/텍스트 정제, 저장경로 설정 (#13) ([e3f716a](https://github.com/JungYeoni/da-template/commit/e3f716a5f668928c0738ed6050250742e66b6c19))
 - 주요내용에 불릿제거 적용 (#9) ([4dd5406](https://github.com/JungYeoni/da-template/commit/4dd540633ee6373109ba3e3d4db28f81cc825853))
 - 2021 시행계획 LLM 정제 및 최종 산출물 생성 #9 ([0a80206](https://github.com/JungYeoni/da-template/commit/0a80206ed9ca8c2e3e5200d53572965e942fe6c7))
 - 2021 행유형 후보 전수검토 결과 반영 (#9) ([5abaa18](https://github.com/JungYeoni/da-template/commit/5abaa1873075ca6c1d9edb1bc0960664c3725a1c))
