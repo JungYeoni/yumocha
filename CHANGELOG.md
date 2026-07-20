@@ -26,6 +26,7 @@
 
 ### 리팩터링
 
+- 2021 정제 파이프라인 연도 설정 보완 (#9) ([8f82a9f](https://github.com/JungYeoni/da-template/commit/8f82a9fef7c84157e19c36bbafb32b4bff11a7c6))
 - 정제와 예산변동 노트북 분리 (#7) ([d47ffa4](https://github.com/JungYeoni/da-template/commit/d47ffa41c7fcdc86180b8f990e92da36e5356e31))
 - 연도별 시도 정제 경로 설정 통합 (#7) ([a832815](https://github.com/JungYeoni/da-template/commit/a832815962efed9a75a120a9e023b5d87577ea8f))
 - 2024 체크포인트 파일명에 연도 추가 (#7) ([765fefd](https://github.com/JungYeoni/da-template/commit/765fefd1558346f9ff3cdb8bc5629dafbe22f23a))
@@ -34,6 +35,8 @@
 
 ### 문서
 
+- 2021 시행계획 분리·정제 결과 보고서 작성 #9 ([4f0e7d6](https://github.com/JungYeoni/da-template/commit/4f0e7d692f977e08723f90ed1051f12e823304b3))
+- CHANGELOG 자동 업데이트 [skip ci] ([10d40e5](https://github.com/JungYeoni/da-template/commit/10d40e56d17497fe7d7e59f970132b9f47b9ae36))
 - 2차 멘토링 내용 바탕으로 계획 문서 및 분석방법론 업데이트 ([1ab298a](https://github.com/JungYeoni/da-template/commit/1ab298a49864dd33f07a25fb9401113655b325b7))
 - CHANGELOG 자동 업데이트 [skip ci] ([490cae4](https://github.com/JungYeoni/da-template/commit/490cae421b13250e8f38cac4732ada1526880cf3))
 - 2023 정제와 예산변동 보고서 분리 (#7) ([6100763](https://github.com/JungYeoni/da-template/commit/61007638b368328c0b4fd4b9e4c06075a1e19222))
@@ -73,6 +76,8 @@
 
 ### 버그 수정
 
+- CSV 저장 인코딩을 UTF-8-SIG로 통일 #9 ([467b5a4](https://github.com/JungYeoni/da-template/commit/467b5a490fa75a34747426b4ea5ce6f88beabaee))
+- 2021 연속행 후보 판정 및 사업명 병합 반영 #9 ([5333315](https://github.com/JungYeoni/da-template/commit/5333315745d0993b425efb5aeab19a42d792c3f8))
 - CodeRabbit 리뷰 반영 (#7) ([564bf32](https://github.com/JungYeoni/da-template/commit/564bf323badb830a00d423311b89c0cb1cd0c957))
 - Seaborn 설정을 폰트보다 먼저 적용 (#7) ([8b6e65d](https://github.com/JungYeoni/da-template/commit/8b6e65dbf14c9e51040f0b5566ac3f8e8034f010))
 - {연도}_llm_정제_체크포인트 형식에 맞춰 파일명  수정 (#7) ([4bcc4eb](https://github.com/JungYeoni/da-template/commit/4bcc4ebf8a1d41157a53b3aab0b157d40416d0f3))
@@ -87,6 +92,10 @@
 
 ### 새 기능
 
+- 주요내용에 불릿제거 적용 (#9) ([4dd5406](https://github.com/JungYeoni/da-template/commit/4dd540633ee6373109ba3e3d4db28f81cc825853))
+- 2021 시행계획 LLM 정제 및 최종 산출물 생성 #9 ([0a80206](https://github.com/JungYeoni/da-template/commit/0a80206ed9ca8c2e3e5200d53572965e942fe6c7))
+- 2021 행유형 후보 전수검토 결과 반영 (#9) ([5abaa18](https://github.com/JungYeoni/da-template/commit/5abaa1873075ca6c1d9edb1bc0960664c3725a1c))
+- 2021 시행계획 예산 정제 및 QA 1차 구현 #9 ([7054432](https://github.com/JungYeoni/da-template/commit/7054432e681434426089fb99e4d13dac6d28f8f2))
 - 2023 예산변동 분석과 동명 사업 QA 보완 (#7) ([78f16ab](https://github.com/JungYeoni/da-template/commit/78f16ab5cc58b0aa205869775652c9549db8f3d8))
 - 시도_연도별_시군구수 세분화 (#7) ([cc8f27c](https://github.com/JungYeoni/da-template/commit/cc8f27c51678cb25555558b30d1adc8d556758e6))
 - 시도_연도별_시군구수 룩업 테이블 생성 (#7) ([c165283](https://github.com/JungYeoni/da-template/commit/c16528303821bb6294063b3d31da618b3e20289f))
