@@ -34,6 +34,8 @@
 
 ### 문서
 
+- 2차 멘토링 내용 바탕으로 계획 문서 및 분석방법론 업데이트 ([1ab298a](https://github.com/JungYeoni/da-template/commit/1ab298a49864dd33f07a25fb9401113655b325b7))
+- CHANGELOG 자동 업데이트 [skip ci] ([490cae4](https://github.com/JungYeoni/da-template/commit/490cae421b13250e8f38cac4732ada1526880cf3))
 - 2023 정제와 예산변동 보고서 분리 (#7) ([6100763](https://github.com/JungYeoni/da-template/commit/61007638b368328c0b4fd4b9e4c06075a1e19222))
 - 작업 계획문서에 새로 알게된 내용 추가 (#7) ([2e09d51](https://github.com/JungYeoni/da-template/commit/2e09d5133671f498c107837841a0ebd50f8b04e0))
 - 노트북 상태에 맞춰 레포트 업데이트 (#7) ([e30ef20](https://github.com/JungYeoni/da-template/commit/e30ef2060f207425a56d447384f106e2894a7495))
