@@ -247,6 +247,8 @@ def build_subtotal_qa(
         }
     )
     qa["차이"] = qa["leaf_합계"] - qa["원본_소계값"]
+    subtotal_denominator = qa["원본_소계값"].mask(qa["원본_소계값"].eq(0))
+    qa["오차율(%)"] = qa["차이"].div(subtotal_denominator).mul(100).round(2)
 
     comparable = (
         qa["QA_병합상태"].eq("양쪽존재") & qa["원본_소계값"].notna() & qa["leaf_합계"].notna()
@@ -260,6 +262,7 @@ def build_subtotal_qa(
             "원본_소계값",
             "leaf_합계",
             "차이",
+            "오차율(%)",
             "QA_병합상태",
             "결과",
         ]

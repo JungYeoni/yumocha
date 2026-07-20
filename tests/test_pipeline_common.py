@@ -209,10 +209,13 @@ def test_build_subtotal_qa_compares_subtotal_and_leaf_sum():
     result_by_category = result.set_index("중분류")
     assert result_by_category.loc["돌봄", "leaf_합계"] == 100.0
     assert result_by_category.loc["돌봄", "차이"] == 0.0
+    assert result_by_category.loc["돌봄", "오차율(%)"] == 0.0
     assert result_by_category.loc["돌봄", "결과"] == "일치"
     assert result_by_category.loc["고령", "차이"] == -1.0
+    assert result_by_category.loc["고령", "오차율(%)"] == -1.96
     assert result_by_category.loc["고령", "결과"] == "불일치"
     assert result_by_category.loc["청년", "QA_병합상태"] == "원본소계만"
+    assert pd.isna(result_by_category.loc["청년", "오차율(%)"])
     assert result_by_category.loc["청년", "결과"] == "불일치"
 
 
@@ -243,6 +246,24 @@ def test_build_subtotal_qa_marks_leaf_only_group_as_mismatch():
 
     assert result.loc["주거", "QA_병합상태"] == "leaf합계만"
     assert result.loc["주거", "결과"] == "불일치"
+
+
+def test_build_subtotal_qa_keeps_error_rate_missing_for_zero_subtotal():
+    source = pd.DataFrame(
+        {
+            "지역": ["서울", "서울"],
+            "대분류": ["공통", "공통"],
+            "중분류": ["돌봄", "돌봄"],
+            "사업행구분": ["중분류_소계", "세부사업"],
+            "예산_num": [0.0, 10.0],
+        }
+    )
+
+    result = build_subtotal_qa(source, budget_col="예산_num")
+
+    assert result.loc[0, "차이"] == 10.0
+    assert pd.isna(result.loc[0, "오차율(%)"])
+    assert result.loc[0, "결과"] == "불일치"
 
 
 def test_build_subtotal_qa_rejects_duplicate_subtotals():
