@@ -13,11 +13,24 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib import font_manager
+
+
+def get_korean_font() -> str:
+    """설치된 한글 폰트를 운영체제와 관계없이 우선순위대로 반환한다."""
+    installed_fonts = {font.name for font in font_manager.fontManager.ttflist}
+    candidates = ("AppleGothic", "Malgun Gothic", "NanumGothic")
+    return next((font for font in candidates if font in installed_fonts), "sans-serif")
+
+
+# Seaborn은 font.family를 sans-serif로 초기화하므로 폰트보다 먼저 적용한다.
+sns.set_style("whitegrid")
+KOREAN_FONT = get_korean_font()
 
 # 전역 스타일 설정
 plt.rcParams.update(
     {
-        "font.family": "AppleGothic",  # macOS 한국어; Linux는 'NanumGothic' 등으로 변경
+        "font.family": KOREAN_FONT,
         "axes.unicode_minus": False,
         "figure.dpi": 120,
         "savefig.dpi": 300,
@@ -27,7 +40,6 @@ plt.rcParams.update(
     }
 )
 PALETTE = sns.color_palette("colorblind")
-sns.set_style("whitegrid")
 
 
 def save_figure(fig: plt.Figure, path: str | Path, formats: list[str] | None = None) -> None:
