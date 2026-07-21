@@ -29,6 +29,13 @@ UNIT_NOTATION_PATTERN = re.compile(r"^\(\s*단위\s*[:：]")
 #     "총 계(230개 과제) (공통 88, 자체 142)"(대전, 괄호 부가설명 포함)
 SUBTOTAL_LABEL_PATTERN = re.compile(r"^(총\s*계|소계)(\s*\(.*\))?$|.*합계$")
 
+# 대분류 로마숫자 헤더가 없는 지역(예: 광주)은 중분류 라벨 안에 대분류(공통사업/자체사업)
+# 정보가 같이 들어있다. 예: "1. 저출산 대책(공통사업)", "1-1.청년 일자리 주거대책 강화"는
+# 접미사가 없어 매치되지 않고 상위 "1. 저출산 대책(공통사업)"만 매치된다.
+MEDIUM_LABEL_WITH_BUDGET_TYPE_PATTERN = re.compile(
+    r"^\d+[-\d]*\.\s*(.+?)\s*\((공통사업|자체사업)\)$"
+)
+
 # 문자열 맨 앞의 불릿만 제거
 # 문장 중간의 하이픈이나 가운데점은 보존
 LEADING_BULLET_PATTERN = re.compile(r"^\s*[ㅇ○◦□▪·•o\-]\s*")
@@ -108,6 +115,40 @@ def assign_labels(
 
     result["대분류"] = result[detail_name_col].where(major_mask).ffill()
     result["중분류"] = result[detail_name_col].where(medium_mask).ffill()
+
+    return result
+
+
+def backfill_major_category_from_medium(
+    df_labeled: pd.DataFrame,
+    *,
+    major_col: str = "대분류",
+    medium_col: str = "중분류",
+    pattern: re.Pattern[str] = MEDIUM_LABEL_WITH_BUDGET_TYPE_PATTERN,
+) -> pd.DataFrame:
+    """대분류 로마숫자 헤더가 없는 지역의 대분류를 중분류 라벨에서 역으로 채운다.
+
+    광주처럼 "Ⅰ. 공통사업" 같은 대분류_소계가 아예 없는 지역은 `assign_labels` 이후에도
+    대분류가 전부 결측이다. 대신 중분류 라벨 자체가 "1. 저출산 대책(공통사업)"처럼
+    괄호 안에 대분류(공통사업/자체사업) 정보를 포함하고 있으므로, 대분류가 결측인
+    행만 골라 괄호 안은 대분류로 옮기고 중분류는 괄호 앞 주제명만 남긴다.
+
+    대분류가 이미 채워진 행(로마숫자 대분류_소계가 존재하는 지역)은 건드리지 않는다.
+    """
+    required_cols = {major_col, medium_col}
+    missing_cols = required_cols.difference(df_labeled.columns)
+    if missing_cols:
+        raise KeyError(f"대분류 역채움에 필요한 컬럼이 없습니다: {sorted(missing_cols)}")
+
+    result = df_labeled.copy()
+    missing_major = result[major_col].isna()
+    extracted = result.loc[missing_major, medium_col].str.extract(pattern)
+
+    matched = extracted[1].notna()
+    matched_index = extracted.index[matched]
+
+    result.loc[matched_index, medium_col] = extracted.loc[matched, 0]
+    result.loc[matched_index, major_col] = extracted.loc[matched, 1]
 
     return result
 
@@ -455,10 +496,12 @@ def select_total_budget_rows(
 
 __all__ = [
     "FUNDING_SOURCE_TOKENS",
+    "MEDIUM_LABEL_WITH_BUDGET_TYPE_PATTERN",
     "SUBTOTAL_LABEL_PATTERN",
     "TOTAL_FUNDING_TOKEN",
     "UNIT_NOTATION_PATTERN",
     "assign_labels",
+    "backfill_major_category_from_medium",
     "build_subtotal_qa",
     "calculate_budget_changes",
     "classify_row",

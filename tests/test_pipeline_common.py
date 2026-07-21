@@ -7,6 +7,7 @@ from src.features.pipeline_common import (
     SUBTOTAL_LABEL_PATTERN,
     UNIT_NOTATION_PATTERN,
     assign_labels,
+    backfill_major_category_from_medium,
     build_subtotal_qa,
     calculate_budget_changes,
     classify_row,
@@ -210,6 +211,56 @@ def test_assign_labels_propagates_hierarchy_in_original_row_order():
 def test_assign_labels_rejects_missing_columns():
     with pytest.raises(KeyError, match="필요한 컬럼"):
         assign_labels(pd.DataFrame({"세부사업명": ["사업"]}))
+
+
+def test_backfill_major_category_extracts_budget_type_from_medium_label():
+    # 광주처럼 대분류 로마숫자 헤더가 없는 지역: 대분류가 결측이고 중분류에 접미사로 섞여 있음
+    source = pd.DataFrame(
+        {
+            "대분류": [None, None],
+            "중분류": ["1. 저출산 대책(공통사업)", "1. 저출산 대책(공통사업)"],
+        }
+    )
+
+    result = backfill_major_category_from_medium(source)
+
+    assert result["대분류"].tolist() == ["공통사업", "공통사업"]
+    assert result["중분류"].tolist() == ["저출산 대책", "저출산 대책"]
+
+
+def test_backfill_major_category_does_not_touch_existing_major():
+    # 서울처럼 대분류가 이미 로마숫자 헤더로 채워진 지역은 건드리지 않는다
+    source = pd.DataFrame(
+        {
+            "대분류": ["Ⅰ. 공통사업"],
+            "중분류": ["1. 저출산 대책(공통사업)"],
+        }
+    )
+
+    result = backfill_major_category_from_medium(source)
+
+    assert result["대분류"].iloc[0] == "Ⅰ. 공통사업"
+    assert result["중분류"].iloc[0] == "1. 저출산 대책(공통사업)"
+
+
+def test_backfill_major_category_leaves_unmatched_medium_as_is():
+    # "1-1.청년 일자리 주거대책 강화"처럼 접미사가 없는 라벨은 매치되지 않아 그대로 둔다
+    source = pd.DataFrame(
+        {
+            "대분류": [None],
+            "중분류": ["1-1.청년 일자리 주거대책 강화"],
+        }
+    )
+
+    result = backfill_major_category_from_medium(source)
+
+    assert pd.isna(result["대분류"].iloc[0])
+    assert result["중분류"].iloc[0] == "1-1.청년 일자리 주거대책 강화"
+
+
+def test_backfill_major_category_rejects_missing_columns():
+    with pytest.raises(KeyError, match="필요한 컬럼"):
+        backfill_major_category_from_medium(pd.DataFrame({"중분류": ["1. 저출산(공통사업)"]}))
 
 
 def test_clean_text_normalizes_whitespace_pua_and_leading_bullet():
