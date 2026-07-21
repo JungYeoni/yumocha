@@ -88,8 +88,7 @@ def test_classify_row_filters_subtotal_label_via_extra_header_pattern(detail_nam
     assert classify_row(detail_name, extra_header_patterns=[SUBTOTAL_LABEL_PATTERN]) == expected
 
 
-def test_drop_exact_duplicate_rows_collapses_full_row_duplicates():
-    # 791/792는 같은 머리글행(773)에 속한 진짜 중복, 798은 다른 머리글행(796)의 별개 항목
+def test_drop_exact_duplicate_rows_removes_only_confirmed_duplicate():
     source = pd.DataFrame(
         {
             "지역": ["부산", "부산", "부산"],
@@ -101,7 +100,7 @@ def test_drop_exact_duplicate_rows_collapses_full_row_duplicates():
         }
     )
 
-    result = drop_exact_duplicate_rows(source)
+    result = drop_exact_duplicate_rows(source, confirmed_duplicate_rows=(792,))
 
     assert result["원본행"].tolist() == [791, 798]
 
@@ -118,9 +117,21 @@ def test_drop_exact_duplicate_rows_keeps_same_value_different_label():
         }
     )
 
-    result = drop_exact_duplicate_rows(source)
+    result = drop_exact_duplicate_rows(source, confirmed_duplicate_rows=())
 
     assert len(result) == 2
+
+
+def test_drop_exact_duplicate_rows_rejects_unverified_row():
+    source = pd.DataFrame(
+        {
+            "세부사업명": ["사업 A", "사업 B"],
+            "원본행": [1, 2],
+        }
+    )
+
+    with pytest.raises(ValueError, match="완전 중복이 아닌 행"):
+        drop_exact_duplicate_rows(source, confirmed_duplicate_rows=(2,))
 
 
 def make_funding_source() -> pd.DataFrame:
@@ -178,6 +189,24 @@ def test_select_total_budget_rows_sums_national_and_local_when_no_total():
     assert gyeonggi["재원구분"].iloc[0] == "국비+지방비"
     assert gyeonggi["2016년 예산"].iloc[0] == 100
     assert gyeonggi["2015년 예산"].iloc[0] == 50
+
+
+def test_select_total_budget_rows_keeps_repeated_same_name_projects_separate():
+    source = pd.DataFrame(
+        {
+            "지역": ["부산"] * 4,
+            "머리글행": [1] * 4,
+            "세부사업명": ["동일 사업명"] * 4,
+            "사업분류재정구분": ["국비", "지방비", "국비", "지방비"],
+            "2016년 예산": [60, 40, 30, 20],
+            "2015년 예산": [50, 30, 20, 10],
+        }
+    )
+
+    result = select_total_budget_rows(source, budget_cols=["2016년 예산", "2015년 예산"])
+
+    assert result["2016년 예산"].tolist() == [100, 50]
+    assert result["재원구분"].tolist() == ["국비+지방비", "국비+지방비"]
 
 
 def test_select_total_budget_rows_passes_through_non_funding_rows():
@@ -420,7 +449,58 @@ def test_build_subtotal_qa_compares_subtotal_and_leaf_sum():
     assert result_by_category.loc["고령", "결과"] == "불일치"
     assert result_by_category.loc["청년", "QA_병합상태"] == "원본소계만"
     assert pd.isna(result_by_category.loc["청년", "오차율(%)"])
-    assert result_by_category.loc["청년", "결과"] == "불일치"
+    assert result_by_category.loc["청년", "결과"] == "판정불가"
+
+
+def test_build_subtotal_qa_uses_separate_labeled_subtotal_row():
+    source = pd.DataFrame(
+        {
+            "지역": ["울산", "울산", "울산", "울산"],
+            "대분류": ["공통"] * 4,
+            "중분류": ["저출산"] * 4,
+            "세부사업명": ["1. 저출산", "소계", "사업 A", "사업 B"],
+            "사업행구분": ["중분류_소계", "헤더반복", "세부사업", "세부사업"],
+            "예산_num": [None, 100.0, 40.0, 60.0],
+        }
+    )
+
+    result = build_subtotal_qa(
+        source,
+        budget_col="예산_num",
+        subtotal_label_col="세부사업명",
+        subtotal_labels=("소계",),
+    )
+
+    assert result.loc[0, "원본_소계값"] == 100.0
+    assert result.loc[0, "원본_소계출처"] == "별도소계행"
+    assert result.loc[0, "leaf_합계"] == 100.0
+    assert result.loc[0, "절대차이"] == 0.0
+    assert result.loc[0, "절대오차율(%)"] == 0.0
+    assert result.loc[0, "결과"] == "일치"
+
+
+def test_build_subtotal_qa_prefers_separate_subtotal_over_title_budget():
+    source = pd.DataFrame(
+        {
+            "지역": ["경기", "경기", "경기"],
+            "대분류": ["공통"] * 3,
+            "중분류": ["저출산"] * 3,
+            "세부사업명": ["1. 저출산", "소계", "사업 A"],
+            "사업행구분": ["중분류_소계", "헤더반복", "세부사업"],
+            "예산_num": [999.0, 100.0, 100.0],
+        }
+    )
+
+    result = build_subtotal_qa(
+        source,
+        budget_col="예산_num",
+        subtotal_label_col="세부사업명",
+        subtotal_labels=("소계",),
+    )
+
+    assert result.loc[0, "원본_소계값"] == 100.0
+    assert result.loc[0, "원본_소계출처"] == "별도소계행"
+    assert result.loc[0, "결과"] == "일치"
 
 
 def test_build_subtotal_qa_applies_tolerance():
@@ -449,7 +529,7 @@ def test_build_subtotal_qa_marks_leaf_only_group_as_mismatch():
     result = build_subtotal_qa(source, budget_col="예산_num").set_index("중분류")
 
     assert result.loc["주거", "QA_병합상태"] == "leaf합계만"
-    assert result.loc["주거", "결과"] == "불일치"
+    assert result.loc["주거", "결과"] == "판정불가"
 
 
 def test_build_subtotal_qa_keeps_error_rate_missing_for_zero_subtotal():
