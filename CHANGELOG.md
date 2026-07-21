@@ -37,6 +37,8 @@
 
 ### 문서
 
+- 공통유틸 템플릿에 단위표기 헤더 패턴 사용법 반영 (#24) ([aba570f](https://github.com/JungYeoni/da-template/commit/aba570fe40d16d968e152bc8a20eea49b88ad4ae))
+- CHANGELOG 자동 업데이트 [skip ci] ([a1e4cee](https://github.com/JungYeoni/da-template/commit/a1e4cee889effc9d1b3c1512ba396491fbd74c87))
 - CHANGELOG 자동 업데이트 [skip ci] ([561d653](https://github.com/JungYeoni/da-template/commit/561d6536780e7260b9be68ea1f7a378cb52e8498))
 - 2022 QA 불일치 원인 구체화 ([3c7a0d9](https://github.com/JungYeoni/da-template/commit/3c7a0d970ffab3be80034bbd47637c08201b0d96))
 - 예산 QA 허용기준 적용 결과 기록 (#15) ([a27eda1](https://github.com/JungYeoni/da-template/commit/a27eda18e4082a35dd71e74df64e8e96c4334634))
@@ -83,6 +85,7 @@
 
 ### 버그 수정
 
+- 2016~2020 단위표기 헤더 행 오분류 방지용 패턴 추가 (#24) ([fa5593a](https://github.com/JungYeoni/da-template/commit/fa5593a639e36edc025a6adb06fdc38350a80f2d))
 - 2022 구조 이상 행 제외 내역 반영 (#8) ([17c0bd0](https://github.com/JungYeoni/da-template/commit/17c0bd09a2f9d0a8026061381696c00c68b8bd2c))
 - 삭제 대상 첫 행이 남아있는 경우 삭제 (#8) ([5768196](https://github.com/JungYeoni/da-template/commit/5768196927336dcc74055322fc982e460fea8a11))
 - 숫자보존 QA에 부호와 소수 반영 ([8ea7584](https://github.com/JungYeoni/da-template/commit/8ea7584a56b6c014a776287e334318f4446e360c))
