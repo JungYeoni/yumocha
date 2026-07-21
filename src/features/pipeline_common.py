@@ -374,6 +374,7 @@ def select_total_budget_rows(
     *,
     budget_cols: Sequence[str],
     finance_type_col: str = "사업분류재정구분",
+    funding_detail_col: str = "재원구분",
     group_cols: tuple[str, ...] = ("지역", "머리글행", "세부사업명"),
     funding_source_tokens: Iterable[str] = FUNDING_SOURCE_TOKENS,
     total_token: str = TOTAL_FUNDING_TOKEN,
@@ -392,6 +393,12 @@ def select_total_budget_rows(
     대표 행의 budget_cols 외 컬럼은 그룹의 첫 행 기준이다. finance_type_col 값이
     재원구분 토큰이 아닌 행(헤더, 결측 등)은 건드리지 않고 그대로 통과시킨다.
 
+    finance_type_col은 계/국비/지방비 구분과 무관하게 항상 "계"(total_token)로
+    통일해서 최종 스키마(공통/자체 자리)와 섞이지 않게 하고, 원래 재원 구성은
+    funding_detail_col에 보존한다("계", "지방비"처럼 단일 값이었던 경우 그대로,
+    "국비+지방비"처럼 여러 값을 합산한 경우 "+"로 연결). 재원구분 대상이 아닌
+    행(other_rows)의 funding_detail_col은 결측으로 남긴다.
+
     2020년 이후(공통/자체 체계) 원본에는 이 토큰들이 없으므로 이 함수를 적용할
     필요가 없다.
     """
@@ -403,7 +410,8 @@ def select_total_budget_rows(
     normalized_tokens = {str(token).strip() for token in funding_source_tokens}
     is_funding_row = finance_type.isin(normalized_tokens)
 
-    other_rows = df_raw.loc[~is_funding_row]
+    other_rows = df_raw.loc[~is_funding_row].copy()
+    other_rows[funding_detail_col] = pd.NA
     funding_rows = df_raw.loc[is_funding_row].copy()
     funding_rows["_재원구분"] = finance_type.loc[is_funding_row]
 
@@ -412,22 +420,34 @@ def select_total_budget_rows(
     )
     is_total_row = funding_rows["_재원구분"].eq(total_token)
 
-    total_rows = funding_rows.loc[is_total_row & group_has_total].drop(columns="_재원구분")
+    total_rows = funding_rows.loc[is_total_row & group_has_total].copy()
+    total_rows[funding_detail_col] = total_rows["_재원구분"]
+    total_rows = total_rows.drop(columns="_재원구분")
 
     remainder = funding_rows.loc[~group_has_total].drop(columns="_재원구분").copy()
     if remainder.empty:
         aggregated = remainder
+        if funding_detail_col not in aggregated.columns:
+            aggregated[funding_detail_col] = pd.Series(dtype="string")
     else:
+        remainder["_재원구분"] = finance_type.loc[remainder.index]
         for column in budget_cols:
             remainder[column] = to_numeric_budget(remainder[column], zero_tokens=zero_tokens)
 
+        funding_detail = (
+            remainder.groupby(list(group_cols), dropna=False)["_재원구분"]
+            .apply(lambda s: "+".join(sorted(s.unique())))
+            .rename(funding_detail_col)
+            .reset_index()
+        )
         summed_budget = remainder.groupby(list(group_cols), as_index=False, dropna=False)[
             list(budget_cols)
         ].sum(min_count=1)
         representative = remainder.drop_duplicates(subset=list(group_cols), keep="first").drop(
-            columns=list(budget_cols)
+            columns=[*budget_cols, "_재원구분"]
         )
         aggregated = representative.merge(summed_budget, on=list(group_cols), how="left")
+        aggregated = aggregated.merge(funding_detail, on=list(group_cols), how="left")
         aggregated[finance_type_col] = total_token
 
     return pd.concat([other_rows, total_rows, aggregated], ignore_index=True)

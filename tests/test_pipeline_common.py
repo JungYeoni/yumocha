@@ -151,6 +151,7 @@ def test_select_total_budget_rows_prefers_total_when_present():
     daejeon = result.loc[result["지역"].eq("대전")]
     assert len(daejeon) == 1
     assert daejeon["사업분류재정구분"].iloc[0] == "계"
+    assert daejeon["재원구분"].iloc[0] == "계"
     assert daejeon["2016년 예산"].iloc[0] == "35,907"
 
 
@@ -161,6 +162,7 @@ def test_select_total_budget_rows_keeps_single_local_only_row():
 
     gangwon = result.loc[result["지역"].eq("강원")]
     assert len(gangwon) == 1
+    assert gangwon["재원구분"].iloc[0] == "지방비"
     assert gangwon["2016년 예산"].iloc[0] == 4
 
 
@@ -172,6 +174,7 @@ def test_select_total_budget_rows_sums_national_and_local_when_no_total():
     gyeonggi = result.loc[result["지역"].eq("경기")]
     assert len(gyeonggi) == 1
     assert gyeonggi["사업분류재정구분"].iloc[0] == "계"
+    assert gyeonggi["재원구분"].iloc[0] == "국비+지방비"
     assert gyeonggi["2016년 예산"].iloc[0] == 100
     assert gyeonggi["2015년 예산"].iloc[0] == 50
 
@@ -184,6 +187,7 @@ def test_select_total_budget_rows_passes_through_non_funding_rows():
     seoul = result.loc[result["지역"].eq("서울")]
     assert len(seoul) == 1
     assert seoul["사업분류재정구분"].iloc[0] == "공통"
+    assert pd.isna(seoul["재원구분"].iloc[0])
     assert seoul["2016년 예산"].iloc[0] == "100"
 
 
