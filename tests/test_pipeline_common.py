@@ -10,8 +10,10 @@ from src.features.pipeline_common import (
     calculate_budget_changes,
     classify_row,
     clean_text,
+    drop_exact_duplicate_rows,
     get_sido_dir,
     normalize_budget_type,
+    select_total_budget_rows,
     show_table1_around,
     to_numeric_budget,
 )
@@ -52,6 +54,106 @@ def test_classify_row_accepts_extra_header_pattern():
 )
 def test_classify_row_filters_unit_notation_via_extra_header_pattern(detail_name, expected):
     assert classify_row(detail_name, extra_header_patterns=[UNIT_NOTATION_PATTERN]) == expected
+
+
+def test_drop_exact_duplicate_rows_collapses_full_row_duplicates():
+    # 791/792는 같은 머리글행(773)에 속한 진짜 중복, 798은 다른 머리글행(796)의 별개 항목
+    source = pd.DataFrame(
+        {
+            "지역": ["부산", "부산", "부산"],
+            "세부사업명": ["출산 기념 축하 미역 지원"] * 3,
+            "사업분류재정구분": ["비예산", "비예산", "비예산"],
+            "2016년 예산": [0, 0, 0],
+            "머리글행": [773, 773, 796],
+            "원본행": [791, 792, 798],
+        }
+    )
+
+    result = drop_exact_duplicate_rows(source)
+
+    assert result["원본행"].tolist() == [791, 798]
+
+
+def test_drop_exact_duplicate_rows_keeps_same_value_different_label():
+    # 국비=지방비=2300인 정상적인 5:5 분할은 라벨이 다르므로 중복이 아니다
+    source = pd.DataFrame(
+        {
+            "지역": ["강원", "강원"],
+            "세부사업명": ["공공형어린이집 지원", "공공형어린이집 지원"],
+            "사업분류재정구분": ["국비", "지방비"],
+            "2016년 예산": [2300, 2300],
+            "원본행": [3056, 3057],
+        }
+    )
+
+    result = drop_exact_duplicate_rows(source)
+
+    assert len(result) == 2
+
+
+def make_funding_source() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "지역": ["대전", "대전", "대전", "강원", "경기", "경기", "서울"],
+            "머리글행": [1, 1, 1, 2, 3, 3, 4],
+            "세부사업명": [
+                "2. 난임 등 출생에 대한 사회적 책임강화",
+                "2. 난임 등 출생에 대한 사회적 책임강화",
+                "2. 난임 등 출생에 대한 사회적 책임강화",
+                "가임기여성 풍진검사",
+                "안전한 어린이 교통환경 조성",
+                "안전한 어린이 교통환경 조성",
+                "Ⅰ. 공통사업",
+            ],
+            "사업분류재정구분": ["계", "국비", "지방비", "지방비", "국비", "지방비", "공통"],
+            "2016년 예산": ["35,907", "20,125", "15,782", "4", "60", "40", "100"],
+            "2015년 예산": ["44,171", "19,276", "24,895", "4", "30", "20", "90"],
+        }
+    )
+
+
+def test_select_total_budget_rows_prefers_total_when_present():
+    result = select_total_budget_rows(
+        make_funding_source(), budget_cols=["2016년 예산", "2015년 예산"]
+    )
+
+    daejeon = result.loc[result["지역"].eq("대전")]
+    assert len(daejeon) == 1
+    assert daejeon["사업분류재정구분"].iloc[0] == "계"
+    assert daejeon["2016년 예산"].iloc[0] == "35,907"
+
+
+def test_select_total_budget_rows_keeps_single_local_only_row():
+    result = select_total_budget_rows(
+        make_funding_source(), budget_cols=["2016년 예산", "2015년 예산"]
+    )
+
+    gangwon = result.loc[result["지역"].eq("강원")]
+    assert len(gangwon) == 1
+    assert gangwon["2016년 예산"].iloc[0] == 4
+
+
+def test_select_total_budget_rows_sums_national_and_local_when_no_total():
+    result = select_total_budget_rows(
+        make_funding_source(), budget_cols=["2016년 예산", "2015년 예산"]
+    )
+
+    gyeonggi = result.loc[result["지역"].eq("경기")]
+    assert len(gyeonggi) == 1
+    assert gyeonggi["사업분류재정구분"].iloc[0] == "계"
+    assert gyeonggi["2016년 예산"].iloc[0] == 100
+    assert gyeonggi["2015년 예산"].iloc[0] == 50
+
+
+def test_select_total_budget_rows_passes_through_non_funding_rows():
+    result = select_total_budget_rows(
+        make_funding_source(), budget_cols=["2016년 예산", "2015년 예산"]
+    )
+
+    seoul = result.loc[result["지역"].eq("서울")]
+    assert len(seoul) == 1
+    assert seoul["사업분류재정구분"].iloc[0] == "공통"
+    assert seoul["2016년 예산"].iloc[0] == "100"
 
 
 def test_assign_labels_propagates_hierarchy_in_original_row_order():

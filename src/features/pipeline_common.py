@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 
 import pandas as pd
@@ -9,6 +9,8 @@ from pandas.api.types import is_numeric_dtype
 
 from src.features.text_patterns import PUA_PATTERN
 
+FUNDING_SOURCE_TOKENS = ("계", "국비", "지방비", "도비", "시군비", "시비", "기금", "비예산")
+TOTAL_FUNDING_TOKEN = "계"
 SIDO_TITLE_PATTERN = re.compile(r"붙\s*임\s*\(([^)]+)\)")
 MAJOR_CATEGORY_PATTERN = re.compile(r"^[Ⅰ-Ⅿ]")
 MEDIUM_CATEGORY_PATTERN = re.compile(r"^\d+\.")
@@ -340,15 +342,102 @@ def show_table1_around(
     return view
 
 
+def drop_exact_duplicate_rows(
+    df_raw: pd.DataFrame,
+    *,
+    ignore_cols: tuple[str, ...] = ("원본행",),
+) -> pd.DataFrame:
+    """행 위치 정보(원본행)를 제외한 나머지 컬럼이 완전히 동일한 행을 하나만 남긴다.
+
+    2016~2019 `정리본_자동` 생성 스크립트가 병합셀을 셀 단위로 잘못 분리하면서
+    같은 재정구분 라벨(예: "비예산")이 완전히 같은 값으로 두 번 찍히는 경우가 있다
+    (실제 확인: 부산 "출산 기념 축하 미역 지원" 비예산 행이 원본행만 다르고 나머지는
+    전부 동일하게 2회 반복). `사업분류재정구분`(계/국비/지방비 등) 라벨까지 포함해서
+    모든 값이 같아야 중복으로 보므로, 국비와 지방비 값이 우연히 같은 정상적인 재원
+    분할(예: 국비=지방비=2300인 5:5 분할)은 라벨이 다르기 때문에 건드리지 않는다.
+    """
+    compare_cols = [column for column in df_raw.columns if column not in ignore_cols]
+    is_duplicate = df_raw.duplicated(subset=compare_cols, keep="first")
+    return df_raw.loc[~is_duplicate].copy()
+
+
+def select_total_budget_rows(
+    df_raw: pd.DataFrame,
+    *,
+    budget_cols: Sequence[str],
+    finance_type_col: str = "사업분류재정구분",
+    group_cols: tuple[str, ...] = ("지역", "머리글행", "세부사업명"),
+    funding_source_tokens: Iterable[str] = FUNDING_SOURCE_TOKENS,
+    total_token: str = TOTAL_FUNDING_TOKEN,
+    zero_tokens: Iterable[str] = ("-",),
+) -> pd.DataFrame:
+    """계/국비/지방비 등 재원별로 나뉜 행을 세부사업당 한 행으로 정리한다.
+
+    2016~2019(제3차 기본계획) 원본은 세부사업 하나가 계/국비/지방비(도비·시군비·비예산 등)
+    최대 3~4개 행으로 나뉘어 있다(국비+지방비=계로 검증됨). `drop_exact_duplicate_rows`로
+    셀 분리 버그성 완전 중복을 먼저 제거한 뒤 이 함수를 호출해야 한다.
+
+    같은 그룹(지역·머리글행·세부사업명) 안에 "계" 행이 있으면 그 행만 남기고 국비·
+    지방비 등 나머지는 버린다. "계"가 없으면 그룹 내 재원구분 행들의 budget_cols
+    값을 숫자로 변환해 합산한 대표 행 하나로 축약한다(전액 지방비인 경우 지방비
+    값이 그대로 합산 결과가 되고, 국비+지방비만 있고 계가 없는 경우 둘을 더한다).
+    대표 행의 budget_cols 외 컬럼은 그룹의 첫 행 기준이다. finance_type_col 값이
+    재원구분 토큰이 아닌 행(헤더, 결측 등)은 건드리지 않고 그대로 통과시킨다.
+
+    2020년 이후(공통/자체 체계) 원본에는 이 토큰들이 없으므로 이 함수를 적용할
+    필요가 없다.
+    """
+    missing_cols = {finance_type_col, *group_cols, *budget_cols}.difference(df_raw.columns)
+    if missing_cols:
+        raise KeyError(f"재원구분 필터링에 필요한 컬럼이 없습니다: {sorted(missing_cols)}")
+
+    finance_type = df_raw[finance_type_col].astype("string").str.strip()
+    normalized_tokens = {str(token).strip() for token in funding_source_tokens}
+    is_funding_row = finance_type.isin(normalized_tokens)
+
+    other_rows = df_raw.loc[~is_funding_row]
+    funding_rows = df_raw.loc[is_funding_row].copy()
+    funding_rows["_재원구분"] = finance_type.loc[is_funding_row]
+
+    group_has_total = funding_rows.groupby(list(group_cols), dropna=False)["_재원구분"].transform(
+        lambda s: s.eq(total_token).any()
+    )
+    is_total_row = funding_rows["_재원구분"].eq(total_token)
+
+    total_rows = funding_rows.loc[is_total_row & group_has_total].drop(columns="_재원구분")
+
+    remainder = funding_rows.loc[~group_has_total].drop(columns="_재원구분").copy()
+    if remainder.empty:
+        aggregated = remainder
+    else:
+        for column in budget_cols:
+            remainder[column] = to_numeric_budget(remainder[column], zero_tokens=zero_tokens)
+
+        summed_budget = remainder.groupby(list(group_cols), as_index=False, dropna=False)[
+            list(budget_cols)
+        ].sum(min_count=1)
+        representative = remainder.drop_duplicates(subset=list(group_cols), keep="first").drop(
+            columns=list(budget_cols)
+        )
+        aggregated = representative.merge(summed_budget, on=list(group_cols), how="left")
+        aggregated[finance_type_col] = total_token
+
+    return pd.concat([other_rows, total_rows, aggregated], ignore_index=True)
+
+
 __all__ = [
+    "FUNDING_SOURCE_TOKENS",
+    "TOTAL_FUNDING_TOKEN",
     "UNIT_NOTATION_PATTERN",
     "assign_labels",
     "build_subtotal_qa",
     "calculate_budget_changes",
     "classify_row",
     "clean_text",
+    "drop_exact_duplicate_rows",
     "get_sido_dir",
     "normalize_budget_type",
+    "select_total_budget_rows",
     "show_table1_around",
     "to_numeric_budget",
 ]
