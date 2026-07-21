@@ -4,8 +4,10 @@ import pandas as pd
 import pytest
 
 from src.features.pipeline_common import (
+    SUBTOTAL_LABEL_PATTERN,
     UNIT_NOTATION_PATTERN,
     assign_labels,
+    backfill_major_category_from_medium,
     build_subtotal_qa,
     calculate_budget_changes,
     classify_row,
@@ -27,7 +29,17 @@ from src.features.pipeline_common import (
         ("붙임(서울)", "헤더반복"),
         ("Ⅰ. 공통사업", "대분류_소계"),
         ("1. 함께 돌보는 사회(공통)", "중분류_소계"),
+        # 2016·2017·2018·2020은 "(공통)"이 아니라 "(공통사업)"/"(자체사업)" 접미사를 씀
+        ("1. 저출산 분야(공통사업)", "중분류_소계"),
+        ("2. 고령화 대책(자체사업)", "중분류_소계"),
+        # 괄호 없이 "공통사업"/"자체사업"으로 끝나는 표기도 있음(2016, 1건)
+        ("3. 저출산 고령사회 대응기반 강화 자체사업", "중분류_소계"),
+        # 경기는 자체사업을 도/시군으로 더 세분화한 표기를 씀(2016)
+        ("2.   자체사업(도)", "중분류_소계"),
+        ("3. 자체사업(시군)", "중분류_소계"),
         ("아이돌봄 지원", "세부사업"),
+        # "공통사업"/"자체사업"으로 끝나지만 숫자.으로 시작하지 않는 정상 세부사업명은 오분류되면 안 된다
+        ("노인사회활동지원 자체사업", "세부사업"),
     ],
 )
 def test_classify_row_classifies_standard_rows(detail_name, expected):
@@ -56,8 +68,27 @@ def test_classify_row_filters_unit_notation_via_extra_header_pattern(detail_name
     assert classify_row(detail_name, extra_header_patterns=[UNIT_NOTATION_PATTERN]) == expected
 
 
-def test_drop_exact_duplicate_rows_collapses_full_row_duplicates():
-    # 791/792는 같은 머리글행(773)에 속한 진짜 중복, 798은 다른 머리글행(796)의 별개 항목
+@pytest.mark.parametrize(
+    ("detail_name", "expected"),
+    [
+        ("총   계", "헤더반복"),
+        ("총 계", "헤더반복"),
+        ("총계", "헤더반복"),
+        ("소계", "헤더반복"),
+        ("공통사업 합계", "헤더반복"),
+        ("자체사업 합계", "헤더반복"),
+        ("총 계(230개 과제) (공통 88, 자체 142)", "헤더반복"),
+        # "총"/"합계"와 무관한 정상 세부사업명은 오분류되면 안 된다
+        ("2. 난임 등 출생에 대한 사회적 책임강화 (28개 과제)", "세부사업"),
+        ("난임부부 지원 확대", "세부사업"),
+        ("농촌총각 결혼지원", "세부사업"),
+    ],
+)
+def test_classify_row_filters_subtotal_label_via_extra_header_pattern(detail_name, expected):
+    assert classify_row(detail_name, extra_header_patterns=[SUBTOTAL_LABEL_PATTERN]) == expected
+
+
+def test_drop_exact_duplicate_rows_removes_only_confirmed_duplicate():
     source = pd.DataFrame(
         {
             "지역": ["부산", "부산", "부산"],
@@ -69,7 +100,7 @@ def test_drop_exact_duplicate_rows_collapses_full_row_duplicates():
         }
     )
 
-    result = drop_exact_duplicate_rows(source)
+    result = drop_exact_duplicate_rows(source, confirmed_duplicate_rows=(792,))
 
     assert result["원본행"].tolist() == [791, 798]
 
@@ -86,9 +117,21 @@ def test_drop_exact_duplicate_rows_keeps_same_value_different_label():
         }
     )
 
-    result = drop_exact_duplicate_rows(source)
+    result = drop_exact_duplicate_rows(source, confirmed_duplicate_rows=())
 
     assert len(result) == 2
+
+
+def test_drop_exact_duplicate_rows_rejects_unverified_row():
+    source = pd.DataFrame(
+        {
+            "세부사업명": ["사업 A", "사업 B"],
+            "원본행": [1, 2],
+        }
+    )
+
+    with pytest.raises(ValueError, match="완전 중복이 아닌 행"):
+        drop_exact_duplicate_rows(source, confirmed_duplicate_rows=(2,))
 
 
 def make_funding_source() -> pd.DataFrame:
@@ -120,6 +163,7 @@ def test_select_total_budget_rows_prefers_total_when_present():
     daejeon = result.loc[result["지역"].eq("대전")]
     assert len(daejeon) == 1
     assert daejeon["사업분류재정구분"].iloc[0] == "계"
+    assert daejeon["재원구분"].iloc[0] == "계"
     assert daejeon["2016년 예산"].iloc[0] == "35,907"
 
 
@@ -130,6 +174,7 @@ def test_select_total_budget_rows_keeps_single_local_only_row():
 
     gangwon = result.loc[result["지역"].eq("강원")]
     assert len(gangwon) == 1
+    assert gangwon["재원구분"].iloc[0] == "지방비"
     assert gangwon["2016년 예산"].iloc[0] == 4
 
 
@@ -141,8 +186,27 @@ def test_select_total_budget_rows_sums_national_and_local_when_no_total():
     gyeonggi = result.loc[result["지역"].eq("경기")]
     assert len(gyeonggi) == 1
     assert gyeonggi["사업분류재정구분"].iloc[0] == "계"
+    assert gyeonggi["재원구분"].iloc[0] == "국비+지방비"
     assert gyeonggi["2016년 예산"].iloc[0] == 100
     assert gyeonggi["2015년 예산"].iloc[0] == 50
+
+
+def test_select_total_budget_rows_keeps_repeated_same_name_projects_separate():
+    source = pd.DataFrame(
+        {
+            "지역": ["부산"] * 4,
+            "머리글행": [1] * 4,
+            "세부사업명": ["동일 사업명"] * 4,
+            "사업분류재정구분": ["국비", "지방비", "국비", "지방비"],
+            "2016년 예산": [60, 40, 30, 20],
+            "2015년 예산": [50, 30, 20, 10],
+        }
+    )
+
+    result = select_total_budget_rows(source, budget_cols=["2016년 예산", "2015년 예산"])
+
+    assert result["2016년 예산"].tolist() == [100, 50]
+    assert result["재원구분"].tolist() == ["국비+지방비", "국비+지방비"]
 
 
 def test_select_total_budget_rows_passes_through_non_funding_rows():
@@ -153,6 +217,7 @@ def test_select_total_budget_rows_passes_through_non_funding_rows():
     seoul = result.loc[result["지역"].eq("서울")]
     assert len(seoul) == 1
     assert seoul["사업분류재정구분"].iloc[0] == "공통"
+    assert pd.isna(seoul["재원구분"].iloc[0])
     assert seoul["2016년 예산"].iloc[0] == "100"
 
 
@@ -175,6 +240,56 @@ def test_assign_labels_propagates_hierarchy_in_original_row_order():
 def test_assign_labels_rejects_missing_columns():
     with pytest.raises(KeyError, match="필요한 컬럼"):
         assign_labels(pd.DataFrame({"세부사업명": ["사업"]}))
+
+
+def test_backfill_major_category_extracts_budget_type_from_medium_label():
+    # 광주처럼 대분류 로마숫자 헤더가 없는 지역: 대분류가 결측이고 중분류에 접미사로 섞여 있음
+    source = pd.DataFrame(
+        {
+            "대분류": [None, None],
+            "중분류": ["1. 저출산 대책(공통사업)", "1. 저출산 대책(공통사업)"],
+        }
+    )
+
+    result = backfill_major_category_from_medium(source)
+
+    assert result["대분류"].tolist() == ["공통사업", "공통사업"]
+    assert result["중분류"].tolist() == ["저출산 대책", "저출산 대책"]
+
+
+def test_backfill_major_category_does_not_touch_existing_major():
+    # 서울처럼 대분류가 이미 로마숫자 헤더로 채워진 지역은 건드리지 않는다
+    source = pd.DataFrame(
+        {
+            "대분류": ["Ⅰ. 공통사업"],
+            "중분류": ["1. 저출산 대책(공통사업)"],
+        }
+    )
+
+    result = backfill_major_category_from_medium(source)
+
+    assert result["대분류"].iloc[0] == "Ⅰ. 공통사업"
+    assert result["중분류"].iloc[0] == "1. 저출산 대책(공통사업)"
+
+
+def test_backfill_major_category_leaves_unmatched_medium_as_is():
+    # "1-1.청년 일자리 주거대책 강화"처럼 접미사가 없는 라벨은 매치되지 않아 그대로 둔다
+    source = pd.DataFrame(
+        {
+            "대분류": [None],
+            "중분류": ["1-1.청년 일자리 주거대책 강화"],
+        }
+    )
+
+    result = backfill_major_category_from_medium(source)
+
+    assert pd.isna(result["대분류"].iloc[0])
+    assert result["중분류"].iloc[0] == "1-1.청년 일자리 주거대책 강화"
+
+
+def test_backfill_major_category_rejects_missing_columns():
+    with pytest.raises(KeyError, match="필요한 컬럼"):
+        backfill_major_category_from_medium(pd.DataFrame({"중분류": ["1. 저출산(공통사업)"]}))
 
 
 def test_clean_text_normalizes_whitespace_pua_and_leading_bullet():
@@ -334,7 +449,58 @@ def test_build_subtotal_qa_compares_subtotal_and_leaf_sum():
     assert result_by_category.loc["고령", "결과"] == "불일치"
     assert result_by_category.loc["청년", "QA_병합상태"] == "원본소계만"
     assert pd.isna(result_by_category.loc["청년", "오차율(%)"])
-    assert result_by_category.loc["청년", "결과"] == "불일치"
+    assert result_by_category.loc["청년", "결과"] == "판정불가"
+
+
+def test_build_subtotal_qa_uses_separate_labeled_subtotal_row():
+    source = pd.DataFrame(
+        {
+            "지역": ["울산", "울산", "울산", "울산"],
+            "대분류": ["공통"] * 4,
+            "중분류": ["저출산"] * 4,
+            "세부사업명": ["1. 저출산", "소계", "사업 A", "사업 B"],
+            "사업행구분": ["중분류_소계", "헤더반복", "세부사업", "세부사업"],
+            "예산_num": [None, 100.0, 40.0, 60.0],
+        }
+    )
+
+    result = build_subtotal_qa(
+        source,
+        budget_col="예산_num",
+        subtotal_label_col="세부사업명",
+        subtotal_labels=("소계",),
+    )
+
+    assert result.loc[0, "원본_소계값"] == 100.0
+    assert result.loc[0, "원본_소계출처"] == "별도소계행"
+    assert result.loc[0, "leaf_합계"] == 100.0
+    assert result.loc[0, "절대차이"] == 0.0
+    assert result.loc[0, "절대오차율(%)"] == 0.0
+    assert result.loc[0, "결과"] == "일치"
+
+
+def test_build_subtotal_qa_prefers_separate_subtotal_over_title_budget():
+    source = pd.DataFrame(
+        {
+            "지역": ["경기", "경기", "경기"],
+            "대분류": ["공통"] * 3,
+            "중분류": ["저출산"] * 3,
+            "세부사업명": ["1. 저출산", "소계", "사업 A"],
+            "사업행구분": ["중분류_소계", "헤더반복", "세부사업"],
+            "예산_num": [999.0, 100.0, 100.0],
+        }
+    )
+
+    result = build_subtotal_qa(
+        source,
+        budget_col="예산_num",
+        subtotal_label_col="세부사업명",
+        subtotal_labels=("소계",),
+    )
+
+    assert result.loc[0, "원본_소계값"] == 100.0
+    assert result.loc[0, "원본_소계출처"] == "별도소계행"
+    assert result.loc[0, "결과"] == "일치"
 
 
 def test_build_subtotal_qa_applies_tolerance():
@@ -363,7 +529,7 @@ def test_build_subtotal_qa_marks_leaf_only_group_as_mismatch():
     result = build_subtotal_qa(source, budget_col="예산_num").set_index("중분류")
 
     assert result.loc["주거", "QA_병합상태"] == "leaf합계만"
-    assert result.loc["주거", "결과"] == "불일치"
+    assert result.loc["주거", "결과"] == "판정불가"
 
 
 def test_build_subtotal_qa_keeps_error_rate_missing_for_zero_subtotal():
