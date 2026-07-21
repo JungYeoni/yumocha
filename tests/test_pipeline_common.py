@@ -106,8 +106,8 @@ def make_funding_source() -> pd.DataFrame:
                 "Ⅰ. 공통사업",
             ],
             "사업분류재정구분": ["계", "국비", "지방비", "지방비", "국비", "지방비", "공통"],
-            "2016년 예산": ["35,907", "20,125", "15,782", "4", "0", "0", "100"],
-            "2015년 예산": ["44,171", "19,276", "24,895", "4", "0", "0", "90"],
+            "2016년 예산": ["35,907", "20,125", "15,782", "4", "60", "40", "100"],
+            "2015년 예산": ["44,171", "19,276", "24,895", "4", "30", "20", "90"],
         }
     )
 
@@ -140,7 +140,9 @@ def test_select_total_budget_rows_sums_national_and_local_when_no_total():
 
     gyeonggi = result.loc[result["지역"].eq("경기")]
     assert len(gyeonggi) == 1
-    assert gyeonggi["2016년 예산"].iloc[0] == 0
+    assert gyeonggi["사업분류재정구분"].iloc[0] == "계"
+    assert gyeonggi["2016년 예산"].iloc[0] == 100
+    assert gyeonggi["2015년 예산"].iloc[0] == 50
 
 
 def test_select_total_budget_rows_passes_through_non_funding_rows():

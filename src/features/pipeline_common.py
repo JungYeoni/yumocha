@@ -420,6 +420,7 @@ def select_total_budget_rows(
             columns=list(budget_cols)
         )
         aggregated = representative.merge(summed_budget, on=list(group_cols), how="left")
+        aggregated[finance_type_col] = total_token
 
     return pd.concat([other_rows, total_rows, aggregated], ignore_index=True)
 
