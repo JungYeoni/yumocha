@@ -14,7 +14,7 @@ TOTAL_FUNDING_TOKEN = "계"
 SIDO_TITLE_PATTERN = re.compile(r"붙\s*임\s*\(([^)]+)\)")
 MAJOR_CATEGORY_PATTERN = re.compile(r"^[Ⅰ-Ⅿ]")
 MEDIUM_CATEGORY_PATTERN = re.compile(r"^\d+\.")
-BUDGET_TYPE_SUFFIX_PATTERN = re.compile(r"\((공통|자체)\)$")
+BUDGET_TYPE_SUFFIX_PATTERN = re.compile(r"\((공통|자체)(사업)?\)$|(공통|자체)사업$|\((도|시군)\)$")
 
 # 2016~2020(제3차 기본계획) 원본 특유의 단위표기 헤더 행. 2021년 이후 원본에는 없으므로
 # classify_row에 내장하지 않고, 해당 연도 노트북에서 extra_header_patterns로 전달한다.
