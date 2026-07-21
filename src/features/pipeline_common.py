@@ -21,6 +21,14 @@ BUDGET_TYPE_SUFFIX_PATTERN = re.compile(r"\((공통|자체)\)$")
 # 예: "(단위 : 백만원)", "(단위：백만원)", "(단위:백만원)"
 UNIT_NOTATION_PATTERN = re.compile(r"^\(\s*단위\s*[:：]")
 
+# 2016~2020(제3차 기본계획) 원본 특유의 소계/합계 라벨 행. 대분류·중분류 제목 행과
+# 숫자(계/국비/지방비)가 서로 다른 행으로 분리돼 있고, 숫자가 있는 행은 카테고리명 없이
+# "소계"/"합계" 같은 일반 라벨만 붙어 있다. classify_row 텍스트 매칭만으로는 이 숫자 행을
+# 세부사업과 구분할 수 없어 내장하지 않고 extra_header_patterns로 전달한다.
+# 예: "총 계", "총계", "소계", "공통사업 합계", "자체사업 합계",
+#     "총 계(230개 과제) (공통 88, 자체 142)"(대전, 괄호 부가설명 포함)
+SUBTOTAL_LABEL_PATTERN = re.compile(r"^(총\s*계|소계)(\s*\(.*\))?$|.*합계$")
+
 # 문자열 맨 앞의 불릿만 제거
 # 문장 중간의 하이픈이나 가운데점은 보존
 LEADING_BULLET_PATTERN = re.compile(r"^\s*[ㅇ○◦□▪·•o\-]\s*")
@@ -427,6 +435,7 @@ def select_total_budget_rows(
 
 __all__ = [
     "FUNDING_SOURCE_TOKENS",
+    "SUBTOTAL_LABEL_PATTERN",
     "TOTAL_FUNDING_TOKEN",
     "UNIT_NOTATION_PATTERN",
     "assign_labels",

@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from src.features.pipeline_common import (
+    SUBTOTAL_LABEL_PATTERN,
     UNIT_NOTATION_PATTERN,
     assign_labels,
     build_subtotal_qa,
@@ -54,6 +55,26 @@ def test_classify_row_accepts_extra_header_pattern():
 )
 def test_classify_row_filters_unit_notation_via_extra_header_pattern(detail_name, expected):
     assert classify_row(detail_name, extra_header_patterns=[UNIT_NOTATION_PATTERN]) == expected
+
+
+@pytest.mark.parametrize(
+    ("detail_name", "expected"),
+    [
+        ("총   계", "헤더반복"),
+        ("총 계", "헤더반복"),
+        ("총계", "헤더반복"),
+        ("소계", "헤더반복"),
+        ("공통사업 합계", "헤더반복"),
+        ("자체사업 합계", "헤더반복"),
+        ("총 계(230개 과제) (공통 88, 자체 142)", "헤더반복"),
+        # "총"/"합계"와 무관한 정상 세부사업명은 오분류되면 안 된다
+        ("2. 난임 등 출생에 대한 사회적 책임강화 (28개 과제)", "세부사업"),
+        ("난임부부 지원 확대", "세부사업"),
+        ("농촌총각 결혼지원", "세부사업"),
+    ],
+)
+def test_classify_row_filters_subtotal_label_via_extra_header_pattern(detail_name, expected):
+    assert classify_row(detail_name, extra_header_patterns=[SUBTOTAL_LABEL_PATTERN]) == expected
 
 
 def test_drop_exact_duplicate_rows_collapses_full_row_duplicates():
