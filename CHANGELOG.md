@@ -37,7 +37,9 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([561d653](https://github.com/JungYeoni/da-template/commit/561d6536780e7260b9be68ea1f7a378cb52e8498))
 - 2022 QA 불일치 원인 구체화 ([3c7a0d9](https://github.com/JungYeoni/da-template/commit/3c7a0d970ffab3be80034bbd47637c08201b0d96))
+- 예산 QA 허용기준 적용 결과 기록 (#15) ([a27eda1](https://github.com/JungYeoni/da-template/commit/a27eda18e4082a35dd71e74df64e8e96c4334634))
 - CHANGELOG 자동 업데이트 [skip ci] ([45223c2](https://github.com/JungYeoni/da-template/commit/45223c270ee1cd07c9c9700d4cf03df1ddb67688))
 - CHANGELOG 자동 업데이트 [skip ci] ([7205886](https://github.com/JungYeoni/da-template/commit/7205886624f208b846bed58d236874680f0706d8))
 - 2021 시행계획 분리·정제 결과 보고서 작성 #9 ([4f0e7d6](https://github.com/JungYeoni/da-template/commit/4f0e7d692f977e08723f90ed1051f12e823304b3))
@@ -103,7 +105,10 @@
 
 ### 새 기능
 
+- 2022년도 QA 검증결과 공통 함수 반영해서 업데이트 (#15) ([7cf9939](https://github.com/JungYeoni/da-template/commit/7cf9939a686f7db26eb0252120603123f04fd4e8))
 - 2022년도 전체 시도 세부사업 예산현황 분리·정제 파이프라인 (#8) ([aaca43a](https://github.com/JungYeoni/da-template/commit/aaca43a6a662e650afb3d5cc6b0d0b502d3236bd))
+- 연도별 노트북에 예산 QA 허용기준 적용 (#15) ([110407e](https://github.com/JungYeoni/da-template/commit/110407e075f5a2f864369940a475404bd3ce8d85))
+- 예산 QA에 오차율 허용기준 추가 (#15) ([cfc48bb](https://github.com/JungYeoni/da-template/commit/cfc48bba2086f34efb15db48d6466c14d25cbd91))
 - Add subtotal QA error rate (#13) ([e0b476b](https://github.com/JungYeoni/da-template/commit/e0b476baac7a3b029ab2e5af1cb1ec94db6f4a90))
 - 행 분류. 계층 전파, 숫자/텍스트 정제, 저장경로 설정 (#13) ([e3f716a](https://github.com/JungYeoni/da-template/commit/e3f716a5f668928c0738ed6050250742e66b6c19))
 - 주요내용에 불릿제거 적용 (#9) ([4dd5406](https://github.com/JungYeoni/da-template/commit/4dd540633ee6373109ba3e3d4db28f81cc825853))
