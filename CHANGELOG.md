@@ -37,6 +37,8 @@
 
 ### 문서
 
+- 공통유틸 템플릿에 재원구분 이중계상 처리 반영 (#26) ([a611f7f](https://github.com/JungYeoni/da-template/commit/a611f7f198a952db32eba1ea559bf63989980b95))
+- CHANGELOG 자동 업데이트 [skip ci] ([4f53cb7](https://github.com/JungYeoni/da-template/commit/4f53cb7731ee9c2a007b6e679317ff2849986aae))
 - 공통유틸 템플릿에 단위표기 헤더 패턴 사용법 반영 (#24) ([aba570f](https://github.com/JungYeoni/da-template/commit/aba570fe40d16d968e152bc8a20eea49b88ad4ae))
 - CHANGELOG 자동 업데이트 [skip ci] ([a1e4cee](https://github.com/JungYeoni/da-template/commit/a1e4cee889effc9d1b3c1512ba396491fbd74c87))
 - CHANGELOG 자동 업데이트 [skip ci] ([561d653](https://github.com/JungYeoni/da-template/commit/561d6536780e7260b9be68ea1f7a378cb52e8498))
@@ -85,6 +87,7 @@
 
 ### 버그 수정
 
+- Select_total_budget_rows 합산 결과 라벨을 계로 통일 (#26) ([05eb9af](https://github.com/JungYeoni/da-template/commit/05eb9af6193a0434d44a2ce125247eb629e9993a))
 - 2016~2020 단위표기 헤더 행 오분류 방지용 패턴 추가 (#24) ([fa5593a](https://github.com/JungYeoni/da-template/commit/fa5593a639e36edc025a6adb06fdc38350a80f2d))
 - 2022 구조 이상 행 제외 내역 반영 (#8) ([17c0bd0](https://github.com/JungYeoni/da-template/commit/17c0bd09a2f9d0a8026061381696c00c68b8bd2c))
 - 삭제 대상 첫 행이 남아있는 경우 삭제 (#8) ([5768196](https://github.com/JungYeoni/da-template/commit/5768196927336dcc74055322fc982e460fea8a11))
@@ -108,6 +111,7 @@
 
 ### 새 기능
 
+- 2016~2019 재원구분(계/국비/지방비) 이중계상 방지 유틸 추가 (#26) ([ea86554](https://github.com/JungYeoni/da-template/commit/ea865549022739a40c6cb9755b6930fb114e1449))
 - 2022년도 QA 검증결과 공통 함수 반영해서 업데이트 (#15) ([7cf9939](https://github.com/JungYeoni/da-template/commit/7cf9939a686f7db26eb0252120603123f04fd4e8))
 - 2022년도 전체 시도 세부사업 예산현황 분리·정제 파이프라인 (#8) ([aaca43a](https://github.com/JungYeoni/da-template/commit/aaca43a6a662e650afb3d5cc6b0d0b502d3236bd))
 - 연도별 노트북에 예산 QA 허용기준 적용 (#15) ([110407e](https://github.com/JungYeoni/da-template/commit/110407e075f5a2f864369940a475404bd3ce8d85))
