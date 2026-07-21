@@ -37,6 +37,8 @@
 
 ### 문서
 
+- 2022 QA 불일치 원인 구체화 ([3c7a0d9](https://github.com/JungYeoni/da-template/commit/3c7a0d970ffab3be80034bbd47637c08201b0d96))
+- CHANGELOG 자동 업데이트 [skip ci] ([45223c2](https://github.com/JungYeoni/da-template/commit/45223c270ee1cd07c9c9700d4cf03df1ddb67688))
 - CHANGELOG 자동 업데이트 [skip ci] ([7205886](https://github.com/JungYeoni/da-template/commit/7205886624f208b846bed58d236874680f0706d8))
 - 2021 시행계획 분리·정제 결과 보고서 작성 #9 ([4f0e7d6](https://github.com/JungYeoni/da-template/commit/4f0e7d692f977e08723f90ed1051f12e823304b3))
 - CHANGELOG 자동 업데이트 [skip ci] ([10d40e5](https://github.com/JungYeoni/da-template/commit/10d40e56d17497fe7d7e59f970132b9f47b9ae36))
@@ -79,6 +81,12 @@
 
 ### 버그 수정
 
+- 2022 구조 이상 행 제외 내역 반영 (#8) ([17c0bd0](https://github.com/JungYeoni/da-template/commit/17c0bd09a2f9d0a8026061381696c00c68b8bd2c))
+- 삭제 대상 첫 행이 남아있는 경우 삭제 (#8) ([5768196](https://github.com/JungYeoni/da-template/commit/5768196927336dcc74055322fc982e460fea8a11))
+- 숫자보존 QA에 부호와 소수 반영 ([8ea7584](https://github.com/JungYeoni/da-template/commit/8ea7584a56b6c014a776287e334318f4446e360c))
+- 2022 파이프라인 리뷰 반영 및 정제 검증 ([8c6cada](https://github.com/JungYeoni/da-template/commit/8c6cadab526948312902d3e8e49e20c51e5425a8))
+- 2022 전처리 QA 및 행유형 판정 보완 ([cd0f905](https://github.com/JungYeoni/da-template/commit/cd0f905e768c78e4feb9f56c57dfb97abbb5f3b5))
+- 출력셀 추가 및 연도 하드코딩 수정 (#8) ([a196b57](https://github.com/JungYeoni/da-template/commit/a196b57e0297e224014f689f6bdd1611bdc6c1d4))
 - CSV 저장 인코딩을 UTF-8-SIG로 통일 #9 ([467b5a4](https://github.com/JungYeoni/da-template/commit/467b5a490fa75a34747426b4ea5ce6f88beabaee))
 - 2021 연속행 후보 판정 및 사업명 병합 반영 #9 ([5333315](https://github.com/JungYeoni/da-template/commit/5333315745d0993b425efb5aeab19a42d792c3f8))
 - CodeRabbit 리뷰 반영 (#7) ([564bf32](https://github.com/JungYeoni/da-template/commit/564bf323badb830a00d423311b89c0cb1cd0c957))
@@ -95,6 +103,7 @@
 
 ### 새 기능
 
+- 2022년도 전체 시도 세부사업 예산현황 분리·정제 파이프라인 (#8) ([aaca43a](https://github.com/JungYeoni/da-template/commit/aaca43a6a662e650afb3d5cc6b0d0b502d3236bd))
 - Add subtotal QA error rate (#13) ([e0b476b](https://github.com/JungYeoni/da-template/commit/e0b476baac7a3b029ab2e5af1cb1ec94db6f4a90))
 - 행 분류. 계층 전파, 숫자/텍스트 정제, 저장경로 설정 (#13) ([e3f716a](https://github.com/JungYeoni/da-template/commit/e3f716a5f668928c0738ed6050250742e66b6c19))
 - 주요내용에 불릿제거 적용 (#9) ([4dd5406](https://github.com/JungYeoni/da-template/commit/4dd540633ee6373109ba3e3d4db28f81cc825853))
