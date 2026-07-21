@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from src.features.pipeline_common import (
+    UNIT_NOTATION_PATTERN,
     assign_labels,
     build_subtotal_qa,
     calculate_budget_changes,
@@ -36,6 +37,21 @@ def test_classify_row_accepts_extra_header_pattern():
         classify_row("2023년 시행계획", extra_header_patterns=[re.compile(r"시행계획$")])
         == "헤더반복"
     )
+
+
+@pytest.mark.parametrize(
+    ("detail_name", "expected"),
+    [
+        ("(단위 : 백만원)", "헤더반복"),
+        ("(단위：백만원)", "헤더반복"),
+        ("(단위:백만원)", "헤더반복"),
+        # "단위"를 포함하지만 단위표기 행이 아닌 정상 세부사업명은 오분류되면 안 된다
+        ("직장단위 결혼장려 만남의 장", "세부사업"),
+        ("면단위 공영목욕장 운영 지원", "세부사업"),
+    ],
+)
+def test_classify_row_filters_unit_notation_via_extra_header_pattern(detail_name, expected):
+    assert classify_row(detail_name, extra_header_patterns=[UNIT_NOTATION_PATTERN]) == expected
 
 
 def test_assign_labels_propagates_hierarchy_in_original_row_order():
