@@ -16,6 +16,7 @@
 
 ### 기타
 
+- 노트북 난수 시드 고정 (#17) ([aa2a674](https://github.com/JungYeoni/da-template/commit/aa2a674405caba7f89663d7ab14c50293ab1a1ac))
 - Openai 추가 (#5) ([44ef941](https://github.com/JungYeoni/da-template/commit/44ef941d1c66eca3c36d171f49e64fe27265b7d3))
 - Upstage Solara API 설정 파일 (#5) ([47de032](https://github.com/JungYeoni/da-template/commit/47de032f07af3c550f56ead7a2edc7d82eabfa58))
 - CLAUDE.md 재발명 금치 원칙 추가 ([89844ce](https://github.com/JungYeoni/da-template/commit/89844ce4305d64db0a65b9be0e689c5e5f4ac5ba))
@@ -37,6 +38,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([f66dd0d](https://github.com/JungYeoni/da-template/commit/f66dd0d8931e22cc647fa1290b8e4daf23e71751))
 - 공통유틸 템플릿에 재원구분 이중계상 처리 반영 (#26) ([a611f7f](https://github.com/JungYeoni/da-template/commit/a611f7f198a952db32eba1ea559bf63989980b95))
 - CHANGELOG 자동 업데이트 [skip ci] ([4f53cb7](https://github.com/JungYeoni/da-template/commit/4f53cb7731ee9c2a007b6e679317ff2849986aae))
 - 공통유틸 템플릿에 단위표기 헤더 패턴 사용법 반영 (#24) ([aba570f](https://github.com/JungYeoni/da-template/commit/aba570fe40d16d968e152bc8a20eea49b88ad4ae))
@@ -87,6 +89,8 @@
 
 ### 버그 수정
 
+- 중분류_소계 접미사 판별 범위 확장 (#17) ([809d9f0](https://github.com/JungYeoni/da-template/commit/809d9f0c7489b6890201c1d0382f887cc97d7bee))
+- 총계/소계/합계 라벨 행 오분류 방지 패턴 추가 (#17) ([f9276b5](https://github.com/JungYeoni/da-template/commit/f9276b5b13ed8e91003e5c7d9f7909ee566308cf))
 - Select_total_budget_rows 합산 결과 라벨을 계로 통일 (#26) ([05eb9af](https://github.com/JungYeoni/da-template/commit/05eb9af6193a0434d44a2ce125247eb629e9993a))
 - 2016~2020 단위표기 헤더 행 오분류 방지용 패턴 추가 (#24) ([fa5593a](https://github.com/JungYeoni/da-template/commit/fa5593a639e36edc025a6adb06fdc38350a80f2d))
 - 2022 구조 이상 행 제외 내역 반영 (#8) ([17c0bd0](https://github.com/JungYeoni/da-template/commit/17c0bd09a2f9d0a8026061381696c00c68b8bd2c))
@@ -111,6 +115,11 @@
 
 ### 새 기능
 
+- 2016 시도별 정제 및 QA 보완 (#17) ([f1935a4](https://github.com/JungYeoni/da-template/commit/f1935a42b935e62f838cea2729868b64806ee591))
+- 대분류 로마숫자 헤더 없는 지역용 역채움 함수 추가 (#17) ([79b5987](https://github.com/JungYeoni/da-template/commit/79b5987a6fc2898f12643b6a518ac9d10e4ef033))
+- Select_total_budget_rows에 원본 재원구분 보존 컬럼 추가 (#17) ([157175c](https://github.com/JungYeoni/da-template/commit/157175cd5fedd368d1445ad2e5eb54efb8d9aa47))
+- 2016 노트북 재실행 결과 반영 (#17) ([f6647be](https://github.com/JungYeoni/da-template/commit/f6647be9ee79c5cbdf332c2bd3305e1d969d1a14))
+- 2016 노트북에 재원구분/단위표기/소계라벨 유틸 반영 (#17) ([c533cda](https://github.com/JungYeoni/da-template/commit/c533cda8aa89dde545173d7177db06b8ab92919a))
 - 2016~2019 재원구분(계/국비/지방비) 이중계상 방지 유틸 추가 (#26) ([ea86554](https://github.com/JungYeoni/da-template/commit/ea865549022739a40c6cb9755b6930fb114e1449))
 - 2022년도 QA 검증결과 공통 함수 반영해서 업데이트 (#15) ([7cf9939](https://github.com/JungYeoni/da-template/commit/7cf9939a686f7db26eb0252120603123f04fd4e8))
 - 2022년도 전체 시도 세부사업 예산현황 분리·정제 파이프라인 (#8) ([aaca43a](https://github.com/JungYeoni/da-template/commit/aaca43a6a662e650afb3d5cc6b0d0b502d3236bd))
