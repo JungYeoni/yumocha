@@ -36,6 +36,11 @@ MEDIUM_LABEL_WITH_BUDGET_TYPE_PATTERN = re.compile(
     r"^\d+[-\d]*\.\s*(.+?)\s*\((공통사업|자체사업)\)$"
 )
 
+# 대전은 로마숫자(Ⅰ/Ⅱ/Ⅲ)가 다른 지역과 달리 대분류(공통/자체)가 아니라 주제(중분류) 축을
+# 나타낸다. 진짜 대분류(공통/자체)는 "[공 통 사 업]"처럼 대괄호 + 띄어쓴 글자로 표기된
+# 별도 행에 있다. 예: "[공 통 사 업] (88개 과제)", "[자 체 사 업] (142개 과제)"
+MAJOR_BRACKET_PATTERN = re.compile(r"^\[\s*(공\s*통|자\s*체)\s*사\s*업\s*\]")
+
 # 문자열 맨 앞의 불릿만 제거
 # 문장 중간의 하이픈이나 가운데점은 보존
 LEADING_BULLET_PATTERN = re.compile(r"^\s*[ㅇ○◦□▪·•o\-]\s*")
@@ -149,6 +154,52 @@ def backfill_major_category_from_medium(
 
     result.loc[matched_index, medium_col] = extracted.loc[matched, 0]
     result.loc[matched_index, major_col] = extracted.loc[matched, 1]
+
+    return result
+
+
+def realign_major_category_from_bracket_marker(
+    df_labeled: pd.DataFrame,
+    *,
+    detail_name_col: str = "세부사업명",
+    major_col: str = "대분류",
+    medium_col: str = "중분류",
+    row_order_col: str = "원본행",
+    group_col: str = "지역",
+    pattern: re.Pattern[str] = MAJOR_BRACKET_PATTERN,
+) -> pd.DataFrame:
+    """대괄호 표기("[공 통 사 업]" 등)로 대분류(공통/자체)를 나타내는 지역(예: 대전)에서,
+    로마숫자 대분류_소계가 실제로는 주제(중분류) 축을 의미하는 경우를 보정한다.
+
+    대괄호 표기가 하나라도 있는 지역만 대상으로: 현재 대분류(로마숫자 주제명)를
+    중분류로 내리고, 대괄호 텍스트에서 뽑은 공통사업/자체사업을 새 대분류로 채운다
+    (같은 지역 안에서 원본행 순서로 ffill). 대괄호 표기가 없는 지역은 건드리지 않는다.
+    """
+    required_cols = {detail_name_col, major_col, medium_col, row_order_col, group_col}
+    missing_cols = required_cols.difference(df_labeled.columns)
+    if missing_cols:
+        raise KeyError(f"대분류 재정렬에 필요한 컬럼이 없습니다: {sorted(missing_cols)}")
+
+    result = df_labeled.sort_values([group_col, row_order_col]).copy()
+    detail_name = result[detail_name_col].astype("string")
+
+    bracket_token = detail_name.str.extract(pattern)[0]
+    has_marker = bracket_token.notna()
+
+    affected_groups = set(result.loc[has_marker, group_col].unique())
+    if not affected_groups:
+        return result
+
+    is_affected_region = result[group_col].isin(affected_groups)
+
+    bracket_major = bracket_token.where(has_marker)
+    bracket_major = bracket_major.str.replace(r"\s+", "", regex=True) + "사업"
+
+    new_major = bracket_major.where(is_affected_region)
+    new_major = new_major.groupby(result[group_col]).ffill()
+
+    result.loc[is_affected_region, medium_col] = result.loc[is_affected_region, major_col]
+    result.loc[is_affected_region, major_col] = new_major.loc[is_affected_region]
 
     return result
 
@@ -282,21 +333,40 @@ def build_subtotal_qa(
         raise TypeError(f"{budget_col} 컬럼은 숫자형이어야 합니다.")
 
     leaf = df_labeled.loc[df_labeled[row_type_col].eq("세부사업")]
+
+    def collapse_consistent_subtotals(
+        subtotal_rows: pd.DataFrame,
+        *,
+        source_label: str,
+        error_label: str,
+    ) -> pd.DataFrame:
+        """반복 추출된 동일 소계 행은 접고, 값이 충돌할 때만 실패한다."""
+        value_counts = subtotal_rows.groupby(list(group_cols), dropna=False)["원본_소계값"].nunique(
+            dropna=True
+        )
+        conflicting_groups = value_counts[value_counts.gt(1)].index
+        if len(conflicting_groups) > 0:
+            duplicate_groups = pd.DataFrame(list(conflicting_groups), columns=list(group_cols))
+            raise ValueError(
+                f"같은 QA 그룹에 값이 다른 {error_label}가 여러 행 존재합니다: "
+                f"{duplicate_groups.to_dict(orient='records')}"
+            )
+
+        collapsed = subtotal_rows.groupby(
+            list(group_cols), as_index=False, dropna=False, sort=False
+        )["원본_소계값"].first()
+        collapsed["원본_소계출처"] = source_label
+        return collapsed
+
     subtotal_from_title = df_labeled.loc[
         df_labeled[row_type_col].eq("중분류_소계"),
         [*group_cols, budget_col],
     ].rename(columns={budget_col: "원본_소계값"})
-    subtotal_from_title["원본_소계출처"] = "중분류제목행"
-
-    duplicate_subtotal = subtotal_from_title.duplicated(list(group_cols), keep=False)
-    if duplicate_subtotal.any():
-        duplicate_groups = subtotal_from_title.loc[
-            duplicate_subtotal, list(group_cols)
-        ].drop_duplicates()
-        raise ValueError(
-            "같은 QA 그룹에 중분류 소계가 여러 행 존재합니다: "
-            f"{duplicate_groups.to_dict(orient='records')}"
-        )
+    subtotal_from_title = collapse_consistent_subtotals(
+        subtotal_from_title,
+        source_label="중분류제목행",
+        error_label="중분류 소계",
+    )
 
     if normalized_subtotal_labels:
         normalized_label = df_labeled[subtotal_label_col].astype("string").str.strip()
@@ -305,17 +375,11 @@ def build_subtotal_qa(
             [*group_cols, budget_col],
         ].rename(columns={budget_col: "원본_소계값"})
 
-        duplicate_labeled_subtotal = subtotal_from_label.duplicated(list(group_cols), keep=False)
-        if duplicate_labeled_subtotal.any():
-            duplicate_groups = subtotal_from_label.loc[
-                duplicate_labeled_subtotal, list(group_cols)
-            ].drop_duplicates()
-            raise ValueError(
-                "같은 QA 그룹에 별도 소계 행이 여러 행 존재합니다: "
-                f"{duplicate_groups.to_dict(orient='records')}"
-            )
-
-        subtotal_from_label["원본_소계출처"] = "별도소계행"
+        subtotal_from_label = collapse_consistent_subtotals(
+            subtotal_from_label,
+            source_label="별도소계행",
+            error_label="별도 소계",
+        )
         subtotal = pd.concat([subtotal_from_label, subtotal_from_title], ignore_index=True)
         subtotal = subtotal.drop_duplicates(subset=list(group_cols), keep="first")
     else:
@@ -585,6 +649,7 @@ def select_total_budget_rows(
 
 __all__ = [
     "FUNDING_SOURCE_TOKENS",
+    "MAJOR_BRACKET_PATTERN",
     "MEDIUM_LABEL_WITH_BUDGET_TYPE_PATTERN",
     "SUBTOTAL_LABEL_PATTERN",
     "TOTAL_FUNDING_TOKEN",
@@ -598,6 +663,7 @@ __all__ = [
     "drop_exact_duplicate_rows",
     "get_sido_dir",
     "normalize_budget_type",
+    "realign_major_category_from_bracket_marker",
     "select_total_budget_rows",
     "show_table1_around",
     "to_numeric_budget",

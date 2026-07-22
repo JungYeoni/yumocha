@@ -15,6 +15,7 @@ from src.features.pipeline_common import (
     drop_exact_duplicate_rows,
     get_sido_dir,
     normalize_budget_type,
+    realign_major_category_from_bracket_marker,
     select_total_budget_rows,
     show_table1_around,
     to_numeric_budget,
@@ -290,6 +291,52 @@ def test_backfill_major_category_leaves_unmatched_medium_as_is():
 def test_backfill_major_category_rejects_missing_columns():
     with pytest.raises(KeyError, match="필요한 컬럼"):
         backfill_major_category_from_medium(pd.DataFrame({"중분류": ["1. 저출산(공통사업)"]}))
+
+
+def test_realign_major_category_moves_roman_numeral_topic_to_medium():
+    # 대전: 로마숫자는 주제(중분류) 축, 대괄호 표기가 진짜 대분류(공통/자체)
+    source = pd.DataFrame(
+        {
+            "지역": ["대전", "대전", "대전"],
+            "원본행": [1, 2, 3],
+            "세부사업명": [
+                "[공 통 사 업] (88개 과제)",
+                "Ⅰ. 저출산 대책 (55개 과제)",
+                "대전일자리종합박람회 개최",
+            ],
+            "대분류": [None, "Ⅰ. 저출산 대책 (55개 과제)", "Ⅰ. 저출산 대책 (55개 과제)"],
+            "중분류": [None, None, None],
+        }
+    )
+
+    result = realign_major_category_from_bracket_marker(source)
+
+    assert result["대분류"].tolist() == ["공통사업", "공통사업", "공통사업"]
+    assert result["중분류"].iloc[1] == "Ⅰ. 저출산 대책 (55개 과제)"
+    assert result["중분류"].iloc[2] == "Ⅰ. 저출산 대책 (55개 과제)"
+
+
+def test_realign_major_category_does_not_touch_regions_without_bracket_marker():
+    # 서울처럼 대괄호 표기가 없는 지역은 그대로 둔다
+    source = pd.DataFrame(
+        {
+            "지역": ["서울", "서울"],
+            "원본행": [1, 2],
+            "세부사업명": ["Ⅰ. 공통사업", "아이돌봄 지원"],
+            "대분류": ["Ⅰ. 공통사업", "Ⅰ. 공통사업"],
+            "중분류": [None, None],
+        }
+    )
+
+    result = realign_major_category_from_bracket_marker(source)
+
+    assert result["대분류"].tolist() == ["Ⅰ. 공통사업", "Ⅰ. 공통사업"]
+    assert result["중분류"].isna().all()
+
+
+def test_realign_major_category_rejects_missing_columns():
+    with pytest.raises(KeyError, match="필요한 컬럼"):
+        realign_major_category_from_bracket_marker(pd.DataFrame({"세부사업명": ["사업"]}))
 
 
 def test_clean_text_normalizes_whitespace_pua_and_leading_bullet():
@@ -602,11 +649,22 @@ def test_build_subtotal_qa_supports_custom_rate_tolerance():
     assert result.loc[0, "허용기준결과"] == "초과"
 
 
-def test_build_subtotal_qa_rejects_duplicate_subtotals():
+def test_build_subtotal_qa_collapses_duplicate_subtotals_with_same_value():
     source = make_qa_source()
     source = pd.concat([source, source.iloc[[0]]], ignore_index=True)
 
-    with pytest.raises(ValueError, match="중분류 소계가 여러 행"):
+    result = build_subtotal_qa(source, budget_col="예산_num")
+
+    assert len(result.loc[result["중분류"].eq("돌봄")]) == 1
+
+
+def test_build_subtotal_qa_rejects_duplicate_subtotals_with_conflicting_values():
+    source = make_qa_source()
+    conflicting = source.iloc[[0]].copy()
+    conflicting["예산_num"] = 999.0
+    source = pd.concat([source, conflicting], ignore_index=True)
+
+    with pytest.raises(ValueError, match="값이 다른 중분류 소계"):
         build_subtotal_qa(source, budget_col="예산_num")
 
 
