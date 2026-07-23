@@ -84,6 +84,31 @@ def test_dedup_label_normalizes_parentheses_bullets_and_duplicates():
     assert pd.isna(dedup_label(pd.NA))
 
 
+@pytest.mark.parametrize("bullet", ["ㅇ", "○", "◦", "□", "▪", "•", "·"])
+def test_dedup_label_removes_supported_bullet_before_content_label(bullet):
+    text = f"지원대상 : 시군(1개소) {bullet}지원내용 : 돌봄센터 인건비 및 시설 보강"
+
+    result = dedup_label(text)
+
+    assert result == "지원대상 : 시군(1개소) 지원내용 : 돌봄센터 인건비 및 시설 보강"
+
+
+def test_dedup_label_removes_bullets_anywhere_in_text():
+    text = "사업대상 : 시민 ◦사업내용 : 상담 • 교육 · 사후관리"
+
+    result = dedup_label(text)
+
+    assert result == "사업대상 : 시민 사업내용 : 상담 교육 사후관리"
+
+
+def test_dedup_label_preserves_middle_dot_inside_word():
+    text = "교재·교구비와 시·군 지원"
+
+    result = dedup_label(text)
+
+    assert result == text
+
+
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
