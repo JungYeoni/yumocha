@@ -38,6 +38,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([7a8e6df](https://github.com/JungYeoni/da-template/commit/7a8e6dfa1680f0a2845af2fd7ab49c6131438d1e))
 - CHANGELOG 자동 업데이트 [skip ci] ([36cb549](https://github.com/JungYeoni/da-template/commit/36cb549e7371d1a7ca1802a8e1240cbf91122ec6))
 - CHANGELOG 자동 업데이트 [skip ci] ([f66dd0d](https://github.com/JungYeoni/da-template/commit/f66dd0d8931e22cc647fa1290b8e4daf23e71751))
 - 공통유틸 템플릿에 재원구분 이중계상 처리 반영 (#26) ([a611f7f](https://github.com/JungYeoni/da-template/commit/a611f7f198a952db32eba1ea559bf63989980b95))
