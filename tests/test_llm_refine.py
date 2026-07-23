@@ -8,9 +8,14 @@ import pytest
 from src.features.llm_refine import (
     call_llm_once,
     clean_sentence,
+    extract_proper_names,
+    extract_quantities,
     extract_numbers,
     needs_llm_rerun,
     numbers_preserved,
+    preservation_violations,
+    refine_sentence,
+    run_checkpointed_refinement,
 )
 
 
@@ -120,6 +125,80 @@ def test_clean_sentence_rejects_invalid_attempt_count():
         clean_sentence("사업 A", "원문", call_once=Mock(), max_attempts=0)
 
 
+def test_refine_sentence_reports_api_failure_without_exposing_error_message():
+    call_once = Mock(side_effect=RuntimeError("secret-bearing API detail"))
+
+    result = refine_sentence("사업 A", "원문", call_once=call_once)
+
+    assert result.cleaned_text == "원문"
+    assert result.status == "실패"
+    assert result.attempts == 2
+    assert result.error_type == "RuntimeError"
+    assert "secret-bearing" not in result.error_type
+
+
+def test_refine_sentence_retries_preservation_violation_and_holds_original():
+    call_once = Mock(return_value="월 300만원 지원")
+
+    result = refine_sentence(
+        "사업 A",
+        "월 30만원 지원",
+        call_once=call_once,
+        validator=lambda original, cleaned: preservation_violations(original, cleaned),
+    )
+
+    assert result.cleaned_text == "월 30만원 지원"
+    assert result.status == "보존위반"
+    assert result.violations == ("숫자 불일치", "금액·퍼센트·범위 불일치")
+    assert call_once.call_count == 2
+
+
+def test_run_checkpointed_refinement_reuses_completed_and_reruns_marked_rows(tmp_path):
+    source = pd.DataFrame(
+        {
+            "지역": ["서울", "서울", "서울"],
+            "원본행": [10, 11, 12],
+            "세부사업명": ["사업 A", "사업 B", "사업 C"],
+            "주요내용": ["원문 A", "원문 B", pd.NA],
+        },
+        index=[100, 101, 102],
+    )
+    checkpoint_path = tmp_path / "checkpoint.csv"
+    first_call = Mock(side_effect=lambda name, content: content.replace("원문", "정제"))
+
+    first_checkpoint, first_summary = run_checkpointed_refinement(
+        source,
+        checkpoint_path=checkpoint_path,
+        call_once=first_call,
+        max_workers=2,
+        chunk_size=2,
+    )
+
+    assert first_summary.total_rows == 3
+    assert first_summary.llm_target_rows == 2
+    assert first_summary.new_success_rows == 2
+    assert first_summary.held_rows == 1
+    assert first_call.call_count == 2
+
+    first_checkpoint.loc[100, "주요내용_정제"] = "\uf09f재실행 대상"
+    first_checkpoint.to_csv(checkpoint_path, encoding="utf-8-sig")
+    second_call = Mock(return_value="정제 A")
+
+    second_checkpoint, second_summary = run_checkpointed_refinement(
+        source,
+        checkpoint_path=checkpoint_path,
+        call_once=second_call,
+        max_workers=1,
+        chunk_size=1,
+    )
+
+    assert second_summary.reused_rows == 2
+    assert second_summary.rerun_rows == 1
+    assert second_summary.new_success_rows == 1
+    assert second_call.call_count == 1
+    assert second_checkpoint.loc[100, "주요내용_정제"] == "정제 A"
+
+
 def test_extract_numbers_preserves_order():
     assert extract_numbers("만 0~1세, 월 30만원씩 3개월") == ["0", "1", "30", "3"]
     assert extract_numbers(None) == []
@@ -128,6 +207,31 @@ def test_extract_numbers_preserves_order():
 def test_numbers_preserved_compares_sequences():
     assert numbers_preserved("월 30만원, 3개월", "월 30만 원, 3개월")
     assert not numbers_preserved("월 30만원, 3개월", "월 300만원, 3개월")
+
+
+def test_extract_quantities_preserves_amount_percent_and_range_tokens():
+    text = "월 30만원, 5%, 만 0~1세, 2020-2022년"
+
+    assert extract_quantities(text) == ["30만원", "5%", "0~1세", "2020-2022년"]
+
+
+def test_extract_proper_names_uses_quotes_institutions_and_present_context_only():
+    text = "「아이행복」 사업을 서울복지관에서 운영"
+
+    assert extract_proper_names(
+        text,
+        context_terms=("서울복지관에서", "없는 사업명"),
+    ) == ["아이행복", "서울복지관", "서울복지관에서"]
+
+
+def test_preservation_violations_detects_proper_name_and_empty_result():
+    original = "「아이행복」 대상에게 서울복지관에서 월 30만원 지원"
+
+    assert preservation_violations(original, "") == ("빈 결과",)
+    assert preservation_violations(
+        original,
+        "대상에게 복지관에서 월 30만원 지원",
+    ) == ("고유명사 불일치",)
 
 
 @pytest.mark.parametrize(

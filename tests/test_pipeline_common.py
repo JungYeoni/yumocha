@@ -452,6 +452,49 @@ def test_build_subtotal_qa_compares_subtotal_and_leaf_sum():
     assert result_by_category.loc["청년", "결과"] == "판정불가"
 
 
+def test_build_subtotal_qa_preserves_original_and_uses_adjusted_comparison_subtotal():
+    source = pd.DataFrame(
+        {
+            "지역": ["경남", "경남", "경남"],
+            "대분류": ["자체"] * 3,
+            "중분류": ["노후"] * 3,
+            "사업행구분": ["중분류_소계", "세부사업", "세부사업"],
+            "예산_num": [87048.0, 30000.0, 27055.0],
+            "QA_보정액": [-29994.0, 0.0, 0.0],
+            "QA_보정근거": ["잘못 포함된 29,994백만원 제외", "", ""],
+        }
+    )
+
+    result = build_subtotal_qa(
+        source,
+        budget_col="예산_num",
+        tolerance=0.01,
+        subtotal_adjustment_col="QA_보정액",
+        subtotal_adjustment_reason_col="QA_보정근거",
+    )
+
+    assert result.loc[0, "원본_소계값"] == 87048.0
+    assert result.loc[0, "보정액"] == -29994.0
+    assert result.loc[0, "QA_비교_소계값"] == 57054.0
+    assert result.loc[0, "leaf_합계"] == 57055.0
+    assert result.loc[0, "차이"] == 1.0
+    assert result.loc[0, "결과"] == "불일치"
+    assert result.loc[0, "허용기준결과"] == "허용"
+
+
+def test_build_subtotal_qa_requires_adjustment_reason_for_nonzero_amount():
+    source = make_qa_source().assign(QA_보정액=0.0, QA_보정근거="")
+    source.loc[0, "QA_보정액"] = -10.0
+
+    with pytest.raises(ValueError, match="보정근거"):
+        build_subtotal_qa(
+            source,
+            budget_col="예산_num",
+            subtotal_adjustment_col="QA_보정액",
+            subtotal_adjustment_reason_col="QA_보정근거",
+        )
+
+
 def test_build_subtotal_qa_uses_separate_labeled_subtotal_row():
     source = pd.DataFrame(
         {
