@@ -500,6 +500,49 @@ def test_build_subtotal_qa_compares_subtotal_and_leaf_sum():
     assert result_by_category.loc["청년", "결과"] == "판정불가"
 
 
+def test_build_subtotal_qa_preserves_original_and_uses_adjusted_comparison_subtotal():
+    source = pd.DataFrame(
+        {
+            "지역": ["경남", "경남", "경남"],
+            "대분류": ["자체"] * 3,
+            "중분류": ["노후"] * 3,
+            "사업행구분": ["중분류_소계", "세부사업", "세부사업"],
+            "예산_num": [87048.0, 30000.0, 27055.0],
+            "QA_보정액": [-29994.0, 0.0, 0.0],
+            "QA_보정근거": ["잘못 포함된 29,994백만원 제외", "", ""],
+        }
+    )
+
+    result = build_subtotal_qa(
+        source,
+        budget_col="예산_num",
+        tolerance=0.01,
+        subtotal_adjustment_col="QA_보정액",
+        subtotal_adjustment_reason_col="QA_보정근거",
+    )
+
+    assert result.loc[0, "원본_소계값"] == 87048.0
+    assert result.loc[0, "보정액"] == -29994.0
+    assert result.loc[0, "QA_비교_소계값"] == 57054.0
+    assert result.loc[0, "leaf_합계"] == 57055.0
+    assert result.loc[0, "차이"] == 1.0
+    assert result.loc[0, "결과"] == "불일치"
+    assert result.loc[0, "허용기준결과"] == "허용"
+
+
+def test_build_subtotal_qa_requires_adjustment_reason_for_nonzero_amount():
+    source = make_qa_source().assign(QA_보정액=0.0, QA_보정근거="")
+    source.loc[0, "QA_보정액"] = -10.0
+
+    with pytest.raises(ValueError, match="보정근거"):
+        build_subtotal_qa(
+            source,
+            budget_col="예산_num",
+            subtotal_adjustment_col="QA_보정액",
+            subtotal_adjustment_reason_col="QA_보정근거",
+        )
+
+
 def test_build_subtotal_qa_uses_separate_labeled_subtotal_row():
     source = pd.DataFrame(
         {
@@ -659,6 +702,24 @@ def test_build_subtotal_qa_collapses_duplicate_subtotals_with_same_value():
     assert len(result.loc[result["중분류"].eq("돌봄")]) == 1
 
 
+def test_build_subtotal_qa_collapses_duplicate_adjusted_subtotals():
+    source = make_qa_source().assign(QA_보정액=0.0, QA_보정근거="")
+    source.loc[0, ["QA_보정액", "QA_보정근거"]] = [-10.0, "원본 오기 제외"]
+    source = pd.concat([source, source.iloc[[0]]], ignore_index=True)
+
+    result = build_subtotal_qa(
+        source,
+        budget_col="예산_num",
+        subtotal_adjustment_col="QA_보정액",
+        subtotal_adjustment_reason_col="QA_보정근거",
+    )
+
+    care = result.loc[result["중분류"].eq("돌봄")].iloc[0]
+    assert care["보정액"] == -10.0
+    assert care["보정근거"] == "원본 오기 제외"
+    assert care["QA_비교_소계값"] == 90.0
+
+
 def test_build_subtotal_qa_rejects_duplicate_subtotals_with_conflicting_values():
     source = make_qa_source()
     conflicting = source.iloc[[0]].copy()
@@ -667,6 +728,21 @@ def test_build_subtotal_qa_rejects_duplicate_subtotals_with_conflicting_values()
 
     with pytest.raises(ValueError, match="값이 다른 중분류 소계"):
         build_subtotal_qa(source, budget_col="예산_num")
+
+
+def test_build_subtotal_qa_rejects_duplicate_subtotals_with_conflicting_adjustments():
+    source = make_qa_source().assign(QA_보정액=0.0, QA_보정근거="")
+    conflicting = source.iloc[[0]].copy()
+    conflicting[["QA_보정액", "QA_보정근거"]] = [-10.0, "원본 오기 제외"]
+    source = pd.concat([source, conflicting], ignore_index=True)
+
+    with pytest.raises(ValueError, match="값이 다른 중분류 소계"):
+        build_subtotal_qa(
+            source,
+            budget_col="예산_num",
+            subtotal_adjustment_col="QA_보정액",
+            subtotal_adjustment_reason_col="QA_보정근거",
+        )
 
 
 def test_build_subtotal_qa_validates_arguments():

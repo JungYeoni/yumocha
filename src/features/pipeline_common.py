@@ -301,6 +301,8 @@ def build_subtotal_qa(
     row_type_col: str = "사업행구분",
     subtotal_label_col: str | None = None,
     subtotal_labels: Iterable[str] = (),
+    subtotal_adjustment_col: str | None = None,
+    subtotal_adjustment_reason_col: str | None = None,
 ) -> pd.DataFrame:
     """원본 중분류 소계와 세부사업 예산 합계를 비교한다.
 
@@ -308,7 +310,10 @@ def build_subtotal_qa(
     절대 오차율의 허용 상한이다. 2016년처럼 중분류 제목과 소계 숫자가 별도 행으로
     분리된 자료는 ``subtotal_label_col="세부사업명"``, ``subtotal_labels=("소계",)``로
     지정한다. 별도 소계 행과 중분류 제목 행에 모두 숫자가 있으면 별도 소계 행을
-    우선한다. 한쪽 그룹이 없거나 비교값이 결측인 경우는 허용 여부를 판정하지 않는다.
+    우선한다. ``subtotal_adjustment_col``과 ``subtotal_adjustment_reason_col``을 함께
+    지정하면 원본 소계는 보존하면서 ``QA_비교_소계값 = 원본_소계값 + 보정액``으로
+    차이와 오차율을 계산한다. 한쪽 그룹이 없거나 비교값이 결측인 경우는 허용 여부를
+    판정하지 않는다.
     """
     if tolerance < 0:
         raise ValueError("tolerance는 0 이상이어야 합니다.")
@@ -321,18 +326,38 @@ def build_subtotal_qa(
     normalized_subtotal_labels = {str(label).strip() for label in subtotal_labels}
     if normalized_subtotal_labels and subtotal_label_col is None:
         raise ValueError("subtotal_labels를 사용하려면 subtotal_label_col이 필요합니다.")
+    adjustment_cols = (subtotal_adjustment_col, subtotal_adjustment_reason_col)
+    if any(column is None for column in adjustment_cols) and any(
+        column is not None for column in adjustment_cols
+    ):
+        raise ValueError("소계 보정액 컬럼과 보정근거 컬럼을 함께 지정해야 합니다.")
+    use_adjustment = subtotal_adjustment_col is not None
 
     required_cols = {*group_cols, budget_col, row_type_col}
     if subtotal_label_col is not None:
         required_cols.add(subtotal_label_col)
+    if use_adjustment:
+        required_cols.update(adjustment_cols)
     missing_cols = required_cols.difference(df_labeled.columns)
     if missing_cols:
         raise KeyError(f"소계 QA에 필요한 컬럼이 없습니다: {sorted(missing_cols)}")
 
     if not is_numeric_dtype(df_labeled[budget_col]):
         raise TypeError(f"{budget_col} 컬럼은 숫자형이어야 합니다.")
+    if use_adjustment and not is_numeric_dtype(df_labeled[subtotal_adjustment_col]):
+        raise TypeError(f"{subtotal_adjustment_col} 컬럼은 숫자형이어야 합니다.")
 
     leaf = df_labeled.loc[df_labeled[row_type_col].eq("세부사업")]
+    subtotal_source_cols = [*group_cols, budget_col]
+    subtotal_rename_cols = {budget_col: "원본_소계값"}
+    if use_adjustment:
+        subtotal_source_cols.extend(adjustment_cols)
+        subtotal_rename_cols.update(
+            {
+                subtotal_adjustment_col: "보정액",
+                subtotal_adjustment_reason_col: "보정근거",
+            }
+        )
 
     def collapse_consistent_subtotals(
         subtotal_rows: pd.DataFrame,
@@ -341,10 +366,14 @@ def build_subtotal_qa(
         error_label: str,
     ) -> pd.DataFrame:
         """반복 추출된 동일 소계 행은 접고, 값이 충돌할 때만 실패한다."""
-        value_counts = subtotal_rows.groupby(list(group_cols), dropna=False)["원본_소계값"].nunique(
-            dropna=True
-        )
-        conflicting_groups = value_counts[value_counts.gt(1)].index
+        subtotal_value_cols = ["원본_소계값"]
+        if use_adjustment:
+            subtotal_value_cols.extend(["보정액", "보정근거"])
+
+        value_counts = subtotal_rows.groupby(list(group_cols), dropna=False)[
+            subtotal_value_cols
+        ].nunique(dropna=True)
+        conflicting_groups = value_counts.index[value_counts.gt(1).any(axis=1)]
         if len(conflicting_groups) > 0:
             duplicate_groups = pd.DataFrame(list(conflicting_groups), columns=list(group_cols))
             raise ValueError(
@@ -354,14 +383,14 @@ def build_subtotal_qa(
 
         collapsed = subtotal_rows.groupby(
             list(group_cols), as_index=False, dropna=False, sort=False
-        )["원본_소계값"].first()
+        )[subtotal_value_cols].first()
         collapsed["원본_소계출처"] = source_label
         return collapsed
 
     subtotal_from_title = df_labeled.loc[
         df_labeled[row_type_col].eq("중분류_소계"),
-        [*group_cols, budget_col],
-    ].rename(columns={budget_col: "원본_소계값"})
+        subtotal_source_cols,
+    ].rename(columns=subtotal_rename_cols)
     subtotal_from_title = collapse_consistent_subtotals(
         subtotal_from_title,
         source_label="중분류제목행",
@@ -372,8 +401,8 @@ def build_subtotal_qa(
         normalized_label = df_labeled[subtotal_label_col].astype("string").str.strip()
         subtotal_from_label = df_labeled.loc[
             normalized_label.isin(normalized_subtotal_labels) & df_labeled[budget_col].notna(),
-            [*group_cols, budget_col],
-        ].rename(columns={budget_col: "원본_소계값"})
+            subtotal_source_cols,
+        ].rename(columns=subtotal_rename_cols)
 
         subtotal_from_label = collapse_consistent_subtotals(
             subtotal_from_label,
@@ -406,9 +435,21 @@ def build_subtotal_qa(
             "both": "양쪽존재",
         }
     )
-    qa["차이"] = qa["leaf_합계"] - qa["원본_소계값"]
+    comparison_subtotal_col = "원본_소계값"
+    adjustment_output_cols: list[str] = []
+    if use_adjustment:
+        qa["보정액"] = qa["보정액"].fillna(0)
+        qa["보정근거"] = qa["보정근거"].fillna("").astype("string")
+        missing_reason = qa["보정액"].ne(0) & qa["보정근거"].str.strip().eq("")
+        if missing_reason.any():
+            raise ValueError("0이 아닌 소계 보정액에는 보정근거가 필요합니다.")
+        qa["QA_비교_소계값"] = qa["원본_소계값"] + qa["보정액"]
+        comparison_subtotal_col = "QA_비교_소계값"
+        adjustment_output_cols = ["보정액", "보정근거", "QA_비교_소계값"]
+
+    qa["차이"] = qa["leaf_합계"] - qa[comparison_subtotal_col]
     qa["절대차이"] = qa["차이"].abs()
-    subtotal_denominator = qa["원본_소계값"].mask(qa["원본_소계값"].eq(0))
+    subtotal_denominator = qa[comparison_subtotal_col].mask(qa[comparison_subtotal_col].eq(0))
 
     qa["오차율(%)"] = qa["차이"].div(subtotal_denominator).mul(100).round(2)
     qa["절대오차율(%)"] = qa["오차율(%)"].abs()
@@ -428,7 +469,9 @@ def build_subtotal_qa(
     ] = "초과"
 
     comparable = (
-        qa["QA_병합상태"].eq("양쪽존재") & qa["원본_소계값"].notna() & qa["leaf_합계"].notna()
+        qa["QA_병합상태"].eq("양쪽존재")
+        & qa[comparison_subtotal_col].notna()
+        & qa["leaf_합계"].notna()
     )
     qa["결과"] = "판정불가"
     qa.loc[comparable, "결과"] = "불일치"
@@ -439,6 +482,7 @@ def build_subtotal_qa(
             *group_cols,
             "원본_소계값",
             "원본_소계출처",
+            *adjustment_output_cols,
             "leaf_합계",
             "차이",
             "절대차이",
