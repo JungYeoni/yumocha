@@ -76,6 +76,7 @@ def test_classify_row_filters_unit_notation_via_extra_header_pattern(detail_name
         ("총 계", "헤더반복"),
         ("총계", "헤더반복"),
         ("소계", "헤더반복"),
+        ("소  계", "헤더반복"),
         ("공통사업 합계", "헤더반복"),
         ("자체사업 합계", "헤더반복"),
         ("총 계(230개 과제) (공통 88, 자체 142)", "헤더반복"),
