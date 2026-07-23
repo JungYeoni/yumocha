@@ -38,6 +38,8 @@
 
 ### 문서
 
+- 2020 노트북 제목 정보 정리 (#21) ([75e2472](https://github.com/JungYeoni/da-template/commit/75e24720880ced0905d4fef724e8cf996fe1d49b))
+- CHANGELOG 자동 업데이트 [skip ci] ([c7a5425](https://github.com/JungYeoni/da-template/commit/c7a5425ada7fe8fcae669e72f66dadfc69ff7f72))
 - 2019 정제 한계와 잠재 편향 보강 (#20) ([49d9d6c](https://github.com/JungYeoni/da-template/commit/49d9d6c52caae5ad167e87c2eac98f4fc438cfc4))
 - 2019 정제 검증 결과 기록 (#20) ([56d4f41](https://github.com/JungYeoni/da-template/commit/56d4f411f38e841fc9063f7b3d03f62a80d2075a))
 - CHANGELOG 자동 업데이트 [skip ci] ([328d801](https://github.com/JungYeoni/da-template/commit/328d801bebfb5202967da5cc48a46096f327c5c2))
@@ -95,7 +97,10 @@
 
 ### 버그 수정
 
+- 2020 CodeRabbit 리뷰 반영 (#21) ([74066af](https://github.com/JungYeoni/da-template/commit/74066af051ae9272d2d15b20df2dd390de1757a4))
 - CodeRabbit 리뷰 반영 - 커널 재시작 (#18) ([bcbfa0c](https://github.com/JungYeoni/da-template/commit/bcbfa0c088ad2a6efa9d89d97ee4e0dae9eeba91))
+- LLM 체크포인트 원문 변경 감지 ([c74f787](https://github.com/JungYeoni/da-template/commit/c74f7873ae247d772c677f4b2f658e93c78b314a))
+- 2020 경남 QA 보정 및 LLM 정제 완료 ([1c39586](https://github.com/JungYeoni/da-template/commit/1c395866e612b7b8eaec85130d5e000441142fbd))
 - 중분류_소계 접미사 판별 범위 확장 (#17) ([809d9f0](https://github.com/JungYeoni/da-template/commit/809d9f0c7489b6890201c1d0382f887cc97d7bee))
 - 총계/소계/합계 라벨 행 오분류 방지 패턴 추가 (#17) ([f9276b5](https://github.com/JungYeoni/da-template/commit/f9276b5b13ed8e91003e5c7d9f7909ee566308cf))
 - Select_total_budget_rows 합산 결과 라벨을 계로 통일 (#26) ([05eb9af](https://github.com/JungYeoni/da-template/commit/05eb9af6193a0434d44a2ce125247eb629e9993a))
@@ -130,6 +135,8 @@
 - Select_total_budget_rows에 원본 재원구분 보존 컬럼 추가 (#17) ([157175c](https://github.com/JungYeoni/da-template/commit/157175cd5fedd368d1445ad2e5eb54efb8d9aa47))
 - 2016 노트북 재실행 결과 반영 (#17) ([f6647be](https://github.com/JungYeoni/da-template/commit/f6647be9ee79c5cbdf332c2bd3305e1d969d1a14))
 - 2016 노트북에 재원구분/단위표기/소계라벨 유틸 반영 (#17) ([c533cda](https://github.com/JungYeoni/da-template/commit/c533cda8aa89dde545173d7177db06b8ab92919a))
+- 2020 정제 파이프라인 및 QA 검증 진행 중, 임시 저장  (#21) ([f512cc1](https://github.com/JungYeoni/da-template/commit/f512cc1026cd31fea6c18b9aa2fe5f3704e268eb))
+- 2020 정제 노트북 설정 및 행 분류 보정 (#21) ([22b4f2c](https://github.com/JungYeoni/da-template/commit/22b4f2ca0d2a40baa9e445c94e725340165e0111))
 - 2016~2019 재원구분(계/국비/지방비) 이중계상 방지 유틸 추가 (#26) ([ea86554](https://github.com/JungYeoni/da-template/commit/ea865549022739a40c6cb9755b6930fb114e1449))
 - 2022년도 QA 검증결과 공통 함수 반영해서 업데이트 (#15) ([7cf9939](https://github.com/JungYeoni/da-template/commit/7cf9939a686f7db26eb0252120603123f04fd4e8))
 - 2022년도 전체 시도 세부사업 예산현황 분리·정제 파이프라인 (#8) ([aaca43a](https://github.com/JungYeoni/da-template/commit/aaca43a6a662e650afb3d5cc6b0d0b502d3236bd))
