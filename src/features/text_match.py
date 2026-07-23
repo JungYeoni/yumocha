@@ -8,10 +8,12 @@ from itertools import combinations
 import pandas as pd
 from rapidfuzz import fuzz
 
-from src.features.text_patterns import CONTENT_LABEL_PATTERN, PAREN_LABEL_PATTERN
+from src.features.text_patterns import PAREN_LABEL_PATTERN
 
 MATCH_NORMALIZE_PATTERN = re.compile(r"[\s,./\-()]")
-BULLET_BEFORE_LABEL_PATTERN = re.compile(rf"[•·]\s*(?=({CONTENT_LABEL_PATTERN})\s*[:：])")
+# `·`는 목록 불릿과 단어 연결 기호(예: "교재·교구")로 모두 쓰인다.
+# 앞 문자가 문자·숫자인 경우는 의미 있는 연결 기호로 보고 보존한다.
+BULLET_PATTERN = re.compile(r"[ㅇ○◦□▪•]|(?<![0-9A-Za-z가-힣])·")
 STRICT_SUPPORT_PATTERN = re.compile(
     r"^지원대상\s*[:：]\s*(.*?)\s*지원내용\s*[:：]\s*(.*)$",
     re.DOTALL,
@@ -108,7 +110,7 @@ def dedup_label(text: object) -> object:
         return text
 
     value = PAREN_LABEL_PATTERN.sub(r"\1 : ", str(text))
-    value = BULLET_BEFORE_LABEL_PATTERN.sub("", value)
+    value = BULLET_PATTERN.sub(" ", value)
 
     for label in ("지원대상", "지원내용", "사업대상", "사업내용"):
         value = re.sub(
@@ -117,7 +119,7 @@ def dedup_label(text: object) -> object:
             value,
         )
 
-    return value.strip()
+    return re.sub(r"\s+", " ", value).strip()
 
 
 def check_pattern(text: object) -> str:

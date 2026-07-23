@@ -38,6 +38,12 @@
 
 ### 문서
 
+- 2019 정제 한계와 잠재 편향 보강 (#20) ([49d9d6c](https://github.com/JungYeoni/da-template/commit/49d9d6c52caae5ad167e87c2eac98f4fc438cfc4))
+- 2019 정제 검증 결과 기록 (#20) ([56d4f41](https://github.com/JungYeoni/da-template/commit/56d4f411f38e841fc9063f7b3d03f62a80d2075a))
+- CHANGELOG 자동 업데이트 [skip ci] ([328d801](https://github.com/JungYeoni/da-template/commit/328d801bebfb5202967da5cc48a46096f327c5c2))
+- CHANGELOG 자동 업데이트 [skip ci] ([4a7e40d](https://github.com/JungYeoni/da-template/commit/4a7e40d23c3155980073e3c16b30c6c29171232d))
+- CHANGELOG 자동 업데이트 [skip ci] ([7a8e6df](https://github.com/JungYeoni/da-template/commit/7a8e6dfa1680f0a2845af2fd7ab49c6131438d1e))
+- CHANGELOG 자동 업데이트 [skip ci] ([36cb549](https://github.com/JungYeoni/da-template/commit/36cb549e7371d1a7ca1802a8e1240cbf91122ec6))
 - CHANGELOG 자동 업데이트 [skip ci] ([f66dd0d](https://github.com/JungYeoni/da-template/commit/f66dd0d8931e22cc647fa1290b8e4daf23e71751))
 - 공통유틸 템플릿에 재원구분 이중계상 처리 반영 (#26) ([a611f7f](https://github.com/JungYeoni/da-template/commit/a611f7f198a952db32eba1ea559bf63989980b95))
 - CHANGELOG 자동 업데이트 [skip ci] ([4f53cb7](https://github.com/JungYeoni/da-template/commit/4f53cb7731ee9c2a007b6e679317ff2849986aae))
@@ -89,6 +95,7 @@
 
 ### 버그 수정
 
+- CodeRabbit 리뷰 반영 - 커널 재시작 (#18) ([bcbfa0c](https://github.com/JungYeoni/da-template/commit/bcbfa0c088ad2a6efa9d89d97ee4e0dae9eeba91))
 - 중분류_소계 접미사 판별 범위 확장 (#17) ([809d9f0](https://github.com/JungYeoni/da-template/commit/809d9f0c7489b6890201c1d0382f887cc97d7bee))
 - 총계/소계/합계 라벨 행 오분류 방지 패턴 추가 (#17) ([f9276b5](https://github.com/JungYeoni/da-template/commit/f9276b5b13ed8e91003e5c7d9f7909ee566308cf))
 - Select_total_budget_rows 합산 결과 라벨을 계로 통일 (#26) ([05eb9af](https://github.com/JungYeoni/da-template/commit/05eb9af6193a0434d44a2ce125247eb629e9993a))
@@ -115,6 +122,9 @@
 
 ### 새 기능
 
+- 2019 시도별 정제 파이프라인 추가 (#20) ([14d2641](https://github.com/JungYeoni/da-template/commit/14d2641d35aed774daedab420059c3c277414f55))
+- 2017년 시도별 예산 데이터 정제 (#18) ([52c9af1](https://github.com/JungYeoni/da-template/commit/52c9af12aa60cf709160d4305183cd89f2483688))
+- 대전 로마숫자가 중분류 축인 경우의 대분류 재정렬 함수 추가 (#18) ([a954047](https://github.com/JungYeoni/da-template/commit/a9540477aca48b80ef9209ae49cbed2008b5bd71))
 - 2016 시도별 정제 및 QA 보완 (#17) ([f1935a4](https://github.com/JungYeoni/da-template/commit/f1935a42b935e62f838cea2729868b64806ee591))
 - 대분류 로마숫자 헤더 없는 지역용 역채움 함수 추가 (#17) ([79b5987](https://github.com/JungYeoni/da-template/commit/79b5987a6fc2898f12643b6a518ac9d10e4ef033))
 - Select_total_budget_rows에 원본 재원구분 보존 컬럼 추가 (#17) ([157175c](https://github.com/JungYeoni/da-template/commit/157175cd5fedd368d1445ad2e5eb54efb8d9aa47))
