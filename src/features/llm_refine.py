@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import re
@@ -55,6 +56,12 @@ class CheckpointRunSummary:
     failed_rows: int
     held_rows: int
     rerun_rows: int
+
+
+def _original_text_sha256(text: object) -> str:
+    """체크포인트 재사용 판정을 위한 원문 SHA-256을 반환한다."""
+    payload = b"\x00" if pd.isna(text) else str(text).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def call_llm_once(
@@ -275,8 +282,10 @@ def run_checkpointed_refinement(
     attempts_col = "LLM_시도횟수"
     error_col = "LLM_오류유형"
     violations_col = "LLM_보존위반"
+    source_hash_col = f"{content_col}_원문_SHA256"
     result_cols = [
         *identity_cols,
+        source_hash_col,
         cleaned_col,
         status_col,
         attempts_col,
@@ -291,14 +300,14 @@ def run_checkpointed_refinement(
         missing_checkpoint_cols = required_checkpoint_cols.difference(checkpoint_df.columns)
         if missing_checkpoint_cols:
             raise KeyError(
-                "체크포인트 신원·결과 컬럼이 없습니다: "
-                f"{sorted(missing_checkpoint_cols)}"
+                f"체크포인트 신원·결과 컬럼이 없습니다: {sorted(missing_checkpoint_cols)}"
             )
         checkpoint_df.index = pd.to_numeric(checkpoint_df.index, errors="raise").astype(int)
         checkpoint_df = checkpoint_df.loc[~checkpoint_df.index.duplicated(keep="last")]
         checkpoint_df = checkpoint_df.loc[checkpoint_df.index.intersection(df.index)].copy()
 
         for column, default in (
+            (source_hash_col, ""),
             (status_col, "기존완료"),
             (attempts_col, 0),
             (error_col, ""),
@@ -309,13 +318,16 @@ def run_checkpointed_refinement(
 
         current_identity = df.loc[checkpoint_df.index, list(identity_cols)].astype("string")
         saved_identity = checkpoint_df.loc[:, list(identity_cols)].astype("string")
-        identity_matches = current_identity.fillna("<NA>").eq(
-            saved_identity.fillna("<NA>")
-        ).all(axis=1)
-        invalid_index = identity_matches.index[~identity_matches]
+        identity_matches = (
+            current_identity.fillna("<NA>").eq(saved_identity.fillna("<NA>")).all(axis=1)
+        )
+        current_source_hash = df.loc[checkpoint_df.index, content_col].map(_original_text_sha256)
+        saved_source_hash = checkpoint_df[source_hash_col].fillna("").astype("string")
+        source_matches = saved_source_hash.eq(current_source_hash.astype("string"))
+        reusable_rows = identity_matches & source_matches
+        invalid_index = reusable_rows.index[~reusable_rows]
         rerun_index = checkpoint_df.index[
-            checkpoint_df[cleaned_col].apply(needs_llm_rerun)
-            | checkpoint_df[status_col].eq("실패")
+            checkpoint_df[cleaned_col].apply(needs_llm_rerun) | checkpoint_df[status_col].eq("실패")
         ]
         dropped_index = invalid_index.union(rerun_index)
         rerun_rows = len(dropped_index)
@@ -356,6 +368,7 @@ def run_checkpointed_refinement(
         return {
             "_index": index,
             **{column: row[column] for column in identity_cols},
+            source_hash_col: _original_text_sha256(row[content_col]),
             cleaned_col: result.cleaned_text,
             status_col: result.status,
             attempts_col: result.attempts,
@@ -369,12 +382,12 @@ def run_checkpointed_refinement(
             rows = list(executor.map(refine_index, chunk))
         partial_df = pd.DataFrame(rows).set_index("_index")
         checkpoint_df = pd.concat([checkpoint_df, partial_df])
-        checkpoint_df = checkpoint_df.loc[
-            ~checkpoint_df.index.duplicated(keep="last")
-        ].sort_index()
+        checkpoint_df = checkpoint_df.loc[~checkpoint_df.index.duplicated(keep="last")].sort_index()
         path.parent.mkdir(parents=True, exist_ok=True)
         checkpoint_df.to_csv(path, encoding="utf-8-sig")
-        LOGGER.info("LLM 체크포인트 저장: %s/%s", min(start + chunk_size, len(targets)), len(targets))
+        LOGGER.info(
+            "LLM 체크포인트 저장: %s/%s", min(start + chunk_size, len(targets)), len(targets)
+        )
 
         called_rows = partial_df.loc[partial_df[attempts_col].gt(0)]
         if start == 0 and len(called_rows) and called_rows[status_col].eq("실패").all():

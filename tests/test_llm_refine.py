@@ -1,3 +1,4 @@
+import hashlib
 import json
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -179,6 +180,10 @@ def test_run_checkpointed_refinement_reuses_completed_and_reruns_marked_rows(tmp
     assert first_summary.new_success_rows == 2
     assert first_summary.held_rows == 1
     assert first_call.call_count == 2
+    assert (
+        first_checkpoint.loc[100, "주요내용_원문_SHA256"]
+        == hashlib.sha256("원문 A".encode("utf-8")).hexdigest()
+    )
 
     first_checkpoint.loc[100, "주요내용_정제"] = "\uf09f재실행 대상"
     first_checkpoint.to_csv(checkpoint_path, encoding="utf-8-sig")
@@ -197,6 +202,104 @@ def test_run_checkpointed_refinement_reuses_completed_and_reruns_marked_rows(tmp
     assert second_summary.new_success_rows == 1
     assert second_call.call_count == 1
     assert second_checkpoint.loc[100, "주요내용_정제"] == "정제 A"
+
+
+def test_run_checkpointed_refinement_reruns_when_original_content_changes(tmp_path):
+    source = pd.DataFrame(
+        {
+            "지역": ["서울"],
+            "원본행": [10],
+            "세부사업명": ["사업 A"],
+            "주요내용": ["원문 A"],
+        },
+        index=[100],
+    )
+    checkpoint_path = tmp_path / "checkpoint.csv"
+    first_call = Mock(return_value="정제 A")
+
+    run_checkpointed_refinement(
+        source,
+        checkpoint_path=checkpoint_path,
+        call_once=first_call,
+        max_workers=1,
+        chunk_size=1,
+    )
+
+    changed_source = source.copy()
+    changed_source.loc[100, "주요내용"] = "수정 원문 A"
+    changed_call = Mock(return_value="수정 정제 A")
+    changed_checkpoint, changed_summary = run_checkpointed_refinement(
+        changed_source,
+        checkpoint_path=checkpoint_path,
+        call_once=changed_call,
+        max_workers=1,
+        chunk_size=1,
+    )
+
+    assert changed_summary.reused_rows == 0
+    assert changed_summary.rerun_rows == 1
+    assert changed_summary.new_called_rows == 1
+    changed_call.assert_called_once_with("사업 A", "수정 원문 A")
+    assert changed_checkpoint.loc[100, "주요내용_정제"] == "수정 정제 A"
+    assert (
+        changed_checkpoint.loc[100, "주요내용_원문_SHA256"]
+        == hashlib.sha256("수정 원문 A".encode("utf-8")).hexdigest()
+    )
+
+    reuse_call = Mock()
+    reused_checkpoint, reused_summary = run_checkpointed_refinement(
+        changed_source,
+        checkpoint_path=checkpoint_path,
+        call_once=reuse_call,
+        max_workers=1,
+        chunk_size=1,
+    )
+
+    assert reused_summary.reused_rows == 1
+    assert reused_summary.rerun_rows == 0
+    reuse_call.assert_not_called()
+    assert reused_checkpoint.loc[100, "주요내용_정제"] == "수정 정제 A"
+
+
+def test_run_checkpointed_refinement_reruns_legacy_checkpoint_without_source_hash(
+    tmp_path,
+):
+    source = pd.DataFrame(
+        {
+            "지역": ["서울"],
+            "원본행": [10],
+            "세부사업명": ["사업 A"],
+            "주요내용": ["원문 A"],
+        },
+        index=[100],
+    )
+    checkpoint_path = tmp_path / "checkpoint.csv"
+    run_checkpointed_refinement(
+        source,
+        checkpoint_path=checkpoint_path,
+        call_once=Mock(return_value="정제 A"),
+        max_workers=1,
+        chunk_size=1,
+    )
+    legacy_checkpoint = pd.read_csv(
+        checkpoint_path,
+        encoding="utf-8-sig",
+        index_col=0,
+    ).drop(columns="주요내용_원문_SHA256")
+    legacy_checkpoint.to_csv(checkpoint_path, encoding="utf-8-sig")
+    rerun_call = Mock(return_value="정제 A")
+
+    _, summary = run_checkpointed_refinement(
+        source,
+        checkpoint_path=checkpoint_path,
+        call_once=rerun_call,
+        max_workers=1,
+        chunk_size=1,
+    )
+
+    assert summary.reused_rows == 0
+    assert summary.rerun_rows == 1
+    rerun_call.assert_called_once_with("사업 A", "원문 A")
 
 
 def test_extract_numbers_preserves_order():
