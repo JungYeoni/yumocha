@@ -13,6 +13,7 @@ import shutil
 import sys
 import unicodedata
 from collections import Counter
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 
@@ -31,7 +32,14 @@ SYNC_COLUMNS = ("원본행", "세부사업명", *TEXT_COLUMNS)
 
 
 def _read_csv(path: Path) -> pd.DataFrame:
-    return pd.read_csv(path, encoding="utf-8-sig")
+    # NA/NULL/None/빈 값 등을 결측치로 바꾸지 않고 원문 그대로 읽는다.
+    return pd.read_csv(
+        path,
+        encoding="utf-8-sig",
+        dtype=str,
+        keep_default_na=False,
+        na_filter=False,
+    )
 
 
 def _normalized_name(path: Path) -> str:
@@ -78,7 +86,7 @@ def _normalize_frame(df: pd.DataFrame, path: Path) -> tuple[pd.DataFrame, int]:
     return result, changed_cells
 
 
-def _row_counter(df: pd.DataFrame, columns: list[str]) -> Counter[tuple[str, ...]]:
+def _row_counter(df: pd.DataFrame, columns: Sequence[str]) -> Counter[tuple[str, ...]]:
     normalized = df[columns].astype("string").fillna("<NA>")
     return Counter(map(tuple, normalized.itertuples(index=False, name=None)))
 
@@ -110,7 +118,15 @@ def _validate_wide_long_sync(frames: dict[Path, pd.DataFrame]) -> None:
                 f"wide·long 행 수가 맞지 않습니다: {wide_path} ({len(wide)} / {len(long)})"
             )
 
-        columns = [column for column in SYNC_COLUMNS if column in wide and column in long]
+        missing_wide = [column for column in SYNC_COLUMNS if column not in wide]
+        missing_long = [column for column in SYNC_COLUMNS if column not in long]
+        if missing_wide or missing_long:
+            raise ValueError(
+                "wide·long 동기화 검증에 필요한 컬럼이 없습니다: "
+                f"{wide_path} (wide 누락: {missing_wide}, long 누락: {missing_long})"
+            )
+
+        columns = list(SYNC_COLUMNS)
         wide_rows = _row_counter(wide, columns)
         long_rows = _row_counter(long, columns)
         expected_long_rows = Counter({row: count * 2 for row, count in wide_rows.items()})

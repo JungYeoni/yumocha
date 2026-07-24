@@ -2,6 +2,7 @@ from pathlib import Path
 import unicodedata
 
 import pandas as pd
+import pytest
 
 from scripts.reapply_bullet_normalization import reapply_bullet_normalization
 
@@ -42,3 +43,42 @@ def test_reapply_bullet_normalization_dry_run_and_write_with_backup(tmp_path):
     backup_dir = Path(str(written["백업경로"]))
     backup = pd.read_csv(backup_dir / "서울" / wide_path.name, encoding="utf-8-sig")
     assert "•" in backup.loc[0, "주요내용"]
+
+
+def test_reapply_bullet_normalization_preserves_na_like_text(tmp_path):
+    region_dir = tmp_path / "서울"
+    wide_path = region_dir / "2022_서울_세부사업_정제.csv"
+    long_path = region_dir / "2022_서울_세부사업_정제_long.csv"
+    row = {
+        "원본행": 1,
+        "세부사업명": "NA",
+        "주요내용": "지원대상 : 시민 • 지원내용 : 상담 1회",
+        "주요내용_정제": "NULL",
+    }
+    _write_csv(wide_path, [row])
+    _write_csv(long_path, [row, row])
+
+    reapply_bullet_normalization(tmp_path, years=(2022,), write=True)
+
+    normalized = pd.read_csv(
+        wide_path, encoding="utf-8-sig", dtype=str, keep_default_na=False, na_filter=False
+    )
+    assert normalized.loc[0, "세부사업명"] == "NA"
+    assert normalized.loc[0, "주요내용_정제"] == "NULL"
+
+
+def test_reapply_bullet_normalization_fails_when_sync_column_missing(tmp_path):
+    region_dir = tmp_path / "서울"
+    wide_path = region_dir / "2022_서울_세부사업_정제.csv"
+    long_path = region_dir / "2022_서울_세부사업_정제_long.csv"
+    wide_row = {
+        "세부사업명": "사업 A",
+        "주요내용": "지원대상 : 시민 • 지원내용 : 상담 3회",
+        "주요내용_정제": "시민 상담 • 3회",
+    }
+    long_row = {**wide_row, "주요내용": "지원대상 : 다른 시민 • 지원내용 : 상담 5회"}
+    _write_csv(wide_path, [wide_row])
+    _write_csv(long_path, [long_row, long_row])
+
+    with pytest.raises(ValueError, match="동기화 검증에 필요한 컬럼이 없습니다"):
+        reapply_bullet_normalization(tmp_path, years=(2022,))
