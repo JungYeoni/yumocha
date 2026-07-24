@@ -154,6 +154,20 @@ def test_refine_sentence_retries_preservation_violation_and_holds_original():
     assert call_once.call_count == 2
 
 
+def test_refine_sentence_strips_bullets_inserted_by_llm_response():
+    call_once = Mock(return_value="체외수정 및 인공수정 시술비지원 • 체외수정6회, 인공수정3회")
+
+    result = refine_sentence(
+        "사업 A",
+        "체외수정 및 인공수정 시술비지원 체외수정6회, 인공수정3회",
+        call_once=call_once,
+    )
+
+    assert result.cleaned_text == "체외수정 및 인공수정 시술비지원 체외수정6회, 인공수정3회"
+    assert result.status == "성공"
+    assert call_once.call_count == 1
+
+
 def test_run_checkpointed_refinement_reuses_completed_and_reruns_marked_rows(tmp_path):
     source = pd.DataFrame(
         {

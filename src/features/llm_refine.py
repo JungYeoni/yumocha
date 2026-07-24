@@ -16,6 +16,7 @@ from typing import Any
 
 import pandas as pd
 
+from src.features.text_match import dedup_label
 from src.features.text_patterns import PAREN_LABEL_PATTERN, PUA_PATTERN
 
 LOGGER = logging.getLogger(__name__)
@@ -223,6 +224,8 @@ def refine_sentence(
         if result is None:
             last_error_type = "InvalidResponse"
             continue
+
+        result = dedup_label(result)
 
         last_violations = validator(original, result) if validator else ()
         if not last_violations:
