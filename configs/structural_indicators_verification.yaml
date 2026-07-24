@@ -64,7 +64,7 @@ indicators:
     recommended_formula: >-
       20–34세 청년 취업자 수 ÷ 20–34세 청년 주민등록인구 × 100.
       분자와 분모의 연도 기준을 통일한다.
-    processed:
+    finance_team_value:
       id: '1w7Ip9clREMI3IHt_rS4TayHjrLRtbnzr'
       file_name: '1-1.1. 청년고용률.xlsx'
     raw_sources:
@@ -88,7 +88,7 @@ indicators:
     recommended_formula: >-
       시도별 상용총근로시간 공표값을 그대로 사용하되 조사대상 사업체
       범위가 바뀐 연도는 시계열 단절 여부를 표시한다.
-    processed:
+    finance_team_value:
       id: '1OEWrLkpKwSlrZGhUNvoLv0mGNdbz-F7W'
       file_name: '4-1.1. 근로시간.xlsx'
     raw_sources:
@@ -113,7 +113,7 @@ indicators:
     recommended_formula: >-
       소득이 있는 유효응답자를 대상으로 척도를 긍정 방향으로 역코딩한
       뒤 조사 가중평균을 산출한다.
-    processed:
+    finance_team_value:
       id: '1IcROAgGrq5E6OPaaeqSDjrypiiKqoKkM'
       file_name: '1-3.1. 소득만족도.xlsx'
     raw_sources:
@@ -133,7 +133,7 @@ indicators:
     recommended_formula: >-
       현재 원자료의 1인당 가계총처분가능소득이 공식 지표의
       1인당 개인총처분가능소득과 같은 계열인지 먼저 판정한다.
-    processed:
+    finance_team_value:
       id: '1L1WUCzmKjuXt7T80zLb1dztOCE2_SAtu'
       file_name: '1-3.2. 소득 수준.xlsx'
     raw_sources:
@@ -153,7 +153,7 @@ indicators:
     recommended_formula: >-
       시도별 어린이집 정원 ÷ 동일 기준일의 0–4세 주민등록인구 × 100.
       시설 수는 분자로 사용하지 않는다.
-    processed:
+    finance_team_value:
       id: '1y9bTz-RJPVGKTA5Krozk4cJf6IkoM73e'
       file_name: '2-1.1. 보육시설 보급률.xlsx'
     raw_sources:
@@ -180,7 +180,7 @@ indicators:
     recommended_formula: >-
       두 시설 자료의 기준일과 휴업·폐업 처리 기준을 통일한 뒤
       6–12세 주민등록인구로 나눈다.
-    processed:
+    finance_team_value:
       id: '1sQv4D2wpbxeHV7J-pTNB1fHZo2XJs-Sz'
       file_name: '2-1.2. 방과후 돌봄시설 보급도.xlsx'
     raw_sources:
@@ -203,7 +203,7 @@ indicators:
     recommended_formula: >-
       시도별 전체학생 1인당 월평균 사교육비를 사용하고
       사교육 참여학생 기준 값과 혼용하지 않는다.
-    processed:
+    finance_team_value:
       id: '1JUGtXQCNStAQ0OH68KIsCRdl---Uefqi'
       file_name: '2-1.3. 사교육비 지출액.xlsx'
     raw_sources:
@@ -223,7 +223,7 @@ indicators:
     recommended_formula: >-
       공표된 인구 10만 명당 문화기반시설 수를 사용하고,
       연도별 시설 분류가 바뀌었는지 확인한다.
-    processed:
+    finance_team_value:
       id: '1bTfnWYNjdbduYUt0yjxO_Y1dFivvI4n1'
       file_name: '2-2.1. 문화기반시설 보급도.xlsx'
     raw_sources:
@@ -243,7 +243,7 @@ indicators:
     recommended_formula: >-
       국토교통부 도시계획현황 또는 같은 계열의 공표값을 사용하고
       분모를 도시지역 인구로 고정한다.
-    processed:
+    finance_team_value:
       id: '1ADFFfW-vdLqoasDzY00-Har-r-J15P37'
       file_name: '2-2.2. 도시공원 보급도.xlsx'
     raw_sources:
@@ -264,7 +264,7 @@ indicators:
     recommended_formula: >-
       응답을 긍정 방향으로 역코딩하고 조사 가중평균을 산출한다.
       소득 없음 제외 조건은 적용하지 않는다.
-    processed:
+    finance_team_value:
       id: '1R1kBfigPiNlE0VNMhx0TsYjGhIw20TNR'
       file_name: '2-2.3. 여가생활 만족도.xlsx'
     raw_sources:
@@ -284,7 +284,7 @@ indicators:
     official_formula: '분만실 보유 의료기관 수 ÷ 전체 주민등록인구 × 100,000'
     project_formula: >-
       연도별 분기 평균 분만실 병상 수 ÷ 해당 연도 전체 주민등록인구 × 100,000
-    processed:
+    finance_team_value:
       id: '1TCk8coWupr6mxC_LQ9R9mVvLfHfQ-9jW'
       file_name: '3-1.1. (대체)분만실 병상수 보급도.xlsx'
     raw_sources:
@@ -309,7 +309,7 @@ indicators:
     project_formula: >-
       연도별 분기 평균 소아청소년과 전문의 수 ÷ 해당 연도
       전체 주민등록인구 × 100,000
-    processed:
+    finance_team_value:
       id: '1Z8HogfGBOdJmDspxvpUso_5AnJD3buSs'
       file_name: '3-1.2. (대체)소아청소년과 전문인력 보급도.xlsx'
     raw_sources:
@@ -332,7 +332,7 @@ indicators:
     recommended_formula: >-
       동일 기준일의 산후조리원 수를 동일 기준일의 전체 주민등록인구로
       나눈다. 2023년은 하반기, 2024년과 2025년은 상반기 자료임을 표시한다.
-    processed:
+    finance_team_value:
       id: '1fWe2sKye50A3lka9_PjeS1D0O3Y7c5P4'
       file_name: '3-2.1. 산후조리원 보급도.xlsx'
     raw_sources:
@@ -366,7 +366,7 @@ indicators:
     recommended_formula: >-
       조리원별 14일 기준 최고 일반실 요금을 구한 뒤 시도별 산술평균을
       계산한다. 일반실 결측을 특실로 대체한 행은 별도 표시한다.
-    processed:
+    finance_team_value:
       id: '1VJ7JscWCrCwZIO2gziQwm-lWIrLWk0G_'
       file_name: '3-2.2. 산후조리원 이용 요금.xlsx'
     raw_sources:
@@ -396,7 +396,7 @@ indicators:
     recommended_formula: >-
       사고 발생건수와 주민등록인구의 연도를 일치시키고 사망자·부상자
       수를 발생건수와 혼용하지 않는다.
-    processed:
+    finance_team_value:
       id: '1KBgK4RbzsQzhD0e5Tidpt7iLLbQLaW7o'
       file_name: '3-3.1. 어린이 교통사고 발생률.xlsx'
     raw_sources:
@@ -422,7 +422,7 @@ indicators:
       사회조사 전반적인 사회 안전 5점 응답을 긍정 방향으로 역코딩한 가중평균
     recommended_formula: >-
       비조사연도는 결측 오류가 아니라 비조사연도로 구분한다.
-    processed:
+    finance_team_value:
       id: '1Ul-FPTjwAMlI1EtJJI5_loszJW7Uwavc'
       file_name: '3-3.2. 사회 안전에 대한 인식.xlsx'
     raw_sources:
@@ -443,7 +443,7 @@ indicators:
     recommended_formula: >-
       출생연도·시도별 공표값을 사용하고 분모의 부모 자격과
       고용보험 적용범위를 연도별로 확인한다.
-    processed:
+    finance_team_value:
       id: '1cSYE4FZBhD7msFI6SU1_choEN6H1HBBb'
       file_name: '4-1.2. 육아휴직 사용률.xlsx'
     raw_sources:
@@ -464,7 +464,7 @@ indicators:
     recommended_formula: >-
       기업만 사용할지 기업·기관을 모두 사용할지 확정한 뒤
       분자와 분모의 기관 범위를 동일하게 맞춘다.
-    processed:
+    finance_team_value:
       id: '1YR-4uXAprMXyJh7pmJ3pu_w2T7BInlcd'
       file_name: '4-1.3. 가족친화 인증기업 비율.xlsx'
     raw_sources:
@@ -506,7 +506,7 @@ indicators:
       긍정 방향으로 역코딩한 가중평균
     recommended_formula: >-
       잘 모르겠다 응답을 분모에서 제외한 뒤 긍정 방향 점수를 계산한다.
-    processed:
+    finance_team_value:
       id: '16dq8Y981OX4gfFckCJTe5FgPu2YFV14r'
       file_name: '4-2.1. 결혼에 대한 인식.xlsx'
     raw_sources:
@@ -527,7 +527,7 @@ indicators:
       긍정 방향으로 역코딩한 가중평균
     recommended_formula: >-
       실제 문항명을 결과에 병기하고 긍정 방향으로 역코딩한다.
-    processed:
+    finance_team_value:
       id: '1OkHBLnnJMDn-XxPwG09BYWHqUBL93IMX'
       file_name: '4-2.2. 출산에 대한 인식.xlsx'
     raw_sources:
@@ -547,7 +547,7 @@ indicators:
     recommended_formula: >-
       부부가 공평하게 분담해야 한다 응답자의 가중비율을 직접 사용한다.
       공식 재현값과 권고값을 별도 열로 보존한다.
-    processed:
+    finance_team_value:
       id: '1OTk2pZ2emnBVNqJdlm1DGj24-UG-te7n'
       file_name: '4-2.3. 가사분담에 대한 성평등 인식.xlsx'
     raw_sources:
