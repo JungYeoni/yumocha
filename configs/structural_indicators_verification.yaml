@@ -1,4 +1,4 @@
-manifest_version: 2
+manifest_version: 3
 issue: 38
 verified_date: '2026-07-24'
 
@@ -23,6 +23,14 @@ rules:
   fill_missing_values: false
   normalize_or_reverse_direction: false
   keep_official_and_recommended_results_separate: true
+  # 드라이브 "원자료" 폴더가 아예 없는 지표들. 계산 과정 없이 공표값을
+  # 그대로 쓰는 지표라(팀원 메모: "폴더 없는 세부지표는 원자료 자체가
+  # 곧 측정값이라 별도저장X"), 검증할 별도 원자료가 존재하지 않는다.
+  no_separate_raw_data_indicators:
+    - income_level
+    - private_education_cost
+    - cultural_facilities_supply
+    - urban_park_supply
 
 local:
   data_root: 'data/raw/'
