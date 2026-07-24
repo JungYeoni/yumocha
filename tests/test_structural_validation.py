@@ -90,6 +90,27 @@ def test_compare_region_year_matrices_detects_missing_region_instead_of_reportin
     assert result.max_abs_diff == 0.0
 
 
+def test_compare_region_year_matrices_treats_cell_level_nan_as_missing_combination():
+    # 행/열은 둘 다 있지만 서울의 2017년 값 자체가 NaN인 경우
+    left = pd.DataFrame({2016: [1.0, 2.0], 2017: [3.0, float("nan")]}, index=["전국", "서울"])
+    right = pd.DataFrame({2016: [1.0, 2.0], 2017: [3.0, 4.0]}, index=["전국", "서울"])
+
+    result = compare_region_year_matrices(
+        left,
+        right,
+        expected_regions=["전국", "서울"],
+        expected_years=[2016, 2017],
+        label="테스트",
+    )
+
+    assert bool(result) is False
+    assert len(result.missing_combinations) == 1
+    assert result.missing_combinations.iloc[0]["지역"] == "서울"
+    assert result.missing_combinations.iloc[0]["연도"] == 2017
+    assert not result.missing_combinations.iloc[0]["left_있음"]
+    assert result.missing_combinations.iloc[0]["right_있음"]
+
+
 def test_compare_region_year_matrices_reports_max_diff_location():
     left = pd.DataFrame({2016: [1.0, 2.0], 2017: [3.0, 100.0]}, index=["전국", "서울"])
     right = pd.DataFrame({2016: [1.0, 2.0], 2017: [3.0, 4.0]}, index=["전국", "서울"])

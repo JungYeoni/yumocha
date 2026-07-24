@@ -90,33 +90,40 @@ def compare_region_year_matrices(
     건너뛰어 "최대 오차 0.0"처럼 거짓으로 통과할 수 있다. 이를 막기 위해
     기대하는 지역·연도 조합이 두 행렬 모두에 실제로 존재하는지 먼저
     확인하고, 결측 조합·중복 인덱스·불일치 위치를 결과에 전부 남긴다.
+
+    지역·연도 열 자체는 있지만 그 칸의 값이 NaN인 "셀 단위 결측"도, 행/열
+    자체가 없는 경우와 같은 이유로 비교가 불가능하므로 missing_combinations에
+    함께 기록한다. 그렇지 않으면 결측조합수는 0인데 판정만 "확인 필요"로
+    나와서 요약만 보고는 원인을 알 수 없게 된다.
     """
     for name, frame in (("left", left), ("right", right)):
         if frame.index.duplicated().any():
             dupes = frame.index[frame.index.duplicated()].unique().tolist()
             raise ValueError(f"{label} - {name}: 지역 인덱스 중복 {dupes}")
 
+    left_aligned = left.reindex(index=expected_regions, columns=expected_years)
+    right_aligned = right.reindex(index=expected_regions, columns=expected_years)
+    diff = (left_aligned - right_aligned).abs()
+
     missing_rows = []
     for region in expected_regions:
         for year in expected_years:
             in_left = region in left.index and year in left.columns
             in_right = region in right.index and year in right.columns
-            if not (in_left and in_right):
+            left_has_value = in_left and pd.notna(left_aligned.loc[region, year])
+            right_has_value = in_right and pd.notna(right_aligned.loc[region, year])
+            if not (left_has_value and right_has_value):
                 missing_rows.append(
                     {
                         "지역": region,
                         "연도": year,
-                        "left_있음": in_left,
-                        "right_있음": in_right,
+                        "left_있음": left_has_value,
+                        "right_있음": right_has_value,
                     }
                 )
     missing_combinations = pd.DataFrame(
         missing_rows, columns=["지역", "연도", "left_있음", "right_있음"]
     )
-
-    left_aligned = left.reindex(index=expected_regions, columns=expected_years)
-    right_aligned = right.reindex(index=expected_regions, columns=expected_years)
-    diff = (left_aligned - right_aligned).abs()
 
     comparable = diff.notna()
     comparison_count = int(comparable.sum().sum())
