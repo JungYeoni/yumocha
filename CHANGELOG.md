@@ -38,6 +38,8 @@
 
 ### 문서
 
+- 주요내용 불릿 정규화 과거 연도 재적용 결과 기록 (#34) ([bfce3b1](https://github.com/JungYeoni/da-template/commit/bfce3b1d0afef89e1f492d3e87c8d807d684f710))
+- CHANGELOG 자동 업데이트 [skip ci] ([d17cb54](https://github.com/JungYeoni/da-template/commit/d17cb54f31e798f685abb484e1f9cfeac50a4e98))
 - 2020 노트북 제목 정보 정리 (#21) ([75e2472](https://github.com/JungYeoni/da-template/commit/75e24720880ced0905d4fef724e8cf996fe1d49b))
 - CHANGELOG 자동 업데이트 [skip ci] ([c7a5425](https://github.com/JungYeoni/da-template/commit/c7a5425ada7fe8fcae669e72f66dadfc69ff7f72))
 - 2019 정제 한계와 잠재 편향 보강 (#20) ([49d9d6c](https://github.com/JungYeoni/da-template/commit/49d9d6c52caae5ad167e87c2eac98f4fc438cfc4))
@@ -97,6 +99,10 @@
 
 ### 버그 수정
 
+- 불릿 재적용 데이터 무결성 보완 (#34) ([bf90e21](https://github.com/JungYeoni/da-template/commit/bf90e210abae4fac318c3edcb4fd4e3286484f89))
+- 코드래빗 리뷰 반영 - CSV 원문 보존 및 동기화 검증 보완 (#34) ([6fb1961](https://github.com/JungYeoni/da-template/commit/6fb1961e5ae99be31dddd66f97dc1de34c774269))
+- 불릿 정규화 재적용 경로 보완 (#34) ([b179d04](https://github.com/JungYeoni/da-template/commit/b179d04a953ff02a7736981bf062c30eb3bcd2c6))
+- LLM 정제 응답에서 불릿 재삽입 방지 (#34) ([dac4beb](https://github.com/JungYeoni/da-template/commit/dac4beb3a61b331d52082fac399986e4d9f9ea7b))
 - 2020 CodeRabbit 리뷰 반영 (#21) ([74066af](https://github.com/JungYeoni/da-template/commit/74066af051ae9272d2d15b20df2dd390de1757a4))
 - CodeRabbit 리뷰 반영 - 커널 재시작 (#18) ([bcbfa0c](https://github.com/JungYeoni/da-template/commit/bcbfa0c088ad2a6efa9d89d97ee4e0dae9eeba91))
 - LLM 체크포인트 원문 변경 감지 ([c74f787](https://github.com/JungYeoni/da-template/commit/c74f7873ae247d772c677f4b2f658e93c78b314a))
