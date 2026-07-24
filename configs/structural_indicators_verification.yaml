@@ -1,0 +1,556 @@
+manifest_version: 2
+issue: 38
+verified_date: '2026-07-24'
+
+scope:
+  official_indicators: 31
+  project_structural_indicators: 30
+  completed_indicators_to_validate: 21
+  note: >-
+    제주여성가족연구원 공식 31개 지표 중 저출생 대응 예산액을 별도
+    재정대응지수로 분리한 프로젝트 구조환경지표는 30개이며, 이번 검증
+    범위는 현재 측정값이 만들어진 21개다.
+
+rules:
+  source_priority:
+    - methodology_pdf
+    - original_raw_data
+    - processed_indicator_file
+    - merged_file
+    - reference_dataset
+  exact_file_name_only: true
+  allow_fuzzy_file_matching: false
+  fill_missing_values: false
+  normalize_or_reverse_direction: false
+  keep_official_and_recommended_results_separate: true
+
+local:
+  data_root: 'data/raw/'
+  exact_recursive_lookup: true
+
+drive:
+  raw_root:
+    id: '18GlazJSmirVHo7WTqztuILyJSM7w8mTx'
+    name: '2. 구조환경지수 원데이터'
+  institute_raw_root:
+    id: '1C9uZpij7DQWLHE2KTGj459JYN1kZvo1O'
+    name: '1. 제주여성가족연구원 지표별 원데이터'
+  team_raw_root:
+    id: '1lmvSJ4mN2KfeUxbIKEUNjtZ5UD623xx5'
+    name: '2. 유모차팀 자체 지표별 원데이터'
+  processed_root:
+    id: '1XOdHmBZMpymsfUxuFcGI9L51-2HVZrWC'
+    name: '3. 제주여성가족연구원 지표별 측정값(raw)'
+  merged:
+    id: '1lqyDcoux4iMyaOKrnX6AHoZB9nyuv1Fx'
+    file_name: '구조환경지표 측정값_합본_30개 중 21개.xlsx'
+  methodology:
+    id: '1y2hWFmiBwIGSJTUm4PVYTvpBkwqPtv1V'
+    file_name: '2025_제주여성가족연구원_제주지역 출산환경지수 개발 연구_측정방법 페이지 추출.pdf'
+  reference_dataset:
+    id: '1woqH2Mc0enCF8vtTwNTWcn0KmqvPO1lA'
+    file_name: '제주여성가족연구원_출생환경지수_데이터셋.xlsx'
+
+indicators:
+  - id: 'youth_employment_rate'
+    project_code: '1-1.1'
+    category: '경제·고용·주거'
+    subcategory: '고용여건'
+    name: '청년고용률'
+    status: 'official'
+    direction: 'positive'
+    calculation_type: 'ratio'
+    official_formula: '20–34세 청년 취업자 수 ÷ 20–34세 청년 인구 수 × 100'
+    recommended_formula: >-
+      20–34세 청년 취업자 수 ÷ 20–34세 청년 주민등록인구 × 100.
+      분자와 분모의 연도 기준을 통일한다.
+    processed:
+      id: '1w7Ip9clREMI3IHt_rS4TayHjrLRtbnzr'
+      file_name: '1-1.1. 청년고용률.xlsx'
+    raw_sources:
+      - role: 'numerator'
+        id: '1q5qfiM0oaddqUS36bu0-pFca4YH39Ymf'
+        file_name: '2016-2025_행정구역_시도__연령별_취업자_20260715184807.csv'
+      - role: 'denominator'
+        id: '1Rm42k1V1H-eSgTJ3mSKMZYHCFjhE-lFn'
+        file_name: '2016-2025_행정구역(시도)별_1세별_주민등록인구_20260715.csv'
+
+  - id: 'work_hours'
+    project_code: '4-1.1'
+    former_code: '1-1.3'
+    category: '사회·문화'
+    subcategory: '일·가정 양립 여건'
+    name: '근로시간'
+    status: 'official_reclassified'
+    direction: 'negative'
+    calculation_type: 'published_value'
+    official_formula: '사업체노동력조사의 시도별 상용총근로시간 공표값'
+    recommended_formula: >-
+      시도별 상용총근로시간 공표값을 그대로 사용하되 조사대상 사업체
+      범위가 바뀐 연도는 시계열 단절 여부를 표시한다.
+    processed:
+      id: '1OEWrLkpKwSlrZGhUNvoLv0mGNdbz-F7W'
+      file_name: '4-1.1. 근로시간.xlsx'
+    raw_sources:
+      - role: 'published_value_2016_2019'
+        id: '1zlh-yFwKvUyT3v10epmEbGUFN6P_JiGh'
+        file_name: '2016-2019_행정구역_시도___산업_규모별_임금_및_근로시간_상용근로자__상용근로자_1인이상_사업체__20260715183802.csv'
+      - role: 'published_value_2020_2025'
+        id: '1WP6AvTCp7HSbsCbSMsD4u9ACZIL0JM99'
+        file_name: '2020-2025_행정구역_시도___산업_규모별_임금_및_근로시간_상용근로자__상용근로자_1인이상_사업체__20260715184101.csv'
+
+  - id: 'income_satisfaction'
+    project_code: '1-3.1'
+    category: '경제·고용·주거'
+    subcategory: '경제적 여건'
+    name: '소득만족도'
+    status: 'official'
+    direction: 'positive'
+    calculation_type: 'weighted_likert'
+    official_formula: >-
+      사회조사 소득만족도 5점 응답을 긍정 방향으로 역코딩한 가중평균.
+      소득 없음 응답은 제외한다.
+    recommended_formula: >-
+      소득이 있는 유효응답자를 대상으로 척도를 긍정 방향으로 역코딩한
+      뒤 조사 가중평균을 산출한다.
+    processed:
+      id: '1IcROAgGrq5E6OPaaeqSDjrypiiKqoKkM'
+      file_name: '1-3.1. 소득만족도.xlsx'
+    raw_sources:
+      - role: 'response_distribution'
+        id: '1-rC7f0mxV7QZgoFxNMIzEQDTB_ya_aKb'
+        file_name: '2015,2017,2019,2021,2023,2025_소득_만족도__19세_이상_인구__20260715185726.csv'
+
+  - id: 'income_level'
+    project_code: '1-3.2'
+    category: '경제·고용·주거'
+    subcategory: '경제적 여건'
+    name: '소득 수준'
+    status: 'source_definition_review'
+    direction: 'positive'
+    calculation_type: 'published_value'
+    official_formula: '시도별 1인당 개인총처분가능소득 공표값'
+    recommended_formula: >-
+      현재 원자료의 1인당 가계총처분가능소득이 공식 지표의
+      1인당 개인총처분가능소득과 같은 계열인지 먼저 판정한다.
+    processed:
+      id: '1L1WUCzmKjuXt7T80zLb1dztOCE2_SAtu'
+      file_name: '1-3.2. 소득 수준.xlsx'
+    raw_sources:
+      - role: 'published_value'
+        id: '1givygFw_o5xPjIOkcisyKQb7m7yDw8w9'
+        file_name: '1인당_가계총처분가능소득_시도__20260721120851.csv'
+
+  - id: 'childcare_capacity_rate'
+    project_code: '2-1.1'
+    category: '가족·생활'
+    subcategory: '돌봄여건'
+    name: '보육시설 보급률'
+    status: 'official_corrected_raw'
+    direction: 'positive'
+    calculation_type: 'ratio'
+    official_formula: '보육시설 정원 ÷ 0–4세 주민등록인구 × 100'
+    recommended_formula: >-
+      시도별 어린이집 정원 ÷ 동일 기준일의 0–4세 주민등록인구 × 100.
+      시설 수는 분자로 사용하지 않는다.
+    processed:
+      id: '1y9bTz-RJPVGKTA5Krozk4cJf6IkoM73e'
+      file_name: '2-1.1. 보육시설 보급률.xlsx'
+    raw_sources:
+      - role: 'numerator_active'
+        id: '1ifo38jhxmWu-BZusDH4jTuoVdBbIVnG-'
+        file_name: '전국_어린이집_정현원_현황_20260724113247.csv.xlsx'
+      - role: 'denominator'
+        id: '1RbZwHksyXyWbkqC9F-GD3bQIEQnHEaNm'
+        file_name: '2016-2025_행정구역(시도)별_1세별_주민등록인구_20260715.csv.xlsx'
+      - role: 'numerator_excluded_facility_count'
+        id: '1_r9pyyP9Il2aJDahyUf8n9DGzpG_jVI0'
+        file_name: '2016-2025_어린이집_현황_시·도__20260715191601.csv'
+
+  - id: 'after_school_care_supply'
+    project_code: '2-1.2'
+    category: '가족·생활'
+    subcategory: '돌봄여건'
+    name: '방과후 돌봄시설 보급도'
+    status: 'official'
+    direction: 'positive'
+    calculation_type: 'ratio'
+    official_formula: >-
+      (다함께돌봄센터 수 + 지역아동센터 수) ÷ 6–12세 주민등록인구 × 1,000
+    recommended_formula: >-
+      두 시설 자료의 기준일과 휴업·폐업 처리 기준을 통일한 뒤
+      6–12세 주민등록인구로 나눈다.
+    processed:
+      id: '1sQv4D2wpbxeHV7J-pTNB1fHZo2XJs-Sz'
+      file_name: '2-1.2. 방과후 돌봄시설 보급도.xlsx'
+    raw_sources:
+      - role: 'numerator'
+        id: '1026rhcE0ZVAcOGfCGqqUgUg7pc6aMY7F'
+        file_name: '2016-2024_다함께돌봄센터 시설수 & 지역아동센터 시설수.xlsx'
+      - role: 'denominator'
+        id: '1GV3DsPsR2uS8OxZXHDxirNT6zYrkwD5Y'
+        file_name: '2016-2025_행정구역(시도)별_1세별_주민등록인구_20260715.csv'
+
+  - id: 'private_education_cost'
+    project_code: '2-1.3'
+    category: '가족·생활'
+    subcategory: '돌봄여건'
+    name: '사교육비 지출액'
+    status: 'official'
+    direction: 'negative'
+    calculation_type: 'published_value'
+    official_formula: '초·중·고 전체학생 1인당 월평균 사교육비 공표값'
+    recommended_formula: >-
+      시도별 전체학생 1인당 월평균 사교육비를 사용하고
+      사교육 참여학생 기준 값과 혼용하지 않는다.
+    processed:
+      id: '1JUGtXQCNStAQ0OH68KIsCRdl---Uefqi'
+      file_name: '2-1.3. 사교육비 지출액.xlsx'
+    raw_sources:
+      - role: 'published_value'
+        id: '17DMqjZ8UwRcWQ3lZHgKCsLuQWbO6XZ0Z'
+        file_name: '2016-2025_학교급_및_시도별__학생_1인당_월평균_사교육비_20260715191739.csv'
+
+  - id: 'cultural_facilities_supply'
+    project_code: '2-2.1'
+    category: '가족·생활'
+    subcategory: '여가 인프라'
+    name: '문화기반시설 보급도'
+    status: 'official'
+    direction: 'positive'
+    calculation_type: 'published_rate'
+    official_formula: '문화기반시설 수 ÷ 전체 주민등록인구 × 100,000'
+    recommended_formula: >-
+      공표된 인구 10만 명당 문화기반시설 수를 사용하고,
+      연도별 시설 분류가 바뀌었는지 확인한다.
+    processed:
+      id: '1bTfnWYNjdbduYUt0yjxO_Y1dFivvI4n1'
+      file_name: '2-2.1. 문화기반시설 보급도.xlsx'
+    raw_sources:
+      - role: 'published_rate'
+        id: '1rw7F3ZH43hWFmdLn4c6gkeQXfB3JRGGn'
+        file_name: '2016-2024_인구_십만명당_문화기반시설수_시도_시_군_구__20260715191848.csv'
+
+  - id: 'urban_park_supply'
+    project_code: '2-2.2'
+    category: '가족·생활'
+    subcategory: '여가 인프라'
+    name: '도시공원 보급도'
+    status: 'official'
+    direction: 'positive'
+    calculation_type: 'published_rate'
+    official_formula: '총 도시공원 조성면적(천㎡) ÷ 도시지역 인구 × 1,000'
+    recommended_formula: >-
+      국토교통부 도시계획현황 또는 같은 계열의 공표값을 사용하고
+      분모를 도시지역 인구로 고정한다.
+    processed:
+      id: '1ADFFfW-vdLqoasDzY00-Har-r-J15P37'
+      file_name: '2-2.2. 도시공원 보급도.xlsx'
+    raw_sources:
+      - role: 'published_rate'
+        id: '1H_jOg_9b5W0jN4JLGpwNwNLbaA0ujuIh'
+        file_name: '2016-2024_인구_천명당_도시공원조성면적_시도__20260715192056.csv'
+
+  - id: 'leisure_satisfaction'
+    project_code: '2-2.3'
+    category: '가족·생활'
+    subcategory: '여가 인프라'
+    name: '여가생활 만족도'
+    status: 'official'
+    direction: 'positive'
+    calculation_type: 'weighted_likert'
+    official_formula: >-
+      사회조사 여가생활 만족도 5점 응답을 긍정 방향으로 역코딩한 가중평균
+    recommended_formula: >-
+      응답을 긍정 방향으로 역코딩하고 조사 가중평균을 산출한다.
+      소득 없음 제외 조건은 적용하지 않는다.
+    processed:
+      id: '1R1kBfigPiNlE0VNMhx0TsYjGhIw20TNR'
+      file_name: '2-2.3. 여가생활 만족도.xlsx'
+    raw_sources:
+      - role: 'response_distribution'
+        id: '1G6AAuPFKpbCx68TRSwV9SHy5BeQwd4Xf'
+        file_name: '2015,2017,2019,2021,2023,2025_여가활용_만족도_시도__20260715192254.csv'
+
+  - id: 'delivery_bed_supply'
+    project_code: '3-1.1'
+    category: '보건·안전'
+    subcategory: '의료서비스 여건'
+    name: '(대체)분만실 병상수 보급도'
+    official_name: '분만 가능 산부인과 보급도'
+    status: 'project_substitute'
+    direction: 'positive'
+    calculation_type: 'ratio_quarterly_mean'
+    official_formula: '분만실 보유 의료기관 수 ÷ 전체 주민등록인구 × 100,000'
+    project_formula: >-
+      연도별 분기 평균 분만실 병상 수 ÷ 해당 연도 전체 주민등록인구 × 100,000
+    processed:
+      id: '1TCk8coWupr6mxC_LQ9R9mVvLfHfQ-9jW'
+      file_name: '3-1.1. (대체)분만실 병상수 보급도.xlsx'
+    raw_sources:
+      - role: 'substitute_numerator'
+        id: '1wC0RKhdnC5PGDDHsWn1ooelEzG7lhOUn'
+        file_name: '2018-2025_시군구별_특수진료실_현황_20260716080246.csv'
+      - role: 'denominator'
+        id: '1gV1hz4XHcw2R1l2bRLf6StDhBaH2wF_S'
+        file_name: '2016-2025_행정구역(시도)별_1세별_주민등록인구_20260715.csv'
+
+  - id: 'pediatric_specialist_supply'
+    project_code: '3-1.2'
+    category: '보건·안전'
+    subcategory: '의료서비스 여건'
+    name: '(대체)소아청소년과 전문인력 보급도'
+    official_name: '소아청소년과 보급도'
+    status: 'project_substitute'
+    direction: 'positive'
+    calculation_type: 'ratio_quarterly_mean'
+    official_formula: >-
+      소아청소년과 진료과목 등록 의료기관 수 ÷ 전체 주민등록인구 × 100,000
+    project_formula: >-
+      연도별 분기 평균 소아청소년과 전문의 수 ÷ 해당 연도
+      전체 주민등록인구 × 100,000
+    processed:
+      id: '1Z8HogfGBOdJmDspxvpUso_5AnJD3buSs'
+      file_name: '3-1.2. (대체)소아청소년과 전문인력 보급도.xlsx'
+    raw_sources:
+      - role: 'substitute_numerator'
+        id: '1agv6H5arQEQ4DW0efQYUiK-wec7prSrm'
+        file_name: '2016-2025_시군구별_전문과목별_전문의_인력현황_20260716081608.csv'
+      - role: 'denominator'
+        id: '1Pn4K5WN_9LuLNNzbs7_8Tx69ReQAZxZ8'
+        file_name: '2016-2025_행정구역(시도)별_1세별_주민등록인구_20260715.csv'
+
+  - id: 'postpartum_center_supply'
+    project_code: '3-2.1'
+    category: '보건·안전'
+    subcategory: '산후조리 여건'
+    name: '산후조리원 보급도'
+    status: 'official_limited_years'
+    direction: 'positive'
+    calculation_type: 'ratio_snapshot'
+    official_formula: '산후조리원 수 ÷ 전체 주민등록인구 × 100,000'
+    recommended_formula: >-
+      동일 기준일의 산후조리원 수를 동일 기준일의 전체 주민등록인구로
+      나눈다. 2023년은 하반기, 2024년과 2025년은 상반기 자료임을 표시한다.
+    processed:
+      id: '1fWe2sKye50A3lka9_PjeS1D0O3Y7c5P4'
+      file_name: '3-2.1. 산후조리원 보급도.xlsx'
+    raw_sources:
+      - role: 'snapshot_2023'
+        id: '1IAXMeVIl20CqNTb_oJ8Faiil1jqeqRCV'
+        file_name: '2023년_하반기_산후조리원_현황.xlsx'
+      - role: 'snapshot_2024'
+        id: '1GhL6HCanuVGttQ0LVN7M7uOwvzLdf20n'
+        file_name: '2024년 상반기 산후조리원 현황(홈페이지용).xlsx'
+      - role: 'snapshot_2025'
+        id: '1DXes5EqSoUPM9L2SLhORw9qQq3fr-7I4'
+        file_name: '2025년+상반기+산후조리원+현황(홈페이지용).xlsx'
+      - role: 'denominator'
+        id: '1IAOh2jh0nYMM584rGOubSo4achCHZ4oK'
+        file_name: '2016-2025_행정구역(시도)별_1세별_주민등록인구_20260715.csv'
+      - role: 'team_intermediate'
+        id: '1ybbN5CrDYEqA0pBb3sh2brFF3tw_PpWT'
+        file_name: '2023-2025_산후조리원 현황(통합)_최연호.xlsx'
+
+  - id: 'postpartum_center_fee'
+    project_code: '3-2.2'
+    category: '보건·안전'
+    subcategory: '산후조리 여건'
+    name: '산후조리원 이용 요금'
+    status: 'official_limited_years'
+    direction: 'negative'
+    calculation_type: 'regional_mean_with_fallback'
+    official_formula: >-
+      지자체별 조리원의 14일 기준 최고 일반실 요금 평균.
+      일반실이 없으면 특실 요금을 적용한다.
+    recommended_formula: >-
+      조리원별 14일 기준 최고 일반실 요금을 구한 뒤 시도별 산술평균을
+      계산한다. 일반실 결측을 특실로 대체한 행은 별도 표시한다.
+    processed:
+      id: '1VJ7JscWCrCwZIO2gziQwm-lWIrLWk0G_'
+      file_name: '3-2.2. 산후조리원 이용 요금.xlsx'
+    raw_sources:
+      - role: 'snapshot_2023'
+        id: '1IAXMeVIl20CqNTb_oJ8Faiil1jqeqRCV'
+        file_name: '2023년_하반기_산후조리원_현황.xlsx'
+      - role: 'snapshot_2024'
+        id: '1GhL6HCanuVGttQ0LVN7M7uOwvzLdf20n'
+        file_name: '2024년 상반기 산후조리원 현황(홈페이지용).xlsx'
+      - role: 'snapshot_2025'
+        id: '1DXes5EqSoUPM9L2SLhORw9qQq3fr-7I4'
+        file_name: '2025년+상반기+산후조리원+현황(홈페이지용).xlsx'
+      - role: 'team_intermediate'
+        id: '1ybbN5CrDYEqA0pBb3sh2brFF3tw_PpWT'
+        file_name: '2023-2025_산후조리원 현황(통합)_최연호.xlsx'
+
+  - id: 'child_traffic_accident_rate'
+    project_code: '3-3.1'
+    category: '보건·안전'
+    subcategory: '아동안전 수준'
+    name: '어린이 교통사고 발생률'
+    status: 'official'
+    direction: 'negative'
+    calculation_type: 'ratio'
+    official_formula: >-
+      12세 이하 어린이 교통사고 발생건수 ÷ 12세 이하 주민등록인구 × 100,000
+    recommended_formula: >-
+      사고 발생건수와 주민등록인구의 연도를 일치시키고 사망자·부상자
+      수를 발생건수와 혼용하지 않는다.
+    processed:
+      id: '1KBgK4RbzsQzhD0e5Tidpt7iLLbQLaW7o'
+      file_name: '3-3.1. 어린이 교통사고 발생률.xlsx'
+    raw_sources:
+      - role: 'numerator_2016_2020'
+        id: '1CtY3NQN_ThgnYJmhTyfLrqdNOrLyf7Oq'
+        file_name: '2016-2020_어린이(만13세미만)_교통사고통계_20260716.xlsx'
+      - role: 'numerator_2021_2025'
+        id: '1IXotZZ6buRjaDDegrKVEMGNHmFQMhY9v'
+        file_name: '2021-2025_어린이(만13세미만)_교통사고통계_20260716.xlsx'
+      - role: 'denominator'
+        id: '15dRoMKcHlg3nRMPJbyPAexgdEd5-_-tc'
+        file_name: '2016-2025_행정구역(시도)별_1세별_주민등록인구_20260715.csv'
+
+  - id: 'social_safety_perception'
+    project_code: '3-3.2'
+    category: '보건·안전'
+    subcategory: '아동안전 수준'
+    name: '사회 안전에 대한 인식'
+    status: 'official'
+    direction: 'positive'
+    calculation_type: 'weighted_likert'
+    official_formula: >-
+      사회조사 전반적인 사회 안전 5점 응답을 긍정 방향으로 역코딩한 가중평균
+    recommended_formula: >-
+      비조사연도는 결측 오류가 아니라 비조사연도로 구분한다.
+    processed:
+      id: '1Ul-FPTjwAMlI1EtJJI5_loszJW7Uwavc'
+      file_name: '3-3.2. 사회 안전에 대한 인식.xlsx'
+    raw_sources:
+      - role: 'response_distribution'
+        id: '1Joa_HyHosUwrcmzfNH9dY6gTM-JeY8Tb'
+        file_name: '2016,2018,2020,2022,2024_사회안전에_대한_인식_시도__20260715193059.csv'
+
+  - id: 'parental_leave_usage'
+    project_code: '4-1.2'
+    former_code: '4-1.1'
+    category: '사회·문화'
+    subcategory: '일·가정 양립 여건'
+    name: '육아휴직 사용률'
+    status: 'official_reclassified'
+    direction: 'positive'
+    calculation_type: 'published_value'
+    official_formula: '육아휴직통계의 출생아 부모 육아휴직 사용률 공표값'
+    recommended_formula: >-
+      출생연도·시도별 공표값을 사용하고 분모의 부모 자격과
+      고용보험 적용범위를 연도별로 확인한다.
+    processed:
+      id: '1cSYE4FZBhD7msFI6SU1_choEN6H1HBBb'
+      file_name: '4-1.2. 육아휴직 사용률.xlsx'
+    raw_sources:
+      - role: 'published_value'
+        id: '1TTf7LzuhqJaN_HbGAq6NhTV3OQn2zxLT'
+        file_name: '2016-2024_시도별_출생아_부모의_육아휴직_사용률_20260715193411.csv'
+
+  - id: 'family_friendly_certification_rate'
+    project_code: '4-1.3'
+    former_code: '4-1.2'
+    category: '사회·문화'
+    subcategory: '일·가정 양립 여건'
+    name: '가족친화 인증기업 비율'
+    status: 'official_reclassified_scope_review'
+    direction: 'positive'
+    calculation_type: 'ratio'
+    official_formula: '가족친화인증기업·기관 수 ÷ 전체 사업체 수 × 100'
+    recommended_formula: >-
+      기업만 사용할지 기업·기관을 모두 사용할지 확정한 뒤
+      분자와 분모의 기관 범위를 동일하게 맞춘다.
+    processed:
+      id: '1YR-4uXAprMXyJh7pmJ3pu_w2T7BInlcd'
+      file_name: '4-1.3. 가족친화 인증기업 비율.xlsx'
+    raw_sources:
+      - role: 'denominator_2016'
+        id: '1dMyVvKQMo1T_lYceC48OsaM6SJCLprsC'
+        file_name: '2016_시도별__산업별__규모별__사업체수_및_종사자수_성별__20260715194020.csv'
+      - role: 'denominator_2017_2023'
+        id: '1IuQuCJioBhqzFJ3n_HUej1mNzLPGYwls'
+        file_name: '2017-2023_시도별__산업별__규모별__사업체수_및_종사자수_성별__20260715194147.csv'
+      - role: 'denominator_2024'
+        id: '16ft1CqCCDM5XfoK1DBZN4QKaiZhm8fz1'
+        file_name: '2024_시도별__산업별__규모별__사업체수_및_종사자수_성별__20260715194241.csv'
+      - role: 'numerator_2018'
+        id: '1F-CSsJ4NEurkq1hbgM7RBg2UZftJCwc9'
+        file_name: '가족친화인증기업현황_20181231.csv'
+      - role: 'numerator_2022'
+        id: '1jaQeL5eMjvr8XOd-_XOhz8DafvAZHAEG'
+        file_name: '가족친화인증기업현황_20221231.csv'
+      - role: 'numerator_2023'
+        id: '1Dn-Gaay423ffSh73e-evLKQCmPgXLic7'
+        file_name: '가족친화인증기업현황_20231231.csv'
+      - role: 'numerator_2024'
+        id: '1xRQQoql4Cj9hRps8xcnWkjFKaT9YkxYk'
+        file_name: '가족친화인증기업현황_20241231.csv'
+      - role: 'numerator_2025'
+        id: '1NuSkYv79o1dt_gETG5SGIMgAvy57K1Am'
+        file_name: '가족친화인증기업현황_20251201.csv'
+
+  - id: 'marriage_perception'
+    project_code: '4-2.1'
+    category: '사회·문화'
+    subcategory: '사회적 가치관'
+    name: '결혼에 대한 인식'
+    status: 'official'
+    direction: 'positive'
+    calculation_type: 'weighted_likert_excluding_unknown'
+    official_formula: >-
+      사회조사 결혼에 대한 인식 5점 응답에서 잘 모르겠다를 제외하고
+      긍정 방향으로 역코딩한 가중평균
+    recommended_formula: >-
+      잘 모르겠다 응답을 분모에서 제외한 뒤 긍정 방향 점수를 계산한다.
+    processed:
+      id: '16dq8Y981OX4gfFckCJTe5FgPu2YFV14r'
+      file_name: '4-2.1. 결혼에 대한 인식.xlsx'
+    raw_sources:
+      - role: 'response_distribution'
+        id: '106qkFUshlb0NdQSxNCKJTIDoqL_icteV'
+        file_name: '2016,2018,2020,2022,2024_결혼에_대한_견해_13세_이상_인구__20260715194527.xlsx'
+
+  - id: 'childbirth_perception'
+    project_code: '4-2.2'
+    category: '사회·문화'
+    subcategory: '사회적 가치관'
+    name: '출산에 대한 인식'
+    status: 'official'
+    direction: 'positive'
+    calculation_type: 'weighted_likert'
+    official_formula: >-
+      사회조사 결혼하면 자녀를 가져야 한다 문항의 4점 응답을
+      긍정 방향으로 역코딩한 가중평균
+    recommended_formula: >-
+      실제 문항명을 결과에 병기하고 긍정 방향으로 역코딩한다.
+    processed:
+      id: '1OkHBLnnJMDn-XxPwG09BYWHqUBL93IMX'
+      file_name: '4-2.2. 출산에 대한 인식.xlsx'
+    raw_sources:
+      - role: 'response_distribution'
+        id: '14V-O1No1-p4-BDejnYCx7O308brzo2hS'
+        file_name: '2018,2020,2022,2024_결혼문화에_대한_태도__결혼하면_자녀를_가져야_한다__13세_이상_인구__20260715194802.csv'
+
+  - id: 'housework_gender_equality'
+    project_code: '4-2.3'
+    category: '사회·문화'
+    subcategory: '사회적 가치관'
+    name: '가사분담에 대한 성평등 인식'
+    status: 'official_and_recommended_parallel'
+    direction: 'center_or_positive'
+    calculation_type: 'dual_method'
+    official_formula: '1 − |지역별 평균응답값 − 3| ÷ 2'
+    recommended_formula: >-
+      부부가 공평하게 분담해야 한다 응답자의 가중비율을 직접 사용한다.
+      공식 재현값과 권고값을 별도 열로 보존한다.
+    processed:
+      id: '1OTk2pZ2emnBVNqJdlm1DGj24-UG-te7n'
+      file_name: '4-2.3. 가사분담에 대한 성평등 인식.xlsx'
+    raw_sources:
+      - role: 'response_distribution'
+        id: '1JeHiUpiZQHy_T3Qjb5y89yRIxCRtLT_g'
+        file_name: '2016,2018,2020,2022,2024_가사_분담에_대한_견해_13세_이상_인구__20260715194953.csv'
