@@ -16,6 +16,7 @@ from typing import Any
 
 import pandas as pd
 
+from src.features.text_match import dedup_label
 from src.features.text_patterns import PAREN_LABEL_PATTERN, PUA_PATTERN
 
 LOGGER = logging.getLogger(__name__)
@@ -224,6 +225,8 @@ def refine_sentence(
             last_error_type = "InvalidResponse"
             continue
 
+        result = dedup_label(result)
+
         last_violations = validator(original, result) if validator else ()
         if not last_violations:
             return RefinementResult(result, "성공", attempt, "", ())
@@ -293,6 +296,7 @@ def run_checkpointed_refinement(
         violations_col,
     ]
     rerun_rows = 0
+    checkpoint_normalized = False
 
     if path.exists():
         checkpoint_df = pd.read_csv(path, encoding="utf-8-sig", index_col=0)
@@ -333,6 +337,13 @@ def run_checkpointed_refinement(
         rerun_rows = len(dropped_index)
         checkpoint_df = checkpoint_df.drop(index=dropped_index, errors="ignore")
         checkpoint_df = checkpoint_df.reindex(columns=result_cols)
+
+        original_cleaned = checkpoint_df[cleaned_col].astype("string")
+        normalized_cleaned = checkpoint_df[cleaned_col].apply(dedup_label).astype("string")
+        checkpoint_normalized = not original_cleaned.fillna("<NA>").equals(
+            normalized_cleaned.fillna("<NA>")
+        )
+        checkpoint_df[cleaned_col] = normalized_cleaned
     else:
         checkpoint_df = pd.DataFrame(columns=result_cols)
 
@@ -393,6 +404,9 @@ def run_checkpointed_refinement(
         if start == 0 and len(called_rows) and called_rows[status_col].eq("실패").all():
             error_counts = called_rows[error_col].value_counts().to_dict()
             raise RuntimeError(f"초기 LLM 청크 전체 실패: {error_counts}")
+
+    if checkpoint_normalized and not targets:
+        checkpoint_df.to_csv(path, encoding="utf-8-sig")
 
     missing_index = df.index.difference(checkpoint_df.index, sort=False)
     if len(missing_index):

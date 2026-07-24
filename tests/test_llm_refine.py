@@ -154,6 +154,62 @@ def test_refine_sentence_retries_preservation_violation_and_holds_original():
     assert call_once.call_count == 2
 
 
+def test_refine_sentence_strips_bullets_inserted_by_llm_response():
+    call_once = Mock(return_value="체외수정 및 인공수정 시술비지원 • 체외수정6회, 인공수정3회")
+
+    result = refine_sentence(
+        "사업 A",
+        "체외수정 및 인공수정 시술비지원 체외수정6회, 인공수정3회",
+        call_once=call_once,
+    )
+
+    assert result.cleaned_text == "체외수정 및 인공수정 시술비지원 체외수정6회, 인공수정3회"
+    assert result.status == "성공"
+    assert call_once.call_count == 1
+
+
+def test_run_checkpointed_refinement_normalizes_reused_result_without_llm_call(tmp_path):
+    source = pd.DataFrame(
+        {
+            "지역": ["서울"],
+            "원본행": [10],
+            "세부사업명": ["사업 A"],
+            "주요내용": ["상담 및 교육"],
+        },
+        index=[100],
+    )
+    checkpoint_path = tmp_path / "checkpoint.csv"
+    first_call = Mock(return_value="상담 • 교육")
+
+    run_checkpointed_refinement(
+        source,
+        checkpoint_path=checkpoint_path,
+        call_once=first_call,
+        max_workers=1,
+        chunk_size=1,
+    )
+    checkpoint = pd.read_csv(checkpoint_path, encoding="utf-8-sig", index_col=0)
+    checkpoint.loc[100, "주요내용_정제"] = "상담 • 교육"
+    checkpoint.to_csv(checkpoint_path, encoding="utf-8-sig")
+
+    reused_call = Mock()
+    reused, summary = run_checkpointed_refinement(
+        source,
+        checkpoint_path=checkpoint_path,
+        call_once=reused_call,
+        max_workers=1,
+        chunk_size=1,
+    )
+
+    assert reused.loc[100, "주요내용_정제"] == "상담 교육"
+    assert summary.reused_rows == 1
+    assert summary.new_called_rows == 0
+    reused_call.assert_not_called()
+
+    saved = pd.read_csv(checkpoint_path, encoding="utf-8-sig", index_col=0)
+    assert saved.loc[100, "주요내용_정제"] == "상담 교육"
+
+
 def test_run_checkpointed_refinement_reuses_completed_and_reruns_marked_rows(tmp_path):
     source = pd.DataFrame(
         {
