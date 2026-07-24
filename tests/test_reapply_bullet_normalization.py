@@ -4,6 +4,7 @@ import unicodedata
 import pandas as pd
 import pytest
 
+import scripts.reapply_bullet_normalization as bullet_script
 from scripts.reapply_bullet_normalization import reapply_bullet_normalization
 
 
@@ -63,8 +64,13 @@ def test_reapply_bullet_normalization_preserves_na_like_text(tmp_path):
     normalized = pd.read_csv(
         wide_path, encoding="utf-8-sig", dtype=str, keep_default_na=False, na_filter=False
     )
+    normalized_long = pd.read_csv(
+        long_path, encoding="utf-8-sig", dtype=str, keep_default_na=False, na_filter=False
+    )
     assert normalized.loc[0, "세부사업명"] == "NA"
     assert normalized.loc[0, "주요내용_정제"] == "NULL"
+    assert normalized_long["세부사업명"].tolist() == ["NA", "NA"]
+    assert normalized_long["주요내용_정제"].tolist() == ["NULL", "NULL"]
 
 
 def test_reapply_bullet_normalization_fails_when_sync_column_missing(tmp_path):
@@ -82,3 +88,44 @@ def test_reapply_bullet_normalization_fails_when_sync_column_missing(tmp_path):
 
     with pytest.raises(ValueError, match="동기화 검증에 필요한 컬럼이 없습니다"):
         reapply_bullet_normalization(tmp_path, years=(2022,))
+
+
+def test_reapply_bullet_normalization_rolls_back_wide_when_long_replace_fails(
+    tmp_path,
+    monkeypatch,
+):
+    region_dir = tmp_path / "서울"
+    wide_path = region_dir / "2022_서울_세부사업_정제.csv"
+    long_path = region_dir / "2022_서울_세부사업_정제_long.csv"
+    row = {
+        "원본행": 10,
+        "세부사업명": "사업 A",
+        "주요내용": "시민 • 상담 3회",
+        "주요내용_정제": "시민 • 상담 3회",
+    }
+    _write_csv(wide_path, [row])
+    _write_csv(long_path, [row, row])
+
+    original_replace = bullet_script.os.replace
+    replace_count = 0
+
+    def fail_second_replace(source, destination):
+        nonlocal replace_count
+        replace_count += 1
+        if replace_count == 2:
+            raise OSError("long 교체 실패")
+        original_replace(source, destination)
+
+    monkeypatch.setattr(bullet_script.os, "replace", fail_second_replace)
+
+    with pytest.raises(OSError, match="long 교체 실패"):
+        reapply_bullet_normalization(tmp_path, years=(2022,), write=True)
+
+    restored_wide = pd.read_csv(
+        wide_path, encoding="utf-8-sig", dtype=str, keep_default_na=False, na_filter=False
+    )
+    untouched_long = pd.read_csv(
+        long_path, encoding="utf-8-sig", dtype=str, keep_default_na=False, na_filter=False
+    )
+    assert "•" in restored_wide.loc[0, "주요내용"]
+    assert "•" in untouched_long.loc[0, "주요내용"]
