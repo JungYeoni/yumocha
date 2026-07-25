@@ -1,16 +1,31 @@
 """구조환경지표 검증 공통 유틸(src.evaluation.structural_validation) 단위 테스트."""
 
+from pathlib import Path
+
 import pandas as pd
 import pytest
 
 from src.evaluation.structural_validation import (
     compare_region_year_matrices,
+    load_region_mapping,
     require_columns,
     require_sheets,
     to_numeric_strict,
     to_verification_record,
     weighted_response_mean,
 )
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_load_region_mapping_includes_전국_and_legacy_aliases():
+    region_order, region_map = load_region_mapping(REPO_ROOT)
+
+    assert region_order[0] == "전국"
+    assert len(region_order) == 18  # 전국 + 17개 시도
+    assert region_map["강원도"] == "강원"  # 옛 행정구역명
+    assert region_map["전체"] == "전국"  # 전국 이명
+    assert region_map["서울특별시"] == "서울"  # 지역명_전체 -> 지역
 
 
 def test_require_columns_passes_when_all_present():
@@ -208,3 +223,10 @@ def test_weighted_response_mean_raises_on_missing_region():
         weighted_response_mean(
             df, scores={"만족": 1, "불만족": 0}, expected_regions=["전국", "서울"]
         )
+
+
+def test_weighted_response_mean_raises_on_duplicate_region_index():
+    # 사회조사류 시트가 원데이터/5~1점곱/최종값 블록을 이어붙여 지역명이 반복되는 경우
+    df = pd.DataFrame({"만족": [1.0, 2.0], "불만족": [1.0, 1.0]}, index=["전국", "전국"])
+    with pytest.raises(ValueError, match="중복"):
+        weighted_response_mean(df, scores={"만족": 1, "불만족": 0}, expected_regions=["전국"])

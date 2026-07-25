@@ -11,8 +11,37 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import pandas as pd
+
+# 룩업 파일은 각 지역의 "현재" 공식 전체명만 담고 있어, 일부 원자료가 쓰는 옛
+# 행정구역명(강원도 등)과 "전국"의 여러 표기(전체/계)는 별도로 추가한다.
+LEGACY_REGION_NAMES = {
+    "강원도": "강원",
+    "전라북도": "전북",
+    "제주도": "제주",
+}
+NATIONWIDE_ALIASES = {"전체": "전국", "계": "전국"}
+
+
+def load_region_mapping(repo_root: Path) -> tuple[list[str], dict[str, str]]:
+    """`data/lookup/시도_지역코드_매핑.csv`를 단일 소스로 지역 순서·매핑을 만든다.
+
+    구조환경지표 검증 노트북 여러 개에서 동일하게 쓰던 지역명 매핑 로직을
+    한 곳으로 모은 것으로, 동작은 그대로 유지한다.
+    """
+    lookup_path = repo_root / "data" / "lookup" / "시도_지역코드_매핑.csv"
+    region_lookup = pd.read_csv(lookup_path)
+
+    region_order = ["전국", *region_lookup["지역"].tolist()]
+    region_map = (
+        {r: r for r in region_order}
+        | dict(zip(region_lookup["지역명_전체"], region_lookup["지역"]))
+        | LEGACY_REGION_NAMES
+        | NATIONWIDE_ALIASES
+    )
+    return region_order, region_map
 
 
 def require_columns(df: pd.DataFrame, required: Iterable[str], *, source_name: str) -> None:
@@ -201,6 +230,10 @@ def weighted_response_mean(
     """
     require_columns(df, scores.keys(), source_name="weighted_response_mean 입력")
 
+    if df.index.duplicated().any():
+        dupes = df.index[df.index.duplicated()].unique().tolist()
+        raise ValueError(f"weighted_response_mean: 지역 인덱스 중복 {dupes}")
+
     missing_regions = sorted(set(expected_regions) - set(df.index))
     if missing_regions:
         raise ValueError(f"weighted_response_mean: 지역 누락 {missing_regions}")
@@ -214,6 +247,7 @@ def weighted_response_mean(
 __all__ = [
     "ComparisonResult",
     "compare_region_year_matrices",
+    "load_region_mapping",
     "require_columns",
     "require_sheets",
     "to_numeric_strict",
