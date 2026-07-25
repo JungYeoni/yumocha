@@ -14,8 +14,14 @@
 
 - 20260712_EDA_2024_서울_시도분리정제 (#3) ([66b5ecc](https://github.com/JungYeoni/da-template/commit/66b5ecc05727db7c94a6e4df6456700df6472531))
 
+### refacotr
+
+- Config 파일명 변경 (#38) ([392d835](https://github.com/JungYeoni/da-template/commit/392d835af07a5cb6d686c912d88f6e4b929debe9))
+
 ### 기타
 
+- Interim 출력 경로 정리 및 지표체계·방향성 확정 반영 (#38) ([a77981e](https://github.com/JungYeoni/da-template/commit/a77981eb5b1a1bff2efc0288fc5ae462b74dfd50))
+- 노트북 커널스펙을 프로젝트 전용 yumocha 커널로 통일 (#38) ([7e8cc43](https://github.com/JungYeoni/da-template/commit/7e8cc43708fd853b5d9f12a77938ba20ff640497))
 - 노트북 난수 시드 고정 (#17) ([aa2a674](https://github.com/JungYeoni/da-template/commit/aa2a674405caba7f89663d7ab14c50293ab1a1ac))
 - Openai 추가 (#5) ([44ef941](https://github.com/JungYeoni/da-template/commit/44ef941d1c66eca3c36d171f49e64fe27265b7d3))
 - Upstage Solara API 설정 파일 (#5) ([47de032](https://github.com/JungYeoni/da-template/commit/47de032f07af3c550f56ead7a2edc7d82eabfa58))
@@ -27,6 +33,10 @@
 
 ### 리팩터링
 
+- 노트북 비교 셀 공통함수 전환, 셀 단위 결측 집계 보완 (#38) ([7b0d3f2](https://github.com/JungYeoni/da-template/commit/7b0d3f2a5ba1e9e06efe54fcd12c8361c847ebf2))
+- 11개 지표 검증 코드 노트북화 및 지역명 매핑 정리 (#38) ([d14d413](https://github.com/JungYeoni/da-template/commit/d14d41346be5e05634e22864eeb36807220aa3bb))
+- Processed 필드명을 finance_team_value로 변경 (#38) ([b1f4852](https://github.com/JungYeoni/da-template/commit/b1f48524cf0b786154c4f5283b0f09e380adc80f))
+- 참조 수정 및 임포트셀 통합 (#38) ([18982f4](https://github.com/JungYeoni/da-template/commit/18982f4d4445067178d7f82acc883fdfcabecf05))
 - Address pipeline utility review feedback (#13) ([9919759](https://github.com/JungYeoni/da-template/commit/99197590efcfd949694166b0b2827f6736b9e12f))
 - 연도별 정제 공통 유틸 모듈화 (#13) ([dbeedae](https://github.com/JungYeoni/da-template/commit/dbeedae47f7037b2aa898e773de63bf1e1ef2669))
 - 2021 정제 파이프라인 연도 설정 보완 (#9) ([8f82a9f](https://github.com/JungYeoni/da-template/commit/8f82a9fef7c84157e19c36bbafb32b4bff11a7c6))
@@ -38,7 +48,18 @@
 
 ### 문서
 
+- A그룹 보간 타당성 시각화 해석과 지표별 고려사항 리포트 반영 (#38) ([f2a1514](https://github.com/JungYeoni/da-template/commit/f2a15148ff3f023d224424cb8ef29cf5b3a9add7))
+- 결측치 58건을 원인별 A/B/C 3그룹으로 재분류해 리포트 반영 (#38) ([438b4e1](https://github.com/JungYeoni/da-template/commit/438b4e109227feb24e9294ece435d85de8561c06))
+- 공표값 5개 지표 검증 결과와 원기획서 근거 인용 리포트 반영 (#38) ([2f9b97e](https://github.com/JungYeoni/da-template/commit/2f9b97e5863daacb4c54fe127021b001de06aa8f))
+- 여가생활·결혼·출산·가사분담 인식 검증 결과 리포트 반영 (#38) ([9241af1](https://github.com/JungYeoni/da-template/commit/9241af1d87e95849dd5f67d40f17df6fa7f2f18e))
+- 노트북 상단 개요 셀을 프로젝트 표준 형식으로 정리 (#38) ([1b9f07e](https://github.com/JungYeoni/da-template/commit/1b9f07e8fc9d50c207a1447fa28e77991195b0d3))
+- 어린이 교통사고·사회안전인식·가족친화인증기업 검증 결과 추가 (#38) ([8e43c45](https://github.com/JungYeoni/da-template/commit/8e43c45f5b746bd69bc42baa24055b74542e4c1c))
+- 산후조리원 보급도·이용요금 검증 결과 추가 (#38) ([5fe9bdf](https://github.com/JungYeoni/da-template/commit/5fe9bdfc144dc2472bd4e4dee97701d8f09fc7c6))
+- 방과후 돌봄시설·분만실·소아청소년과 검증 결과 추가 (#38) ([b375e8d](https://github.com/JungYeoni/da-template/commit/b375e8dd9da8b8cb61b28689fe200e04dee887be))
+- 구조환경지표 21개 검증 진행상황 기록 (#38) ([6a69115](https://github.com/JungYeoni/da-template/commit/6a6911504b8809b4eb0ed0fb177e16ed893d8ce5))
+- CHANGELOG 자동 업데이트 [skip ci] ([8977d50](https://github.com/JungYeoni/da-template/commit/8977d504322a33a2283e162560fe66a83ed656b0))
 - 주요내용 불릿 정규화 과거 연도 재적용 결과 기록 (#34) ([bfce3b1](https://github.com/JungYeoni/da-template/commit/bfce3b1d0afef89e1f492d3e87c8d807d684f710))
+- 제주지역 출산환경지수 세부지표 산식 정리 추가 ([29993e8](https://github.com/JungYeoni/da-template/commit/29993e8506dbe5f591f5cb813bb0acedb7fedc69))
 - CHANGELOG 자동 업데이트 [skip ci] ([d17cb54](https://github.com/JungYeoni/da-template/commit/d17cb54f31e798f685abb484e1f9cfeac50a4e98))
 - 2020 노트북 제목 정보 정리 (#21) ([75e2472](https://github.com/JungYeoni/da-template/commit/75e24720880ced0905d4fef724e8cf996fe1d49b))
 - CHANGELOG 자동 업데이트 [skip ci] ([c7a5425](https://github.com/JungYeoni/da-template/commit/c7a5425ada7fe8fcae669e72f66dadfc69ff7f72))
@@ -99,6 +120,10 @@
 
 ### 버그 수정
 
+- 결측 조합만 있는 지표도 merge 검증 상세 표시 (#38) ([3542e4b](https://github.com/JungYeoni/da-template/commit/3542e4bfc8ad1c9aeb33dc1c559f248025e3a1a7))
+- 코드래빗 중간·사소 지적 8건 반영 (#38) ([8ef5827](https://github.com/JungYeoni/da-template/commit/8ef5827cc9ccc45881e1350c9b037cbaacea99c5))
+- 코드래빗 심각 지적 3건 반영 - 실명 익명화, 노트북 재실행, 검증상태 정정 (#38) ([2a22b0c](https://github.com/JungYeoni/da-template/commit/2a22b0ce1e8b339d8167215fca53c02618ecdda9))
+- 소득 수준 지표 명세 표현 정정, 공표값 5개 지표 정의 확인 추가 (#38) ([c288e86](https://github.com/JungYeoni/da-template/commit/c288e86ee29b68eac39b2380cbe26f5987b3b506))
 - 불릿 재적용 데이터 무결성 보완 (#34) ([bf90e21](https://github.com/JungYeoni/da-template/commit/bf90e210abae4fac318c3edcb4fd4e3286484f89))
 - 코드래빗 리뷰 반영 - CSV 원문 보존 및 동기화 검증 보완 (#34) ([6fb1961](https://github.com/JungYeoni/da-template/commit/6fb1961e5ae99be31dddd66f97dc1de34c774269))
 - 불릿 정규화 재적용 경로 보완 (#34) ([b179d04](https://github.com/JungYeoni/da-template/commit/b179d04a953ff02a7736981bf062c30eb3bcd2c6))
@@ -133,6 +158,13 @@
 
 ### 새 기능
 
+- 재정팀 통합 파일 v2 대조 및 21개 지표 검증본 interim 생성 (#38) ([85c3610](https://github.com/JungYeoni/da-template/commit/85c3610ff64a18491968181f318a22b173a792af))
+- A그룹 결측치 시각화(막대그래프) 추가 (#38) ([4a34466](https://github.com/JungYeoni/da-template/commit/4a344662be6f95d46b0fad37f3b08a8c77185fba))
+- 구조환경지표 통합 파일 merge·결측치 검증 추가 (#38) ([ce55791](https://github.com/JungYeoni/da-template/commit/ce55791add42f80fd0b54fafd0fe053ea58ff346))
+- 여가생활 만족도·결혼·출산·가사분담 인식 4개 지표 검증 추가 (#38) ([1cb84d0](https://github.com/JungYeoni/da-template/commit/1cb84d0ba358c5717012758458189fc7993d450c))
+- 구조환경지표 검증 공통 함수 추가 (#38) ([86a6153](https://github.com/JungYeoni/da-template/commit/86a6153275468f466b3b2f44c2671648e1a04714))
+- 원자료 매칭 로직 보강 및 검증 명세에 예외 목록 반영 (#38) ([29fe8b4](https://github.com/JungYeoni/da-template/commit/29fe8b4fc57008a45a615e36285efc9bcf58e228))
+- 보육시설 보급률 산식 검증 노트북 추가 (#38) ([1d7597d](https://github.com/JungYeoni/da-template/commit/1d7597dc4b13eaf49adaef1712416d1db20049f2))
 - 2019 시도별 정제 파이프라인 추가 (#20) ([14d2641](https://github.com/JungYeoni/da-template/commit/14d2641d35aed774daedab420059c3c277414f55))
 - 2017년 시도별 예산 데이터 정제 (#18) ([52c9af1](https://github.com/JungYeoni/da-template/commit/52c9af12aa60cf709160d4305183cd89f2483688))
 - 대전 로마숫자가 중분류 축인 경우의 대분류 재정렬 함수 추가 (#18) ([a954047](https://github.com/JungYeoni/da-template/commit/a9540477aca48b80ef9209ae49cbed2008b5bd71))
