@@ -49,6 +49,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([6caab4e](https://github.com/JungYeoni/da-template/commit/6caab4e86752d3ac4736706b06d9f700de181712))
 - CHANGELOG 자동 업데이트 [skip ci] ([4da8868](https://github.com/JungYeoni/da-template/commit/4da886821077b665895f8bc451800b7058752bd8))
 - A그룹 보간 타당성 시각화 해석과 지표별 고려사항 리포트 반영 (#38) ([f2a1514](https://github.com/JungYeoni/da-template/commit/f2a15148ff3f023d224424cb8ef29cf5b3a9add7))
 - 결측치 58건을 원인별 A/B/C 3그룹으로 재분류해 리포트 반영 (#38) ([438b4e1](https://github.com/JungYeoni/da-template/commit/438b4e109227feb24e9294ece435d85de8561c06))
@@ -160,6 +161,7 @@
 
 ### 새 기능
 
+- 소계 QA 판정불가 사유 기록 #31 ([d7136c0](https://github.com/JungYeoni/da-template/commit/d7136c0a340d189682e7e0f3acdc8181cedaeffe))
 - 재정팀 통합 파일 v2 대조 및 21개 지표 검증본 interim 생성 (#38) ([85c3610](https://github.com/JungYeoni/da-template/commit/85c3610ff64a18491968181f318a22b173a792af))
 - A그룹 결측치 시각화(막대그래프) 추가 (#38) ([4a34466](https://github.com/JungYeoni/da-template/commit/4a344662be6f95d46b0fad37f3b08a8c77185fba))
 - 구조환경지표 통합 파일 merge·결측치 검증 추가 (#38) ([ce55791](https://github.com/JungYeoni/da-template/commit/ce55791add42f80fd0b54fafd0fe053ea58ff346))
