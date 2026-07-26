@@ -49,6 +49,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([3d73ecc](https://github.com/JungYeoni/da-template/commit/3d73ecc578bda603f3af010690e4fb80fb94cf1f))
 - CHANGELOG 자동 업데이트 [skip ci] ([c4d2ebc](https://github.com/JungYeoni/da-template/commit/c4d2ebca7d564458a0d1d8f283679477afcaf259))
 - CHANGELOG 자동 업데이트 [skip ci] ([6caab4e](https://github.com/JungYeoni/da-template/commit/6caab4e86752d3ac4736706b06d9f700de181712))
 - CHANGELOG 자동 업데이트 [skip ci] ([4da8868](https://github.com/JungYeoni/da-template/commit/4da886821077b665895f8bc451800b7058752bd8))
@@ -124,6 +125,7 @@
 
 ### 버그 수정
 
+- 기초패널 리뷰 피드백 반영 (#52) ([552c3c4](https://github.com/JungYeoni/da-template/commit/552c3c439e878451fd1fa9bb3e547cb1a76573cf))
 - 불릿 정규화 재적용 범위에 2020 추가 #34 ([d78471e](https://github.com/JungYeoni/da-template/commit/d78471e5de5da89fe6ee282d8cbe6059ae3eda51))
 - 결측 조합만 있는 지표도 merge 검증 상세 표시 (#38) ([3542e4b](https://github.com/JungYeoni/da-template/commit/3542e4bfc8ad1c9aeb33dc1c559f248025e3a1a7))
 - 코드래빗 중간·사소 지적 8건 반영 (#38) ([8ef5827](https://github.com/JungYeoni/da-template/commit/8ef5827cc9ccc45881e1350c9b037cbaacea99c5))
@@ -163,6 +165,7 @@
 
 ### 새 기능
 
+- 계획예산·합계출산율 기초패널 생성 (#52) ([2804779](https://github.com/JungYeoni/da-template/commit/28047790717246390142dc32a2e0eae619abe62f))
 - 소계 QA 판정불가 사유 기록 #31 ([d7136c0](https://github.com/JungYeoni/da-template/commit/d7136c0a340d189682e7e0f3acdc8181cedaeffe))
 - 재정팀 통합 파일 v2 대조 및 21개 지표 검증본 interim 생성 (#38) ([85c3610](https://github.com/JungYeoni/da-template/commit/85c3610ff64a18491968181f318a22b173a792af))
 - A그룹 결측치 시각화(막대그래프) 추가 (#38) ([4a34466](https://github.com/JungYeoni/da-template/commit/4a344662be6f95d46b0fad37f3b08a8c77185fba))
@@ -209,6 +212,7 @@
 
 ### 테스트
 
+- 기초패널 범위 및 예산 역대조 검증 (#52) ([b576979](https://github.com/JungYeoni/da-template/commit/b576979ca56939788de6420ddf0724b863cf51c8))
 - 시각화 설정 모듈을 명시적으로 로드 (#7) ([efe0270](https://github.com/JungYeoni/da-template/commit/efe0270470c1a6a6b7cf9837aa7e251b0a8bfc31))
 
 
