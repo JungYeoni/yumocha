@@ -291,6 +291,37 @@ def calculate_budget_changes(
     )
 
 
+def assign_qa_undetermined_reason(
+    qa: pd.DataFrame,
+    comparison_subtotal_col: str = "원본_소계값",
+) -> pd.Series:
+    """`build_subtotal_qa` 결과에서 판정불가 원인을 구분한다.
+
+    ``qa``는 ``QA_병합상태``, ``leaf_합계``, ``comparison_subtotal_col`` 컬럼을
+    가지고 있어야 한다. 같은 출처 내에서 값이 다른 소계가 중복 추출된
+    "원본 소계 중복·충돌"은 ``build_subtotal_qa``가 이 함수를 호출하기 전
+    단계(``collapse_consistent_subtotals``)에서 이미 ``ValueError``로 막기
+    때문에, 이 함수의 반환값에는 나타나지 않는다.
+    """
+    reason = pd.Series(pd.NA, index=qa.index, dtype="string")
+
+    reason.loc[qa["QA_병합상태"].eq("leaf합계만")] = "원본 소계 행 없음"
+    reason.loc[qa["QA_병합상태"].eq("원본소계만")] = "세부사업 행 없음"
+
+    both = qa["QA_병합상태"].eq("양쪽존재")
+    subtotal_missing = qa[comparison_subtotal_col].isna()
+    leaf_missing = qa["leaf_합계"].isna()
+
+    reason.loc[both & subtotal_missing & leaf_missing] = "원본 소계와 세부사업 합계 모두 결측"
+    reason.loc[both & subtotal_missing & ~leaf_missing] = "원본 소계값 결측"
+    reason.loc[both & ~subtotal_missing & leaf_missing] = "세부사업 합계 결측"
+    reason.loc[both & ~subtotal_missing & ~leaf_missing & qa[comparison_subtotal_col].eq(0)] = (
+        "원본 소계가 0이라 오차율 계산 불가"
+    )
+
+    return reason
+
+
 def build_subtotal_qa(
     df_labeled: pd.DataFrame,
     *,
@@ -477,6 +508,8 @@ def build_subtotal_qa(
     qa.loc[comparable, "결과"] = "불일치"
     qa.loc[comparable & qa["차이"].abs().le(tolerance), "결과"] = "일치"
 
+    qa["판정불가_사유"] = assign_qa_undetermined_reason(qa, comparison_subtotal_col)
+
     return qa[
         [
             *group_cols,
@@ -491,6 +524,7 @@ def build_subtotal_qa(
             "QA_병합상태",
             "결과",
             "허용기준결과",
+            "판정불가_사유",
         ]
     ]
 
@@ -699,6 +733,7 @@ __all__ = [
     "TOTAL_FUNDING_TOKEN",
     "UNIT_NOTATION_PATTERN",
     "assign_labels",
+    "assign_qa_undetermined_reason",
     "backfill_major_category_from_medium",
     "build_subtotal_qa",
     "calculate_budget_changes",
