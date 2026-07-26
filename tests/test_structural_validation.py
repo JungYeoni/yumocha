@@ -8,6 +8,7 @@ import pytest
 from src.evaluation.structural_validation import (
     compare_region_year_matrices,
     load_region_mapping,
+    normalize_nationwide_labels,
     require_columns,
     require_sheets,
     to_numeric_strict,
@@ -26,6 +27,32 @@ def test_load_region_mapping_includes_전국_and_legacy_aliases():
     assert region_map["강원도"] == "강원"  # 옛 행정구역명
     assert region_map["전체"] == "전국"  # 전국 이명
     assert region_map["서울특별시"] == "서울"  # 지역명_전체 -> 지역
+
+
+def test_normalize_nationwide_labels_replaces_aliases():
+    df = pd.DataFrame(
+        {
+            "지역": ["전체", "서울"],
+            "세부지표": ["분만실 병상수 보급도", "분만실 병상수 보급도"],
+            "2024": [1.0, 2.0],
+        }
+    )
+
+    result = normalize_nationwide_labels(df)
+
+    assert result["지역"].tolist() == ["전국", "서울"]
+
+
+def test_normalize_nationwide_labels_rejects_collision():
+    df = pd.DataFrame(
+        {
+            "지역": ["전국", "전체"],
+            "세부지표": ["지표A", "지표A"],
+        }
+    )
+
+    with pytest.raises(ValueError, match="지역 키 중복"):
+        normalize_nationwide_labels(df)
 
 
 def test_require_columns_passes_when_all_present():
