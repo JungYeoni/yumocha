@@ -49,6 +49,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([c4d2ebc](https://github.com/JungYeoni/da-template/commit/c4d2ebca7d564458a0d1d8f283679477afcaf259))
 - CHANGELOG 자동 업데이트 [skip ci] ([6caab4e](https://github.com/JungYeoni/da-template/commit/6caab4e86752d3ac4736706b06d9f700de181712))
 - CHANGELOG 자동 업데이트 [skip ci] ([4da8868](https://github.com/JungYeoni/da-template/commit/4da886821077b665895f8bc451800b7058752bd8))
 - A그룹 보간 타당성 시각화 해석과 지표별 고려사항 리포트 반영 (#38) ([f2a1514](https://github.com/JungYeoni/da-template/commit/f2a15148ff3f023d224424cb8ef29cf5b3a9add7))
@@ -123,6 +124,7 @@
 
 ### 버그 수정
 
+- 불릿 정규화 재적용 범위에 2020 추가 #34 ([d78471e](https://github.com/JungYeoni/da-template/commit/d78471e5de5da89fe6ee282d8cbe6059ae3eda51))
 - 결측 조합만 있는 지표도 merge 검증 상세 표시 (#38) ([3542e4b](https://github.com/JungYeoni/da-template/commit/3542e4bfc8ad1c9aeb33dc1c559f248025e3a1a7))
 - 코드래빗 중간·사소 지적 8건 반영 (#38) ([8ef5827](https://github.com/JungYeoni/da-template/commit/8ef5827cc9ccc45881e1350c9b037cbaacea99c5))
 - 코드래빗 심각 지적 3건 반영 - 실명 익명화, 노트북 재실행, 검증상태 정정 (#38) ([2a22b0c](https://github.com/JungYeoni/da-template/commit/2a22b0ce1e8b339d8167215fca53c02618ecdda9))
