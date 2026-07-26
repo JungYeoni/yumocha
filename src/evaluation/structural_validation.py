@@ -25,6 +25,36 @@ LEGACY_REGION_NAMES = {
 NATIONWIDE_ALIASES = {"전체": "전국", "계": "전국"}
 
 
+def normalize_nationwide_labels(
+    df: pd.DataFrame,
+    *,
+    region_col: str = "지역",
+    key_cols: Sequence[str] = ("세부지표",),
+) -> pd.DataFrame:
+    """전국 집계 이명(``전체``, ``계``)을 ``전국``으로 통일한다.
+
+    통일 후 같은 지표·지역 키가 중복되면 어느 행을 남길지 임의로 고르지
+    않고 예외를 낸다.
+    """
+
+    require_columns(
+        df,
+        [region_col, *key_cols],
+        source_name="normalize_nationwide_labels 입력",
+    )
+    result = df.copy()
+    result[region_col] = result[region_col].astype("string").str.strip().replace(NATIONWIDE_ALIASES)
+
+    duplicate_cols = [*key_cols, region_col]
+    duplicated = result.duplicated(duplicate_cols, keep=False)
+    if duplicated.any():
+        duplicate_keys = result.loc[duplicated, duplicate_cols].drop_duplicates()
+        raise ValueError(
+            f"전국 라벨 통일 후 지역 키 중복: {duplicate_keys.to_dict(orient='records')}"
+        )
+    return result
+
+
 def load_region_mapping(repo_root: Path) -> tuple[list[str], dict[str, str]]:
     """`data/lookup/시도_지역코드_매핑.csv`를 단일 소스로 지역 순서·매핑을 만든다.
 
@@ -248,6 +278,7 @@ __all__ = [
     "ComparisonResult",
     "compare_region_year_matrices",
     "load_region_mapping",
+    "normalize_nationwide_labels",
     "require_columns",
     "require_sheets",
     "to_numeric_strict",
