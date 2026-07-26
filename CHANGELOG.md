@@ -33,6 +33,7 @@
 
 ### 리팩터링
 
+- Reports 디렉터리 구조 정리 (#33) ([4b300ee](https://github.com/JungYeoni/da-template/commit/4b300eeb2345dca805c42549a612eb980d73f85b))
 - 노트북 비교 셀 공통함수 전환, 셀 단위 결측 집계 보완 (#38) ([7b0d3f2](https://github.com/JungYeoni/da-template/commit/7b0d3f2a5ba1e9e06efe54fcd12c8361c847ebf2))
 - 11개 지표 검증 코드 노트북화 및 지역명 매핑 정리 (#38) ([d14d413](https://github.com/JungYeoni/da-template/commit/d14d41346be5e05634e22864eeb36807220aa3bb))
 - Processed 필드명을 finance_team_value로 변경 (#38) ([b1f4852](https://github.com/JungYeoni/da-template/commit/b1f48524cf0b786154c4f5283b0f09e380adc80f))
@@ -48,6 +49,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([4da8868](https://github.com/JungYeoni/da-template/commit/4da886821077b665895f8bc451800b7058752bd8))
 - A그룹 보간 타당성 시각화 해석과 지표별 고려사항 리포트 반영 (#38) ([f2a1514](https://github.com/JungYeoni/da-template/commit/f2a15148ff3f023d224424cb8ef29cf5b3a9add7))
 - 결측치 58건을 원인별 A/B/C 3그룹으로 재분류해 리포트 반영 (#38) ([438b4e1](https://github.com/JungYeoni/da-template/commit/438b4e109227feb24e9294ece435d85de8561c06))
 - 공표값 5개 지표 검증 결과와 원기획서 근거 인용 리포트 반영 (#38) ([2f9b97e](https://github.com/JungYeoni/da-template/commit/2f9b97e5863daacb4c54fe127021b001de06aa8f))
