@@ -43,7 +43,6 @@ mlruns/
 # 결과 / 산출물
 results/
 reports/figures/
-!reports/.gitkeep
 
 # 노트북 체크포인트
 .ipynb_checkpoints/
