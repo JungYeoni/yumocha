@@ -8,6 +8,7 @@ import pytest
 from src.features.analysis_panel import (
     add_fiscal_response_features,
     build_budget_fertility_panel,
+    load_budget_qa_panel,
     load_current_budget_panel,
     load_fertility_panel,
     validate_budget_totals_against_sources,
@@ -178,6 +179,40 @@ def test_load_fertility_panel_rejects_out_of_range_value(tmp_path):
         )
 
 
+def test_load_fertility_panel_rejects_duplicate_year_mapping(tmp_path):
+    fertility_path = tmp_path / "fertility.csv"
+    mapping_path = tmp_path / "mapping.csv"
+    columns = pd.MultiIndex.from_tuples(
+        [
+            ("시군구별", "시군구별"),
+            ("합계출산율", "2020"),
+            ("합계출산율", "2020 p)"),
+            ("합계출산율", "2021"),
+        ]
+    )
+    pd.DataFrame(
+        [
+            ["전국", 0.84, 0.83, 0.81],
+            ["서울특별시", 0.64, 0.63, 0.62],
+            ["부산광역시", 0.75, 0.74, 0.73],
+        ],
+        columns=columns,
+    ).to_csv(fertility_path, index=False, encoding="cp949")
+    pd.DataFrame(
+        {
+            "지역": REGIONS,
+            "지역명_전체": ["서울특별시", "부산광역시"],
+        }
+    ).to_csv(mapping_path, index=False)
+
+    with pytest.raises(ValueError, match="연도 컬럼 중복 매핑"):
+        load_fertility_panel(
+            fertility_path,
+            mapping_path,
+            expected_years=YEARS,
+        )
+
+
 def test_validate_budget_totals_against_sources(tmp_path):
     source_paths = []
     for region, values in {"서울": [10.0, None], "부산": [20.0, -1.0]}.items():
@@ -202,6 +237,67 @@ def test_validate_budget_totals_against_sources(tmp_path):
     panel.loc[panel["지역"].eq("서울"), "당해계획예산_백만원"] += 1
     with pytest.raises(ValueError, match="당해예산 합계 불일치"):
         validate_budget_totals_against_sources(panel, source_paths)
+
+    panel.loc[panel["지역"].eq("서울"), "당해계획예산_백만원"] = float("nan")
+    with pytest.raises(ValueError, match="당해예산 합계 불일치"):
+        validate_budget_totals_against_sources(panel, source_paths)
+
+
+def test_load_budget_qa_panel_handles_error_rate_schema_variants(tmp_path):
+    rows = {
+        2020: pd.DataFrame(
+            {
+                "지역": ["서울", "서울"],
+                "결과": ["일치", "불일치"],
+                "허용기준결과": ["이내", "초과"],
+                "절대오차율(%)": [1.0, 4.0],
+            }
+        ),
+        2021: pd.DataFrame(
+            {
+                "지역": ["서울"],
+                "결과": ["불일치"],
+                "허용기준결과": ["초과"],
+                "오차율(%)": [-3.0],
+            }
+        ),
+        2022: pd.DataFrame(
+            {
+                "지역": ["서울"],
+                "결과": ["판정불가"],
+                "허용기준결과": ["판정불가"],
+            }
+        ),
+    }
+    for year, frame in rows.items():
+        report_dir = tmp_path / "yearly" / str(year)
+        report_dir.mkdir(parents=True)
+        frame.to_csv(report_dir / f"{year}_전국_QA_검증결과.csv", index=False)
+
+    panel = load_budget_qa_panel(tmp_path, expected_years=[2020, 2021, 2022])
+
+    row_2020 = panel.loc[panel["연도"].eq(2020)].iloc[0]
+    row_2021 = panel.loc[panel["연도"].eq(2021)].iloc[0]
+    row_2022 = panel.loc[panel["연도"].eq(2022)].iloc[0]
+    assert row_2020["예산_QA_그룹수"] == 2
+    assert row_2020["예산_QA_허용초과건수"] == 1
+    assert row_2020["예산_QA_최대절대오차율"] == 4.0
+    assert row_2021["예산_QA_최대절대오차율"] == 3.0
+    assert pd.isna(row_2022["예산_QA_최대절대오차율"])
+
+
+def test_load_budget_qa_panel_rejects_missing_required_column(tmp_path):
+    report_dir = tmp_path / "yearly" / "2020"
+    report_dir.mkdir(parents=True)
+    pd.DataFrame(
+        {
+            "지역": ["서울"],
+            "결과": ["일치"],
+        }
+    ).to_csv(report_dir / "2020_전국_QA_검증결과.csv", index=False)
+
+    with pytest.raises(ValueError, match="필수 컬럼 누락"):
+        load_budget_qa_panel(tmp_path, expected_years=[2020])
 
 
 def test_build_panel_requires_one_to_one_complete_match():

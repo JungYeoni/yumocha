@@ -161,10 +161,20 @@ def load_fertility_panel(
     tfr = raw["합계출산율"].copy()
 
     year_columns: dict[str, int] = {}
+    year_sources: dict[int, list[str]] = {}
     for column in tfr.columns:
         match = re.search(r"\d{4}", str(column))
         if match:
-            year_columns[column] = int(match.group())
+            year = int(match.group())
+            year_columns[column] = year
+            year_sources.setdefault(year, []).append(str(column))
+
+    conflicting_years = {
+        year: sources for year, sources in year_sources.items() if len(sources) > 1
+    }
+    if conflicting_years:
+        raise ValueError(f"합계출산율 연도 컬럼 중복 매핑: {conflicting_years}")
+
     tfr = tfr.rename(columns=year_columns)
 
     missing_years = sorted(set(expected_years) - set(tfr.columns))
@@ -275,7 +285,9 @@ def validate_budget_totals_against_sources(
     floating_point_tolerance = 1e-6
     within_tolerance = comparison["집계차이_백만원"].abs().le(floating_point_tolerance)
     comparison.loc[within_tolerance, "집계차이_백만원"] = 0.0
-    mismatched = comparison["집계차이_백만원"].abs().gt(floating_point_tolerance)
+    mismatched = comparison["집계차이_백만원"].isna() | comparison["집계차이_백만원"].abs().gt(
+        floating_point_tolerance
+    )
     if mismatched.any():
         raise ValueError(
             "패널·원본 당해예산 합계 불일치: "
@@ -305,7 +317,7 @@ def load_budget_qa_panel(
         elif "오차율(%)" in df.columns:
             df["QA_절대오차율"] = pd.to_numeric(df["오차율(%)"], errors="coerce").abs()
         else:
-            df["QA_절대오차율"] = pd.NA
+            df["QA_절대오차율"] = pd.Series(float("nan"), index=df.index, dtype="float64")
         frames.append(df)
 
     qa = pd.concat(frames, ignore_index=True)
@@ -389,7 +401,11 @@ def add_fiscal_response_features(
     *,
     tfr_col: str = "합계출산율",
 ) -> pd.DataFrame:
-    """재정반응성 기초분석용 선행 출산율 변수를 생성한다."""
+    """재정반응성 기초분석용 선행 출산율 변수를 생성한다.
+
+    지역별 연도가 빠짐없이 연속된 균형패널을 전제로 한다. 연도가 누락된
+    입력에서는 ``shift(1)``과 ``shift(2)``가 실제 t-1, t-2를 뜻하지 않는다.
+    """
 
     result = panel.sort_values(PANEL_KEY).copy()
     grouped = result.groupby("지역", sort=False)[tfr_col]
