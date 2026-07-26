@@ -28,7 +28,7 @@ from src.features.bullet_normalization import (  # noqa: E402
     validate_wide_long_sync,
 )
 
-DEFAULT_YEARS = (2016, 2017, 2021, 2022, 2023, 2024)
+DEFAULT_YEARS = (2016, 2017, 2020, 2021, 2022, 2023, 2024)
 
 
 def _write_pair_with_backup(
