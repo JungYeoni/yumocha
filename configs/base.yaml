@@ -34,6 +34,5 @@ output:
   results_dir: "results"
   figures_dir: "results/figures"
   model_dir: "results/models"
-  report_dir: "reports"
   figure_dpi: 300
   figure_format: "png"     # "png" 또는 "pdf"

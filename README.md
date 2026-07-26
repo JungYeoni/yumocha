@@ -123,7 +123,7 @@ da-template/
 │   └── processed/                # 모델 입력용 최종 데이터
 │
 ├── notebooks/                    # 탐색 분석과 실험 노트북
-├── reports/                      # 보고서, 그림, 표, 대시보드 산출물
+├── reports/                      # 보고서, 그림, 표, 대시보드 산출물 (구조는 reports/README.md 참고)
 │
 ├── src/
 │   ├── features/                 # 피처 생성 코드
