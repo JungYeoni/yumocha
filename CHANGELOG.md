@@ -49,6 +49,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([87105d4](https://github.com/JungYeoni/da-template/commit/87105d4942d6b2e15ea91cf94d800c4b82507b15))
 - CHANGELOG 자동 업데이트 [skip ci] ([3d73ecc](https://github.com/JungYeoni/da-template/commit/3d73ecc578bda603f3af010690e4fb80fb94cf1f))
 - CHANGELOG 자동 업데이트 [skip ci] ([c4d2ebc](https://github.com/JungYeoni/da-template/commit/c4d2ebca7d564458a0d1d8f283679477afcaf259))
 - CHANGELOG 자동 업데이트 [skip ci] ([6caab4e](https://github.com/JungYeoni/da-template/commit/6caab4e86752d3ac4736706b06d9f700de181712))
@@ -125,6 +126,7 @@
 
 ### 버그 수정
 
+- 구조환경지표 전국 라벨과 행 정합성 정리 (#47) ([e6c4f44](https://github.com/JungYeoni/da-template/commit/e6c4f4472722b6fc7b023c30ef539a8a16579e8b))
 - 기초패널 리뷰 피드백 반영 (#52) ([552c3c4](https://github.com/JungYeoni/da-template/commit/552c3c439e878451fd1fa9bb3e547cb1a76573cf))
 - 불릿 정규화 재적용 범위에 2020 추가 #34 ([d78471e](https://github.com/JungYeoni/da-template/commit/d78471e5de5da89fe6ee282d8cbe6059ae3eda51))
 - 결측 조합만 있는 지표도 merge 검증 상세 표시 (#38) ([3542e4b](https://github.com/JungYeoni/da-template/commit/3542e4bfc8ad1c9aeb33dc1c559f248025e3a1a7))
