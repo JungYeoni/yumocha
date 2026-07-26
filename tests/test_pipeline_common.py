@@ -498,6 +498,9 @@ def test_build_subtotal_qa_compares_subtotal_and_leaf_sum():
     assert result_by_category.loc["청년", "QA_병합상태"] == "원본소계만"
     assert pd.isna(result_by_category.loc["청년", "오차율(%)"])
     assert result_by_category.loc["청년", "결과"] == "판정불가"
+    assert result_by_category.loc["청년", "판정불가_사유"] == "세부사업 행 없음"
+    assert pd.isna(result_by_category.loc["돌봄", "판정불가_사유"])
+    assert pd.isna(result_by_category.loc["고령", "판정불가_사유"])
 
 
 def test_build_subtotal_qa_preserves_original_and_uses_adjusted_comparison_subtotal():
@@ -621,6 +624,7 @@ def test_build_subtotal_qa_marks_leaf_only_group_as_mismatch():
 
     assert result.loc["주거", "QA_병합상태"] == "leaf합계만"
     assert result.loc["주거", "결과"] == "판정불가"
+    assert result.loc["주거", "판정불가_사유"] == "원본 소계 행 없음"
 
 
 def test_build_subtotal_qa_keeps_error_rate_missing_for_zero_subtotal():
@@ -640,6 +644,61 @@ def test_build_subtotal_qa_keeps_error_rate_missing_for_zero_subtotal():
     assert pd.isna(result.loc[0, "오차율(%)"])
     assert result.loc[0, "결과"] == "불일치"
     assert result.loc[0, "허용기준결과"] == "판정불가"
+    assert result.loc[0, "판정불가_사유"] == "원본 소계가 0이라 오차율 계산 불가"
+
+
+def test_build_subtotal_qa_reason_for_missing_subtotal_value():
+    source = pd.DataFrame(
+        {
+            "지역": ["서울", "서울"],
+            "대분류": ["공통", "공통"],
+            "중분류": ["돌봄", "돌봄"],
+            "사업행구분": ["중분류_소계", "세부사업"],
+            "예산_num": [None, 10.0],
+        }
+    )
+
+    result = build_subtotal_qa(source, budget_col="예산_num")
+
+    assert result.loc[0, "QA_병합상태"] == "양쪽존재"
+    assert result.loc[0, "결과"] == "판정불가"
+    assert result.loc[0, "판정불가_사유"] == "원본 소계값 결측"
+
+
+def test_build_subtotal_qa_reason_for_missing_leaf_sum():
+    source = pd.DataFrame(
+        {
+            "지역": ["서울", "서울"],
+            "대분류": ["공통", "공통"],
+            "중분류": ["돌봄", "돌봄"],
+            "사업행구분": ["중분류_소계", "세부사업"],
+            "예산_num": [100.0, None],
+        }
+    )
+
+    result = build_subtotal_qa(source, budget_col="예산_num")
+
+    assert result.loc[0, "QA_병합상태"] == "양쪽존재"
+    assert result.loc[0, "결과"] == "판정불가"
+    assert result.loc[0, "판정불가_사유"] == "세부사업 합계 결측"
+
+
+def test_build_subtotal_qa_reason_for_both_missing():
+    source = pd.DataFrame(
+        {
+            "지역": ["서울", "서울"],
+            "대분류": ["공통", "공통"],
+            "중분류": ["돌봄", "돌봄"],
+            "사업행구분": ["중분류_소계", "세부사업"],
+            "예산_num": pd.array([None, None], dtype="float64"),
+        }
+    )
+
+    result = build_subtotal_qa(source, budget_col="예산_num")
+
+    assert result.loc[0, "QA_병합상태"] == "양쪽존재"
+    assert result.loc[0, "결과"] == "판정불가"
+    assert result.loc[0, "판정불가_사유"] == "원본 소계와 세부사업 합계 모두 결측"
 
 
 @pytest.mark.parametrize(
