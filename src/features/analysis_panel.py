@@ -172,6 +172,19 @@ def load_fertility_panel(
         raise ValueError(f"합계출산율 연도 컬럼 누락: {missing_years}")
 
     tfr = tfr[list(expected_years)].apply(pd.to_numeric, errors="raise")
+    invalid_tfr = tfr.isna() | tfr.lt(0) | tfr.gt(5)
+    if invalid_tfr.any(axis=None):
+        invalid_rows, invalid_columns = invalid_tfr.to_numpy().nonzero()
+        samples = [
+            {
+                "지역명_전체": region_source.iloc[row],
+                "연도": int(tfr.columns[column]),
+                "합계출산율": tfr.iloc[row, column],
+            }
+            for row, column in zip(invalid_rows[:10], invalid_columns[:10], strict=True)
+        ]
+        raise ValueError(f"합계출산율 결측 또는 허용범위(0~5) 이탈: {samples}")
+
     tfr.insert(0, "지역명_전체", region_source)
     long = tfr.melt(
         id_vars="지역명_전체",
@@ -209,6 +222,66 @@ def load_fertility_panel(
         label="합계출산율 패널",
     )
     return panel, nationwide
+
+
+def validate_budget_totals_against_sources(
+    budget_panel: pd.DataFrame,
+    source_paths: Sequence[str | Path],
+) -> pd.DataFrame:
+    """패널 총액을 원본 long 파일의 당해예산 직접 합계와 역대조한다."""
+
+    _require_columns(
+        budget_panel,
+        {"지역", "연도", "당해계획예산_백만원"},
+        label="budget_panel",
+    )
+    source_frames: list[pd.DataFrame] = []
+    for source_path in source_paths:
+        path = Path(source_path)
+        source = pd.read_csv(path)
+        _require_columns(source, BUDGET_REQUIRED_COLUMNS, label=str(path))
+        current = source.loc[source["예산구분"].eq("당해예산"), PANEL_KEY + ["예산액"]].copy()
+        current["예산액"] = pd.to_numeric(current["예산액"], errors="coerce")
+        source_frames.append(current)
+
+    if not source_frames:
+        raise ValueError("역대조할 예산 원본 파일이 없습니다.")
+
+    source_totals = (
+        pd.concat(source_frames, ignore_index=True)
+        .groupby(PANEL_KEY, as_index=False)["예산액"]
+        .sum(min_count=1)
+        .rename(columns={"예산액": "원본당해예산합계_백만원"})
+    )
+    comparison = budget_panel[PANEL_KEY + ["당해계획예산_백만원"]].merge(
+        source_totals,
+        on=PANEL_KEY,
+        how="outer",
+        validate="one_to_one",
+        indicator=True,
+    )
+    comparison["집계차이_백만원"] = (
+        comparison["당해계획예산_백만원"] - comparison["원본당해예산합계_백만원"]
+    )
+
+    unmatched = comparison.loc[~comparison["_merge"].eq("both")]
+    if not unmatched.empty:
+        raise ValueError(
+            f"패널·원본 예산 지역×연도 미매칭: "
+            f"{unmatched[PANEL_KEY + ['_merge']].to_dict(orient='records')}"
+        )
+    comparison = comparison.drop(columns="_merge").sort_values(PANEL_KEY).reset_index(drop=True)
+
+    floating_point_tolerance = 1e-6
+    within_tolerance = comparison["집계차이_백만원"].abs().le(floating_point_tolerance)
+    comparison.loc[within_tolerance, "집계차이_백만원"] = 0.0
+    mismatched = comparison["집계차이_백만원"].abs().gt(floating_point_tolerance)
+    if mismatched.any():
+        raise ValueError(
+            "패널·원본 당해예산 합계 불일치: "
+            f"{comparison.loc[mismatched].to_dict(orient='records')[:10]}"
+        )
+    return comparison
 
 
 def load_budget_qa_panel(

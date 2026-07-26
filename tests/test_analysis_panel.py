@@ -10,6 +10,7 @@ from src.features.analysis_panel import (
     build_budget_fertility_panel,
     load_current_budget_panel,
     load_fertility_panel,
+    validate_budget_totals_against_sources,
 )
 
 
@@ -142,6 +143,65 @@ def test_load_fertility_panel_maps_regions_and_excludes_nationwide(tmp_path):
     assert set(panel["지역"]) == set(REGIONS)
     assert set(panel["연도"]) == set(YEARS)
     assert nationwide["합계출산율"].tolist() == [0.84, 0.81]
+
+
+def test_load_fertility_panel_rejects_out_of_range_value(tmp_path):
+    fertility_path = tmp_path / "fertility.csv"
+    mapping_path = tmp_path / "mapping.csv"
+    columns = pd.MultiIndex.from_tuples(
+        [
+            ("시군구별", "시군구별"),
+            ("합계출산율", "2020"),
+            ("합계출산율", "2021"),
+        ]
+    )
+    pd.DataFrame(
+        [
+            ["전국", 0.84, 0.81],
+            ["서울특별시", 0.64, 5.1],
+            ["부산광역시", 0.75, 0.73],
+        ],
+        columns=columns,
+    ).to_csv(fertility_path, index=False, encoding="cp949")
+    pd.DataFrame(
+        {
+            "지역": REGIONS,
+            "지역명_전체": ["서울특별시", "부산광역시"],
+        }
+    ).to_csv(mapping_path, index=False)
+
+    with pytest.raises(ValueError, match=r"허용범위\(0~5\) 이탈"):
+        load_fertility_panel(
+            fertility_path,
+            mapping_path,
+            expected_years=YEARS,
+        )
+
+
+def test_validate_budget_totals_against_sources(tmp_path):
+    source_paths = []
+    for region, values in {"서울": [10.0, None], "부산": [20.0, -1.0]}.items():
+        _write_budget_file(
+            tmp_path,
+            region=region,
+            year=2020,
+            current_values=values,
+            previous_values=[100.0, 200.0],
+        )
+        source_paths.append(tmp_path / region / f"2020_{region}_세부사업_정제_long.csv")
+
+    panel = load_current_budget_panel(
+        tmp_path,
+        expected_regions=REGIONS,
+        expected_years=[2020],
+    )
+    comparison = validate_budget_totals_against_sources(panel, source_paths)
+
+    assert comparison["집계차이_백만원"].eq(0).all()
+
+    panel.loc[panel["지역"].eq("서울"), "당해계획예산_백만원"] += 1
+    with pytest.raises(ValueError, match="당해예산 합계 불일치"):
+        validate_budget_totals_against_sources(panel, source_paths)
 
 
 def test_build_panel_requires_one_to_one_complete_match():
