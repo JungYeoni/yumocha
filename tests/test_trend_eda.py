@@ -88,6 +88,24 @@ def test_prepare_budget_trends_adds_yoy_and_plan_period():
     assert seoul_2021["기본계획기간"].startswith("제4차")
 
 
+def test_prepare_budget_trends_rejects_duplicate_region_year():
+    panel = pd.DataFrame(
+        {
+            "지역": ["서울", "서울"],
+            "연도": [2020, 2020],
+            "당해계획예산_백만원": [100.0, 100.0],
+            "원자료_누락주의": [pd.NA, pd.NA],
+        }
+    )
+
+    with pytest.raises(ValueError, match="지역×연도 키 중복"):
+        prepare_budget_trends(
+            panel,
+            expected_regions=["서울"],
+            expected_years=[2020],
+        )
+
+
 def test_structural_region_summary_respects_lower_is_better_direction():
     structural_long = pd.DataFrame(
         {

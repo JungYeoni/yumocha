@@ -151,6 +151,11 @@ def prepare_budget_trends(
     if result["지역"].eq("전국").any():
         raise ValueError("계획예산 지역 패널에 전국 행이 포함되어 있습니다.")
 
+    duplicated = result.duplicated(["지역", "연도"], keep=False)
+    if duplicated.any():
+        keys = result.loc[duplicated, ["지역", "연도"]].drop_duplicates()
+        raise ValueError(f"계획예산 지역×연도 키 중복: {keys.to_dict('records')}")
+
     actual_keys = set(result[["지역", "연도"]].itertuples(index=False, name=None))
     expected_keys = {(region, year) for region in expected_regions for year in expected_years}
     if actual_keys != expected_keys:
