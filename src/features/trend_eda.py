@@ -15,6 +15,30 @@ from src.evaluation.structural_validation import (
 
 STRUCTURAL_ID_COLUMNS = ["지역", "대영역", "세부영역", "세부지표", "검증상태"]
 
+STRUCTURAL_INDICATOR_DIRECTIONS = {
+    "청년고용률": "높을수록 양호",
+    "소득만족도": "높을수록 양호",
+    "소득수준": "높을수록 양호",
+    "보육시설 보급률": "높을수록 양호",
+    "방과후 돌봄시설 보급도": "높을수록 양호",
+    "사교육비 지출액": "낮을수록 양호",
+    "문화기반시설 보급도": "높을수록 양호",
+    "도시공원 보급도": "높을수록 양호",
+    "여가생활 만족도": "높을수록 양호",
+    "분만실 병상수 보급도": "높을수록 양호",
+    "소아청소년과 전문인력 보급도": "높을수록 양호",
+    "산후조리원 보급도": "높을수록 양호",
+    "산후조리원 이용 요금": "낮을수록 양호",
+    "어린이 교통사고 발생률": "낮을수록 양호",
+    "사회 안전에 대한 인식": "높을수록 양호",
+    "근로시간": "낮을수록 양호",
+    "육아휴직 사용률": "높을수록 양호",
+    "가족친화인증기업 비율": "높을수록 양호",
+    "결혼에 대한 인식": "높을수록 양호",
+    "출산에 대한 인식": "높을수록 양호",
+    "가사 분담에 대한 성평등 인식": "높을수록 양호",
+}
+
 
 def classify_basic_plan_period(year: int) -> str:
     """연도를 저출산·고령사회 기본계획 기간으로 구분한다."""
@@ -153,8 +177,195 @@ def prepare_budget_trends(
     )
 
 
+def _representative_years(indicator_df: pd.DataFrame) -> tuple[int, int]:
+    coverage = indicator_df.groupby("연도")["측정값"].count()
+    fullest_years = coverage.index[coverage.eq(coverage.max())]
+    return int(fullest_years.min()), int(fullest_years.max())
+
+
+def _directional_result(
+    base_value: float | None,
+    reference_value: float | None,
+    direction: str,
+) -> str:
+    if pd.isna(base_value) or pd.isna(reference_value):
+        return "비교 불가"
+    if direction == "3점에 가까울수록 양호":
+        change = abs(reference_value - 3) - abs(base_value - 3)
+    elif direction == "낮을수록 양호":
+        change = base_value - reference_value
+    else:
+        change = reference_value - base_value
+    if abs(change) < 1e-12:
+        return "변화 없음"
+    return "개선" if change > 0 else "악화"
+
+
+def build_structural_region_summary(
+    structural_long: pd.DataFrame,
+    *,
+    region_order: Sequence[str],
+    directions: dict[str, str] | None = None,
+) -> pd.DataFrame:
+    """지표별 대표 최초·최신 연도의 17개 시도 결과와 방향성 순위를 요약한다."""
+
+    required = {
+        "지역",
+        "연도",
+        "대영역",
+        "세부영역",
+        "세부지표",
+        "측정값",
+        "실측여부",
+        "급등락후보",
+    }
+    missing = sorted(required - set(structural_long.columns))
+    if missing:
+        raise ValueError(f"구조환경지표 지역 요약 필수 컬럼 누락: {missing}")
+
+    direction_map = directions or STRUCTURAL_INDICATOR_DIRECTIONS
+    indicators = structural_long["세부지표"].drop_duplicates().tolist()
+    missing_directions = sorted(set(indicators) - set(direction_map))
+    if missing_directions:
+        raise ValueError(f"방향성 정의가 없는 구조환경지표: {missing_directions}")
+
+    region_data = structural_long.loc[structural_long["지역"].isin(region_order)].copy()
+    summaries = []
+    for indicator, indicator_df in region_data.groupby("세부지표", sort=False):
+        base_year, reference_year = _representative_years(indicator_df)
+        direction = direction_map[indicator]
+        metadata = indicator_df[["대영역", "세부영역"]].drop_duplicates()
+        if len(metadata) != 1:
+            raise ValueError(f"{indicator} 대영역·세부영역 값이 하나가 아닙니다.")
+
+        values = indicator_df.pivot(index="지역", columns="연도", values="측정값")
+        base_values = values.get(base_year, pd.Series(dtype="float64"))
+        reference_values = values.get(reference_year, pd.Series(dtype="float64"))
+        if direction == "3점에 가까울수록 양호":
+            ranking_values = reference_values.sub(3).abs()
+            ranks = ranking_values.rank(method="min", ascending=True)
+        else:
+            ranks = reference_values.rank(
+                method="min",
+                ascending=direction == "낮을수록 양호",
+            )
+
+        for region in region_order:
+            region_rows = indicator_df.loc[indicator_df["지역"].eq(region)]
+            base_value = base_values.get(region, pd.NA)
+            reference_value = reference_values.get(region, pd.NA)
+            outlier_years = sorted(
+                region_rows.loc[region_rows["급등락후보"].fillna(False), "연도"].tolist()
+            )
+            summaries.append(
+                {
+                    "대영역": metadata.iloc[0]["대영역"],
+                    "세부영역": metadata.iloc[0]["세부영역"],
+                    "세부지표": indicator,
+                    "방향성": direction,
+                    "비교시작연도": base_year,
+                    "비교기준연도": reference_year,
+                    "지역": region,
+                    "시작값": base_value,
+                    "기준값": reference_value,
+                    "변화량": (
+                        reference_value - base_value
+                        if pd.notna(base_value) and pd.notna(reference_value)
+                        else pd.NA
+                    ),
+                    "방향성기준결과": _directional_result(
+                        base_value,
+                        reference_value,
+                        direction,
+                    ),
+                    "기준연도순위": (
+                        int(ranks.get(region)) if pd.notna(ranks.get(region, pd.NA)) else pd.NA
+                    ),
+                    "실측연도수": int(region_rows["실측여부"].sum()),
+                    "결측연도수": int((~region_rows["실측여부"]).sum()),
+                    "급등락후보연도": ", ".join(map(str, outlier_years)) or "-",
+                }
+            )
+
+    return pd.DataFrame(summaries)
+
+
+def _format_report_value(value: object) -> str:
+    if pd.isna(value):
+        return "-"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        return f"{value:,.3f}".rstrip("0").rstrip(".")
+    return str(value)
+
+
+def render_structural_region_report(summary: pd.DataFrame) -> str:
+    """17개 시도 구조환경지표 요약표를 Markdown 상세 보고서로 렌더링한다."""
+
+    lines = [
+        "# 구조환경지표별 17개 시도 상세 결과",
+        "",
+        "이 부록은 검증된 21개 구조환경지표의 지역별 결과를 비교한다. "
+        "각 지표에서 17개 시도 관측 수가 가장 많은 연도 중 최초·최신 연도를 사용했다.",
+        "",
+        "- `개선·악화`는 지표의 방향성에 따른 기술적 변화이며 정책 효과를 뜻하지 않는다.",
+        "- 순위는 비교기준연도의 관측 가능한 시도만 대상으로 하며 동순위는 최소순위 방식이다.",
+        "- 급등락 후보는 전년 대비 변화의 IQR 기준으로 표시한 검토 대상이며 오류 판정이 아니다.",
+        "- 조사 주기가 비연간인 지표는 결측연도 수가 많을 수 있다.",
+        "",
+    ]
+    for indicator, group in summary.groupby("세부지표", sort=False):
+        first = group.iloc[0]
+        observed = group.dropna(subset=["기준값"]).sort_values("기준연도순위")
+        top_regions = ", ".join(
+            f"{row.지역}({_format_report_value(row.기준값)})"
+            for row in observed.head(3).itertuples()
+        )
+        bottom_regions = ", ".join(
+            f"{row.지역}({_format_report_value(row.기준값)})"
+            for row in observed.tail(3).sort_values("기준연도순위", ascending=False).itertuples()
+        )
+        lines.extend(
+            [
+                f"## {indicator}",
+                "",
+                f"- 영역: {first['대영역']} > {first['세부영역']}",
+                f"- 방향성: {first['방향성']}",
+                f"- 비교: {first['비교시작연도']}년 → {first['비교기준연도']}년",
+                f"- 기준연도 양호 상위: {top_regions or '-'}",
+                f"- 기준연도 하위: {bottom_regions or '-'}",
+                "",
+                "| 지역 | 시작값 | 기준값 | 변화량 | 방향성 기준 | 순위 | 실측/결측 연도 | 급등락 후보 연도 |",
+                "|---|---:|---:|---:|---|---:|---:|---|",
+            ]
+        )
+        for row in group.itertuples(index=False):
+            lines.append(
+                "| "
+                + " | ".join(
+                    [
+                        row.지역,
+                        _format_report_value(row.시작값),
+                        _format_report_value(row.기준값),
+                        _format_report_value(row.변화량),
+                        row.방향성기준결과,
+                        _format_report_value(row.기준연도순위),
+                        f"{row.실측연도수}/{row.결측연도수}",
+                        row.급등락후보연도,
+                    ]
+                )
+                + " |"
+            )
+        lines.append("")
+    return "\n".join(lines)
+
+
 __all__ = [
+    "STRUCTURAL_INDICATOR_DIRECTIONS",
+    "build_structural_region_summary",
     "classify_basic_plan_period",
     "prepare_budget_trends",
+    "render_structural_region_report",
     "reshape_structural_indicators",
 ]

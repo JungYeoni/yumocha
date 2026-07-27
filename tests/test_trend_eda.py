@@ -4,8 +4,10 @@ import pandas as pd
 import pytest
 
 from src.features.trend_eda import (
+    build_structural_region_summary,
     classify_basic_plan_period,
     prepare_budget_trends,
+    render_structural_region_report,
     reshape_structural_indicators,
 )
 
@@ -84,3 +86,58 @@ def test_prepare_budget_trends_adds_yoy_and_plan_period():
     seoul_2021 = result.query("지역 == '서울' and 연도 == 2021").iloc[0]
     assert seoul_2021["전년대비증감률_pct"] == pytest.approx(50.0)
     assert seoul_2021["기본계획기간"].startswith("제4차")
+
+
+def test_structural_region_summary_respects_lower_is_better_direction():
+    structural_long = pd.DataFrame(
+        {
+            "지역": ["서울", "서울", "부산", "부산"],
+            "연도": [2020, 2021, 2020, 2021],
+            "대영역": ["사회·문화"] * 4,
+            "세부영역": ["일·가정 양립"] * 4,
+            "세부지표": ["근로시간"] * 4,
+            "측정값": [180.0, 170.0, 175.0, 178.0],
+            "실측여부": [True] * 4,
+            "급등락후보": [False, True, False, False],
+        }
+    )
+
+    result = build_structural_region_summary(
+        structural_long,
+        region_order=["서울", "부산"],
+    )
+
+    seoul = result.loc[result["지역"].eq("서울")].iloc[0]
+    busan = result.loc[result["지역"].eq("부산")].iloc[0]
+    assert seoul["방향성기준결과"] == "개선"
+    assert seoul["기준연도순위"] == 1
+    assert seoul["급등락후보연도"] == "2021"
+    assert busan["방향성기준결과"] == "악화"
+
+
+def test_structural_region_report_contains_every_region_row():
+    summary = pd.DataFrame(
+        {
+            "대영역": ["경제"] * 2,
+            "세부영역": ["고용"] * 2,
+            "세부지표": ["청년고용률"] * 2,
+            "방향성": ["높을수록 양호"] * 2,
+            "비교시작연도": [2020] * 2,
+            "비교기준연도": [2021] * 2,
+            "지역": ["서울", "부산"],
+            "시작값": [60.0, 55.0],
+            "기준값": [61.0, 57.0],
+            "변화량": [1.0, 2.0],
+            "방향성기준결과": ["개선", "개선"],
+            "기준연도순위": [1, 2],
+            "실측연도수": [2, 2],
+            "결측연도수": [0, 0],
+            "급등락후보연도": ["-", "-"],
+        }
+    )
+
+    report = render_structural_region_report(summary)
+
+    assert "## 청년고용률" in report
+    assert "| 서울 | 60 | 61 | 1 | 개선 | 1 | 2/0 | - |" in report
+    assert "| 부산 | 55 | 57 | 2 | 개선 | 2 | 2/0 | - |" in report
