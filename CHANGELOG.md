@@ -33,6 +33,7 @@
 
 ### 리팩터링
 
+- 구조환경지표 시각화 산출물 폴더 분리 (#45) ([322b357](https://github.com/JungYeoni/da-template/commit/322b3576fe993531d562de70ecc7438db1319207))
 - Reports 디렉터리 구조 정리 (#33) ([4b300ee](https://github.com/JungYeoni/da-template/commit/4b300eeb2345dca805c42549a612eb980d73f85b))
 - 노트북 비교 셀 공통함수 전환, 셀 단위 결측 집계 보완 (#38) ([7b0d3f2](https://github.com/JungYeoni/da-template/commit/7b0d3f2a5ba1e9e06efe54fcd12c8361c847ebf2))
 - 11개 지표 검증 코드 노트북화 및 지역명 매핑 정리 (#38) ([d14d413](https://github.com/JungYeoni/da-template/commit/d14d41346be5e05634e22864eeb36807220aa3bb))
@@ -49,6 +50,8 @@
 
 ### 문서
 
+- 구조환경지표 지역별 상세 결과 추가 (#45) ([bf6bc86](https://github.com/JungYeoni/da-template/commit/bf6bc865eb6b7a2f103b3279570d0645a8990d94))
+- CHANGELOG 자동 업데이트 [skip ci] ([9a04656](https://github.com/JungYeoni/da-template/commit/9a046569850b65bc6f3db0a9bf4ad8cdb1a7d154))
 - CHANGELOG 자동 업데이트 [skip ci] ([87105d4](https://github.com/JungYeoni/da-template/commit/87105d4942d6b2e15ea91cf94d800c4b82507b15))
 - CHANGELOG 자동 업데이트 [skip ci] ([3d73ecc](https://github.com/JungYeoni/da-template/commit/3d73ecc578bda603f3af010690e4fb80fb94cf1f))
 - CHANGELOG 자동 업데이트 [skip ci] ([c4d2ebc](https://github.com/JungYeoni/da-template/commit/c4d2ebca7d564458a0d1d8f283679477afcaf259))
@@ -126,6 +129,7 @@
 
 ### 버그 수정
 
+- PR 리뷰 데이터 무결성 지적 반영 (#45) ([7ced5d5](https://github.com/JungYeoni/da-template/commit/7ced5d52505e56ee8fc9d3ca3336de50d91b24d0))
 - 구조환경지표 전국 라벨과 행 정합성 정리 (#47) ([e6c4f44](https://github.com/JungYeoni/da-template/commit/e6c4f4472722b6fc7b023c30ef539a8a16579e8b))
 - 기초패널 리뷰 피드백 반영 (#52) ([552c3c4](https://github.com/JungYeoni/da-template/commit/552c3c439e878451fd1fa9bb3e547cb1a76573cf))
 - 불릿 정규화 재적용 범위에 2020 추가 #34 ([d78471e](https://github.com/JungYeoni/da-template/commit/d78471e5de5da89fe6ee282d8cbe6059ae3eda51))
@@ -167,6 +171,7 @@
 
 ### 새 기능
 
+- 검증 원자료 지역·연도 추세 시각화 추가 (#45) ([e4f1720](https://github.com/JungYeoni/da-template/commit/e4f17209e044cafc7217c4e6288a6066cc0dcde2))
 - 계획예산·합계출산율 기초패널 생성 (#52) ([2804779](https://github.com/JungYeoni/da-template/commit/28047790717246390142dc32a2e0eae619abe62f))
 - 소계 QA 판정불가 사유 기록 #31 ([d7136c0](https://github.com/JungYeoni/da-template/commit/d7136c0a340d189682e7e0f3acdc8181cedaeffe))
 - 재정팀 통합 파일 v2 대조 및 21개 지표 검증본 interim 생성 (#38) ([85c3610](https://github.com/JungYeoni/da-template/commit/85c3610ff64a18491968181f318a22b173a792af))
