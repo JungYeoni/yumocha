@@ -19,6 +19,7 @@ from src.modeling.tfidf_area_classifier import (
     choose_best_result,
     evaluate_text_variant,
     fit_model,
+    model_checksum_path,
     predict,
     save_model_bundle,
 )
@@ -46,13 +47,16 @@ def load_reusable_summary(
     prediction_sha256: str,
     low_confidence_threshold: float,
     n_splits: int,
+    additional_output_paths: tuple[Path, ...] = (),
 ) -> dict[str, object] | None:
     """입력·설정이 같은 기존 실행 결과가 완전하면 요약을 반환한다."""
     required_outputs = [
         summary_path,
         model_path,
+        model_checksum_path(model_path),
         prediction_output_path,
         review_workbook_path,
+        *additional_output_paths,
     ]
     if not all(path.exists() for path in required_outputs):
         return None
@@ -75,6 +79,16 @@ def load_reusable_summary(
     return summary
 
 
+def validate_prediction_targets(frame: pd.DataFrame) -> None:
+    """QA·검토 Excel에 필요한 예측 대상 키 열을 학습 전에 검증한다."""
+    required = ["연도", "지역", "원본행"]
+    missing = [column for column in required if column not in frame.columns]
+    if missing:
+        raise ValueError(f"예측 대상 필수 열 누락: {missing}")
+    if frame[required].isna().any().any():
+        raise ValueError("예측 대상의 연도·지역·원본행에 결측이 있습니다.")
+
+
 def run_training(
     training_path: Path,
     prediction_path: Path,
@@ -89,6 +103,16 @@ def run_training(
     summary_path = output_dir / "TFIDF_학습_예측_요약.json"
     prediction_output_path = output_dir / "2016_2020_2022_2024_TFIDF_영역분류_예측.csv"
     review_workbook_path = output_dir / "2016_2020_2022_2024_TFIDF_영역분류_검토.xlsx"
+    evaluation_output_paths = (
+        output_dir / "TFIDF_모델_비교.csv",
+        output_dir / "2016_2020_2022_2024_TFIDF_저신뢰_검토대상.csv",
+        output_dir / "2016_2020_2022_2024_TFIDF_예측_QA.csv",
+        *(
+            output_dir / f"TFIDF_{text_variant}_{suffix}.csv"
+            for text_variant in TEXT_VARIANTS
+            for suffix in ("클래스별_평가", "혼동행렬", "교차검증_예측")
+        ),
+    )
     training_sha256 = file_sha256(training_path)
     prediction_sha256 = file_sha256(prediction_path)
 
@@ -102,12 +126,15 @@ def run_training(
             prediction_sha256=prediction_sha256,
             low_confidence_threshold=low_confidence_threshold,
             n_splits=n_splits,
+            additional_output_paths=evaluation_output_paths,
         )
         if reusable is not None:
             return reusable
 
+    output_dir.mkdir(parents=True, exist_ok=True)
     training = pd.read_csv(training_path)
     targets = pd.read_csv(prediction_path)
+    validate_prediction_targets(targets)
 
     evaluations = [
         evaluate_text_variant(training, text_variant, n_splits=n_splits)
@@ -122,7 +149,6 @@ def run_training(
         low_confidence_threshold=low_confidence_threshold,
     )
 
-    output_dir.mkdir(parents=True, exist_ok=True)
     metrics = pd.DataFrame(
         [{"입력방식": result.text_variant, **result.metrics} for result in evaluations]
     ).sort_values("f1_macro", ascending=False)
@@ -201,6 +227,7 @@ def run_training(
         "n_splits": n_splits,
         "training_sha256": training_sha256,
         "prediction_sha256": prediction_sha256,
+        "model_sha256": model_checksum_path(model_path).read_text(encoding="ascii").strip(),
         "model_path": str(model_path),
         "review_workbook_path": str(review_workbook_path),
         "reused_existing": False,

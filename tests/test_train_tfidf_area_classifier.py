@@ -4,7 +4,15 @@ from __future__ import annotations
 
 import json
 
-from scripts.train_tfidf_area_classifier import file_sha256, load_reusable_summary
+import pandas as pd
+import pytest
+
+from scripts.train_tfidf_area_classifier import (
+    file_sha256,
+    load_reusable_summary,
+    validate_prediction_targets,
+)
+from src.modeling.tfidf_area_classifier import model_checksum_path
 
 
 def test_load_reusable_summary_reuses_only_matching_complete_outputs(tmp_path):
@@ -17,6 +25,7 @@ def test_load_reusable_summary_reuses_only_matching_complete_outputs(tmp_path):
     training.write_text("training", encoding="utf-8")
     prediction.write_text("prediction", encoding="utf-8")
     model.touch()
+    model_checksum_path(model).touch()
     prediction_output.touch()
     workbook.touch()
     summary = {
@@ -43,10 +52,76 @@ def test_load_reusable_summary_reuses_only_matching_complete_outputs(tmp_path):
     assert reused["reused_existing"] is True
 
 
+def test_load_reusable_summary_rejects_missing_additional_output(tmp_path):
+    paths = [tmp_path / name for name in ["model", "prediction", "workbook"]]
+    for path in paths:
+        path.touch()
+    model_checksum_path(paths[0]).touch()
+    summary_path = tmp_path / "summary.json"
+    summary_path.write_text(
+        json.dumps(
+            {
+                "training_sha256": "a",
+                "prediction_sha256": "b",
+                "low_confidence_threshold": 0.5,
+                "n_splits": 5,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    reused = load_reusable_summary(
+        summary_path,
+        model_path=paths[0],
+        prediction_output_path=paths[1],
+        review_workbook_path=paths[2],
+        training_sha256="a",
+        prediction_sha256="b",
+        low_confidence_threshold=0.5,
+        n_splits=5,
+        additional_output_paths=(tmp_path / "missing.csv",),
+    )
+
+    assert reused is None
+
+
+def test_load_reusable_summary_rejects_changed_setting(tmp_path):
+    paths = [tmp_path / name for name in ["model", "prediction", "workbook"]]
+    for path in paths:
+        path.touch()
+    model_checksum_path(paths[0]).touch()
+    summary_path = tmp_path / "summary.json"
+    summary_path.write_text(
+        json.dumps(
+            {
+                "training_sha256": "a",
+                "prediction_sha256": "b",
+                "low_confidence_threshold": 0.5,
+                "n_splits": 5,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    reused = load_reusable_summary(
+        summary_path,
+        model_path=paths[0],
+        prediction_output_path=paths[1],
+        review_workbook_path=paths[2],
+        training_sha256="a",
+        prediction_sha256="b",
+        low_confidence_threshold=0.4,
+        n_splits=5,
+    )
+
+    assert reused is None
+
+
 def test_load_reusable_summary_rejects_changed_input(tmp_path):
     paths = [tmp_path / name for name in ["model", "prediction", "workbook"]]
     for path in paths:
         path.touch()
+    model_checksum_path(paths[0]).touch()
     summary_path = tmp_path / "summary.json"
     summary_path.write_text(
         json.dumps(
@@ -72,3 +147,8 @@ def test_load_reusable_summary_rejects_changed_input(tmp_path):
     )
 
     assert reused is None
+
+
+def test_validate_prediction_targets_rejects_missing_key_column():
+    with pytest.raises(ValueError, match="필수 열 누락"):
+        validate_prediction_targets(pd.DataFrame({"연도": [2020], "지역": ["서울"]}))

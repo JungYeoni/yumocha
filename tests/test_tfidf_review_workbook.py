@@ -16,7 +16,7 @@ def _prediction_frame() -> pd.DataFrame:
             "지역": ["서울", "부산"],
             "원본행": [1, 2],
             "세부사업명": ["청년 취업", "아이 돌봄"],
-            "주요내용_정제": ["고용 지원", "돌봄 지원"],
+            "주요내용_정제": ["고용 지원", pd.NA],
             "예측_대영역": ["1. 경제·고용·주거", "2. 가족·생활"],
             "예측_세부영역": ["1-1. 고용여건", "2-1. 돌봄 여건"],
             "예측_신뢰도": [0.9, 0.2],
@@ -33,10 +33,16 @@ def test_create_review_workbook_adds_dropdowns_and_formulas(tmp_path):
     workbook = load_workbook(path, data_only=False)
     sheet = workbook["영역분류검토"]
     assert sheet["D2"].value == "아이 돌봄"
+    assert sheet["E2"].value is None
     assert sheet["K2"].value == "2-1. 돌봄 여건"
     assert sheet["L2"].value == "미검토"
     assert sheet["J2"].value.startswith("=IFERROR(VLOOKUP(")
-    assert len(sheet.data_validations.dataValidation) == 2
+    validations = {
+        str(validation.sqref): validation.formula1
+        for validation in sheet.data_validations.dataValidation
+    }
+    assert validations["K2:K3"] == "'라벨목록'!$A$2:$A$13"
+    assert validations["L2:L3"] == "'라벨목록'!$A$16:$A$19"
     assert workbook["라벨목록"].sheet_state == "hidden"
 
 

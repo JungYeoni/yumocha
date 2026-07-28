@@ -10,6 +10,7 @@ import pandas as pd
 
 from src.modeling.tfidf_area_classifier import (
     RANDOM_STATE,
+    TEXT_VARIANTS,
     load_model_bundle,
     predict,
 )
@@ -26,6 +27,12 @@ def run_inference(
 ) -> pd.DataFrame:
     """모델 번들을 불러와 신규 CSV에 영역 예측을 추가한다."""
     bundle = load_model_bundle(model_path)
+    expected_columns = TEXT_VARIANTS.get(bundle["text_variant"])
+    if expected_columns is None or tuple(bundle["text_columns"]) != expected_columns:
+        raise ValueError(
+            "번들의 텍스트 열 구성이 현재 TEXT_VARIANTS 정의와 다릅니다. "
+            "현재 코드로 모델을 다시 학습하세요."
+        )
     frame = pd.read_csv(input_path)
     predicted = predict(
         bundle["model"],

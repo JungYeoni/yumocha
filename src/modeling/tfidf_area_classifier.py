@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -9,7 +10,6 @@ from typing import Any
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.base import clone
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix
@@ -124,6 +124,8 @@ def evaluate_text_variant(
     text = build_text(frame, text_variant)
     labels = frame["세부영역"].astype("string")
     groups = frame["지역"].astype("string")
+    # 분할 기준: 지역을 그룹으로 완전히 분리하고 세부영역 라벨을 stratify한다.
+    # n_splits는 지역 그룹을 나눌 교차검증 fold 수를 결정한다.
     splitter = StratifiedGroupKFold(
         n_splits=n_splits,
         shuffle=True,
@@ -191,7 +193,7 @@ def choose_best_result(results: list[EvaluationResult]) -> EvaluationResult:
 def fit_model(frame: pd.DataFrame, text_variant: str) -> Pipeline:
     """전체 학습 데이터로 최종 모델을 적합한다."""
     validate_training_data(frame)
-    model = clone(build_pipeline())
+    model = build_pipeline()
     model.fit(build_text(frame, text_variant), frame["세부영역"].astype("string"))
     return model
 
@@ -226,7 +228,7 @@ def save_model_bundle(
     metrics: dict[str, float],
     metadata: dict[str, Any],
 ) -> None:
-    """추론에 필요한 모델·전처리 설정·메타데이터를 함께 저장한다."""
+    """모델 번들과 무결성 검증용 SHA-256 sidecar를 함께 저장한다."""
     path.parent.mkdir(parents=True, exist_ok=True)
     bundle = {
         "model": model,
@@ -236,12 +238,40 @@ def save_model_bundle(
         "metadata": metadata,
     }
     joblib.dump(bundle, path)
+    model_checksum_path(path).write_text(_file_sha256(path) + "\n", encoding="ascii")
 
 
 def load_model_bundle(path: Path) -> dict[str, Any]:
-    """저장된 모델 번들을 불러오고 필수 항목을 검증한다."""
+    """신뢰된 출처의 모델 번들을 체크섬 검증 후 불러온다.
+
+    ``joblib``은 pickle 역직렬화를 사용하므로 외부에서 받은 신뢰할 수 없는
+    파일에는 사용하지 않는다. sidecar 체크섬은 파일 손상·잘못된 아티팩트
+    사용을 탐지하지만 악의적인 파일과 체크섬의 동시 변조를 막는 서명은 아니다.
+    """
+    checksum_path = model_checksum_path(path)
+    if not checksum_path.exists():
+        raise ValueError(f"모델 체크섬 파일이 없습니다: {checksum_path}")
+    expected_checksum = checksum_path.read_text(encoding="ascii").strip()
+    actual_checksum = _file_sha256(path)
+    if not expected_checksum or actual_checksum != expected_checksum:
+        raise ValueError("모델 번들의 SHA-256 체크섬이 일치하지 않습니다.")
+
     bundle = joblib.load(path)
     required = {"model", "text_variant", "text_columns", "metrics", "metadata"}
     if not isinstance(bundle, dict) or not required.issubset(bundle):
         raise ValueError("올바른 TF-IDF 모델 번들이 아닙니다.")
     return bundle
+
+
+def model_checksum_path(path: Path) -> Path:
+    """모델 파일에 대응하는 SHA-256 sidecar 경로를 반환한다."""
+    return path.with_suffix(path.suffix + ".sha256")
+
+
+def _file_sha256(path: Path) -> str:
+    """파일의 SHA-256을 계산한다."""
+    digest = hashlib.sha256()
+    with path.open("rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()

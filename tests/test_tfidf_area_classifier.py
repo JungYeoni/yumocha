@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
+
+import joblib
 import pandas as pd
 import pytest
 
@@ -11,6 +14,7 @@ from src.modeling.tfidf_area_classifier import (
     evaluate_text_variant,
     fit_model,
     load_model_bundle,
+    model_checksum_path,
     predict,
     save_model_bundle,
     validate_training_data,
@@ -83,6 +87,32 @@ def test_fit_predict_and_model_bundle_round_trip(tmp_path):
 
     assert loaded["text_variant"] == "사업명_주요내용"
     assert loaded["metadata"]["training_rows"] == 4
+    assert model_checksum_path(path).exists()
+
+
+@pytest.mark.parametrize("threshold", [0, 1, -0.1, 1.1])
+def test_predict_rejects_threshold_outside_open_unit_interval(threshold):
+    with pytest.raises(ValueError, match="0과 1 사이"):
+        predict(object(), _training_frame(), "사업명", low_confidence_threshold=threshold)
+
+
+def test_load_model_bundle_rejects_missing_required_key(tmp_path):
+    path = tmp_path / "invalid.joblib"
+    joblib.dump({"model": "missing other keys"}, path)
+    checksum = hashlib.sha256(path.read_bytes()).hexdigest()
+    model_checksum_path(path).write_text(checksum + "\n", encoding="ascii")
+
+    with pytest.raises(ValueError, match="올바른 TF-IDF 모델 번들"):
+        load_model_bundle(path)
+
+
+def test_load_model_bundle_rejects_checksum_mismatch(tmp_path):
+    path = tmp_path / "invalid.joblib"
+    joblib.dump({"model": "untrusted"}, path)
+    model_checksum_path(path).write_text("0" * 64 + "\n", encoding="ascii")
+
+    with pytest.raises(ValueError, match="체크섬"):
+        load_model_bundle(path)
 
 
 def test_evaluate_text_variant_returns_grouped_cv_predictions():
