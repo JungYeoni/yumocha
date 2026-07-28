@@ -50,6 +50,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([0fa5052](https://github.com/JungYeoni/da-template/commit/0fa50525058ad97edea11156bff4816df0135729))
 - CHANGELOG 자동 업데이트 [skip ci] ([485125d](https://github.com/JungYeoni/da-template/commit/485125d48ce842912d8ee53d69446d538d8baaf6))
 - CHANGELOG 자동 업데이트 [skip ci] ([fc0d39c](https://github.com/JungYeoni/da-template/commit/fc0d39cb1ee74cd9beac8377b1060915fb46b564))
 - CHANGELOG 자동 업데이트 [skip ci] ([95cf89a](https://github.com/JungYeoni/da-template/commit/95cf89a35ea697d7b91e7664217a659b9aee97b5))
@@ -132,6 +133,7 @@
 
 ### 버그 수정
 
+- 라벨 취합 원자료 키 검증 보강 (#51) ([8ae3900](https://github.com/JungYeoni/da-template/commit/8ae3900e15ea81ce16e971d32496cb11ad184cb2))
 - 가족실태조사 노트북 실행 경로 정리 (#50) ([cb68e1e](https://github.com/JungYeoni/da-template/commit/cb68e1eb335c77e1149bcf509229a616ffa9dc18))
 - 노트북 로컬 경로 출력 제거 (#48) ([5f87ec4](https://github.com/JungYeoni/da-template/commit/5f87ec4ca7fd280abfd840e19722b6428b0162ca))
 - 가중치 컬럼 매핑 근거 보완 (#48) ([178dc7d](https://github.com/JungYeoni/da-template/commit/178dc7d1e847d428c2ddc8bd7ce99286f091a98e))
@@ -178,6 +180,7 @@
 
 ### 새 기능
 
+- 2021년 영역분류 라벨 학습 데이터 취합 (#51) ([33a371e](https://github.com/JungYeoni/da-template/commit/33a371e5b7920a8730f9129d5c9e02a8360d19af))
 - 주거실태조사 주거지표 3종 산출 및 비교 (#49) ([3478c02](https://github.com/JungYeoni/da-template/commit/3478c02e7216789a72da6b32fda23ef2d13ffac1))
 - 주거실태조사 기반 청년가구 주거지표 2종 산출 (#49) ([c1a66c9](https://github.com/JungYeoni/da-template/commit/c1a66c97d7cf082b2e9f99a2f3fb014a72be44f4))
 - 가족실태조사 기반 구조환경지표 3종 산출 (#50) ([dbcfd41](https://github.com/JungYeoni/da-template/commit/dbcfd41ce2b59c0dd47b6a896d8a0b8858d7fb2e))
