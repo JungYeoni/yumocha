@@ -10,9 +10,12 @@ import argparse
 from collections.abc import Sequence
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from scripts.consolidate_2021_area_labels import REGION_ORDER, normalize_text
+
+np.random.seed(42)
 
 PREDICTION_YEARS = [2016, 2017, 2018, 2019, 2020, 2022, 2023, 2024]
 
@@ -54,8 +57,10 @@ def read_prediction_source(path: Path, *, year: int, region: str) -> pd.DataFram
         raise ValueError(f"필수 열 누락: {path}={missing_columns}")
 
     key_columns = ["연도", "지역", "원본행"]
-    if frame[key_columns].isna().any().any():
-        missing = frame.loc[frame[key_columns].isna().any(axis=1), key_columns]
+    invalid_key = frame[key_columns].isna().any(axis=1)
+    invalid_key |= frame["원본행"].map(normalize_text).eq("")
+    if invalid_key.any():
+        missing = frame.loc[invalid_key, key_columns]
         raise ValueError(f"연도·지역·원본행 결측: {path}={missing.to_dict('records')}")
 
     observed_years = pd.to_numeric(frame["연도"], errors="coerce").unique().tolist()
@@ -72,11 +77,12 @@ def read_prediction_source(path: Path, *, year: int, region: str) -> pd.DataFram
     output["지역"] = normalized_regions
     output["원본파일"] = f"{region}/{path.name}"
     output["주요내용_정제_결측"] = output["주요내용_정제"].isna()
+    normalized_project_names = output["세부사업명"].map(normalize_text)
     output["분류텍스트"] = (
-        output["세부사업명"].map(normalize_text) + " " + output["주요내용_정제"].map(normalize_text)
+        normalized_project_names + " " + output["주요내용_정제"].map(normalize_text)
     ).str.strip()
 
-    if output["세부사업명"].isna().any() or output["분류텍스트"].eq("").any():
+    if normalized_project_names.eq("").any() or output["분류텍스트"].eq("").any():
         raise ValueError(f"학습 텍스트를 만들 수 없는 행이 있습니다: {path}")
     if output.duplicated(key_columns).any():
         duplicate = output.loc[

@@ -117,3 +117,24 @@ def test_read_prediction_source_rejects_wrong_region(tmp_path):
 
     with pytest.raises(ValueError, match="경로 지역과 데이터 지역"):
         read_prediction_source(path, year=2020, region="서울")
+
+
+def test_read_prediction_source_rejects_whitespace_only_original_row(tmp_path):
+    path = _write_source(tmp_path, year=2020, region="서울", original_rows=[1])
+    frame = pd.read_csv(path)
+    frame["원본행"] = "   "
+    frame.to_csv(path, index=False)
+
+    with pytest.raises(ValueError, match="연도·지역·원본행 결측"):
+        read_prediction_source(path, year=2020, region="서울")
+
+
+def test_read_prediction_source_rejects_whitespace_only_project_name(tmp_path):
+    path = _write_source(tmp_path, year=2020, region="서울", original_rows=[1])
+    frame = pd.read_csv(path)
+    frame["세부사업명"] = "   "
+    frame["주요내용_정제"] = "내용은 존재"
+    frame.to_csv(path, index=False)
+
+    with pytest.raises(ValueError, match="학습 텍스트를 만들 수 없는 행"):
+        read_prediction_source(path, year=2020, region="서울")
