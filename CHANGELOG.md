@@ -50,6 +50,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([fc0d39c](https://github.com/JungYeoni/da-template/commit/fc0d39cb1ee74cd9beac8377b1060915fb46b564))
 - CHANGELOG 자동 업데이트 [skip ci] ([95cf89a](https://github.com/JungYeoni/da-template/commit/95cf89a35ea697d7b91e7664217a659b9aee97b5))
 - 구조환경지표 지역별 상세 결과 추가 (#45) ([bf6bc86](https://github.com/JungYeoni/da-template/commit/bf6bc865eb6b7a2f103b3279570d0645a8990d94))
 - CHANGELOG 자동 업데이트 [skip ci] ([9a04656](https://github.com/JungYeoni/da-template/commit/9a046569850b65bc6f3db0a9bf4ad8cdb1a7d154))
@@ -130,6 +131,7 @@
 
 ### 버그 수정
 
+- 가족실태조사 노트북 실행 경로 정리 (#50) ([cb68e1e](https://github.com/JungYeoni/da-template/commit/cb68e1eb335c77e1149bcf509229a616ffa9dc18))
 - 노트북 로컬 경로 출력 제거 (#48) ([5f87ec4](https://github.com/JungYeoni/da-template/commit/5f87ec4ca7fd280abfd840e19722b6428b0162ca))
 - 가중치 컬럼 매핑 근거 보완 (#48) ([178dc7d](https://github.com/JungYeoni/da-template/commit/178dc7d1e847d428c2ddc8bd7ce99286f091a98e))
 - CodeRabbit 리뷰 반영 및 산출 근거 보완 (#48) ([4814cf4](https://github.com/JungYeoni/da-template/commit/4814cf462f5945f4623b9461fde13989e1b57684))
@@ -175,6 +177,7 @@
 
 ### 새 기능
 
+- 가족실태조사 기반 구조환경지표 3종 산출 (#50) ([dbcfd41](https://github.com/JungYeoni/da-template/commit/dbcfd41ce2b59c0dd47b6a896d8a0b8858d7fb2e))
 - 청년층 정규직 근로자 비율 산출 (#48) ([d823041](https://github.com/JungYeoni/da-template/commit/d8230412baf7aac4bf8a0679ac3707c61316c54f))
 - 검증 원자료 지역·연도 추세 시각화 추가 (#45) ([e4f1720](https://github.com/JungYeoni/da-template/commit/e4f17209e044cafc7217c4e6288a6066cc0dcde2))
 - 계획예산·합계출산율 기초패널 생성 (#52) ([2804779](https://github.com/JungYeoni/da-template/commit/28047790717246390142dc32a2e0eae619abe62f))
@@ -224,6 +227,8 @@
 
 ### 테스트
 
+- 가족실태조사 지표 3종 최종 재실행 (#50) ([0ae8ca7](https://github.com/JungYeoni/da-template/commit/0ae8ca78a671e34f9dfc90f2cdb976e1ea8c8214))
+- 가족실태조사 지표 3종 외부 기준값 검증 (#50) ([69b78bb](https://github.com/JungYeoni/da-template/commit/69b78bb4d690eb85331c04d0f4f9f5d407b5cfb7))
 - 리뷰 반영 후 청년층 정규직 근로자 비율 재실행 (#48) ([b0a50ae](https://github.com/JungYeoni/da-template/commit/b0a50ae062958ab2b0ffcca8cb0f4189ccd42528))
 - 청년층 정규직 근로자 비율 산출 검증 (#48) ([0f5c2a1](https://github.com/JungYeoni/da-template/commit/0f5c2a14a7b138dd125808f47361e455c91701d9))
 - 기초패널 범위 및 예산 역대조 검증 (#52) ([b576979](https://github.com/JungYeoni/da-template/commit/b576979ca56939788de6420ddf0724b863cf51c8))
