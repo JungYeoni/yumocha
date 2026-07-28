@@ -6,9 +6,13 @@ import pandas as pd
 import pytest
 
 from scripts.consolidate_2021_area_labels import (
+    BASE_COLUMNS,
     MAJOR_BY_SUBCATEGORY,
+    consolidate_labels,
     normalize_text,
+    read_label_file,
     region_from_filename,
+    validate_source_keys,
 )
 
 
@@ -33,3 +37,98 @@ def test_every_subcategory_maps_to_one_canonical_major_category():
     assert MAJOR_BY_SUBCATEGORY["2-1. 돌봄 여건"] == "2. 가족·생활"
     assert MAJOR_BY_SUBCATEGORY["4-1. 일·가정 양립 여건"] == "4. 사회·문화"
     assert MAJOR_BY_SUBCATEGORY["지표체계 외"] == "지표체계 외"
+
+
+def test_read_label_file_stores_normalized_region(tmp_path):
+    path = tmp_path / "(완료) 라벨링_2021_서울_세부사업_정제.xlsx"
+    row = {column: None for column in BASE_COLUMNS}
+    row.update(
+        {
+            "대영역": "2. 가족·생활",
+            "세부영역": "2-1. 돌봄 여건",
+            "연도": 2021,
+            "지역": "  서울  ",
+            "세부사업명": "돌봄 지원",
+            "원본행": 1,
+        }
+    )
+    pd.DataFrame([row]).to_excel(path, index=False)
+
+    result = read_label_file(path)
+
+    assert result["지역"].tolist() == ["서울"]
+
+
+def _write_source_keys(
+    source_dir: Path,
+    *,
+    region: str,
+    original_rows: list[int],
+) -> None:
+    region_dir = source_dir / region
+    region_dir.mkdir(parents=True)
+    pd.DataFrame({"지역": [region] * len(original_rows), "원본행": original_rows}).to_csv(
+        region_dir / f"2021_{region}_세부사업_정제.csv", index=False
+    )
+
+
+def _write_label_rows(
+    input_dir: Path,
+    *,
+    region: str,
+    original_rows: list[int],
+) -> None:
+    input_dir.mkdir(parents=True)
+    rows = []
+    for original_row in original_rows:
+        row = {column: None for column in BASE_COLUMNS}
+        row.update(
+            {
+                "대영역": "2. 가족·생활",
+                "세부영역": "2-1. 돌봄 여건",
+                "연도": 2021,
+                "지역": region,
+                "세부사업명": f"돌봄 지원 {original_row}",
+                "원본행": original_row,
+            }
+        )
+        rows.append(row)
+    pd.DataFrame(rows).to_excel(
+        input_dir / f"(완료) 라벨링_2021_{region}_세부사업_정제.xlsx",
+        index=False,
+    )
+
+
+def test_validate_source_keys_rejects_missing_label_row(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "scripts.consolidate_2021_area_labels.REGION_ORDER",
+        ["서울"],
+    )
+    input_dir = tmp_path / "labels"
+    source_dir = tmp_path / "source"
+    _write_label_rows(input_dir, region="서울", original_rows=[1])
+    _write_source_keys(source_dir, region="서울", original_rows=[1, 2])
+
+    with pytest.raises(ValueError, match="라벨누락.*2"):
+        consolidate_labels(input_dir, source_dir)
+
+
+def test_validate_source_keys_rejects_unexpected_label_row(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "scripts.consolidate_2021_area_labels.REGION_ORDER",
+        ["서울"],
+    )
+    input_dir = tmp_path / "labels"
+    source_dir = tmp_path / "source"
+    _write_label_rows(input_dir, region="서울", original_rows=[1, 2])
+    _write_source_keys(source_dir, region="서울", original_rows=[1])
+
+    with pytest.raises(ValueError, match="예상밖라벨.*2"):
+        consolidate_labels(input_dir, source_dir)
+
+
+def test_validate_source_keys_rejects_missing_key(tmp_path):
+    combined = pd.DataFrame({"지역": ["서울"], "원본행": [pd.NA]})
+
+    with pytest.raises(ValueError, match="지역·원본행 결측"):
+        validate_source_keys(combined, tmp_path)

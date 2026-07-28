@@ -1,4 +1,9 @@
-"""2021년 17개 시도 영역분류 라벨 파일을 TF-IDF 학습용으로 취합한다."""
+"""2021년 17개 시도 영역분류 라벨 파일을 TF-IDF 학습용으로 취합한다.
+
+기존 ``src/features``와 연도별 정제 노트북은 시행계획 원문을 세부사업
+데이터로 변환하는 로직이다. 이번 입력은 정제가 끝난 지역별 라벨 XLSX이며,
+원본 CSV 키 대조와 taxonomy 정규화가 필요해 별도 취합 단계로 구현했다.
+"""
 
 from __future__ import annotations
 
@@ -101,17 +106,77 @@ def read_label_file(path: Path) -> pd.DataFrame:
     if missing_columns:
         raise ValueError(f"필수 열 누락: {path.name}={missing_columns}")
 
+    if frame["지역"].isna().any():
+        raise ValueError(f"지역 결측이 있습니다: {path.name}")
+
     region = region_from_filename(path)
     observed_regions = frame["지역"].dropna().map(normalize_text).unique().tolist()
     if observed_regions != [region]:
         raise ValueError(f"파일명 지역과 데이터 지역이 다릅니다: {path.name}={observed_regions}")
 
     output = frame[BASE_COLUMNS].copy()
+    output["지역"] = output["지역"].map(normalize_text)
     output["라벨원본파일"] = unicodedata.normalize("NFC", path.name)
     return output
 
 
-def consolidate_labels(input_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+def _key_records(frame: pd.DataFrame) -> set[tuple[str, object]]:
+    """지역·원본행 키를 비교 가능한 튜플 집합으로 반환한다."""
+    return set(frame[["지역", "원본행"]].itertuples(index=False, name=None))
+
+
+def validate_source_keys(combined: pd.DataFrame, source_dir: Path) -> None:
+    """통합 라벨 키를 지역별 정제 원본 CSV와 양방향으로 대조한다."""
+    key_columns = ["지역", "원본행"]
+    if combined[key_columns].isna().any().any():
+        missing = combined.loc[combined[key_columns].isna().any(axis=1), key_columns]
+        raise ValueError(f"지역·원본행 결측: {missing.to_dict('records')}")
+
+    failures: list[dict[str, object]] = []
+    for region in REGION_ORDER:
+        source_path = source_dir / region / f"2021_{region}_세부사업_정제.csv"
+        if not source_path.exists():
+            raise FileNotFoundError(f"지역 정제 원본 CSV가 없습니다: {source_path}")
+
+        source = pd.read_csv(source_path, usecols=key_columns)
+        if source[key_columns].isna().any().any():
+            missing = source.loc[source[key_columns].isna().any(axis=1), key_columns]
+            raise ValueError(f"원자료 지역·원본행 결측: {source_path}={missing.to_dict('records')}")
+        source["지역"] = source["지역"].map(normalize_text)
+        observed_regions = source["지역"].unique().tolist()
+        if observed_regions != [region]:
+            raise ValueError(
+                f"원자료 경로 지역과 데이터 지역이 다릅니다: {source_path}={observed_regions}"
+            )
+        if source.duplicated(key_columns).any():
+            duplicate = source.loc[
+                source.duplicated(key_columns, keep=False), key_columns
+            ].drop_duplicates()
+            raise ValueError(
+                f"원자료 지역·원본행 중복: {source_path}={duplicate.to_dict('records')}"
+            )
+
+        label_keys = _key_records(combined.loc[combined["지역"].eq(region)])
+        source_keys = _key_records(source)
+        missing_label = sorted(source_keys - label_keys)
+        unexpected_label = sorted(label_keys - source_keys)
+        if missing_label or unexpected_label:
+            failures.append(
+                {
+                    "지역": region,
+                    "라벨누락": missing_label,
+                    "예상밖라벨": unexpected_label,
+                }
+            )
+
+    if failures:
+        raise ValueError(f"원자료 키 대조 실패: {failures}")
+
+
+def consolidate_labels(
+    input_dir: Path,
+    source_dir: Path = Path("data/interim"),
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """지역별 파일을 결합하고 taxonomy를 세부영역 기준으로 정규화한다."""
     files = sorted(input_dir.glob("*.xlsx"))
     if len(files) != len(REGION_ORDER):
@@ -120,6 +185,11 @@ def consolidate_labels(input_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     frames = [read_label_file(path) for path in files]
     combined = pd.concat(frames, ignore_index=True)
 
+    if combined[["지역", "원본행"]].isna().any().any():
+        missing_key = combined.loc[
+            combined[["지역", "원본행"]].isna().any(axis=1), ["지역", "원본행"]
+        ]
+        raise ValueError(f"지역·원본행 결측: {missing_key.to_dict('records')}")
     if set(combined["지역"]) != set(REGION_ORDER):
         missing = sorted(set(REGION_ORDER) - set(combined["지역"]))
         extra = sorted(set(combined["지역"]) - set(REGION_ORDER))
@@ -131,6 +201,7 @@ def consolidate_labels(input_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
             combined.duplicated(["지역", "원본행"], keep=False), ["지역", "원본행"]
         ]
         raise ValueError(f"지역·원본행 중복: {duplicate.drop_duplicates().to_dict('records')}")
+    validate_source_keys(combined, source_dir)
 
     combined["대영역_원본"] = combined["대영역"]
     canonical_major = combined["세부영역"].map(MAJOR_BY_SUBCATEGORY)
@@ -207,6 +278,11 @@ def parse_args() -> argparse.Namespace:
         default=Path("data/interim/영역분류_라벨링/2021"),
     )
     parser.add_argument(
+        "--source-dir",
+        type=Path,
+        default=Path("data/interim"),
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=Path("data/interim/영역분류_라벨링/2021/통합"),
@@ -216,7 +292,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    combined, qa = consolidate_labels(args.input_dir)
+    combined, qa = consolidate_labels(args.input_dir, args.source_dir)
     paths = save_outputs(combined, qa, args.output_dir)
 
     print(f"지역: {combined['지역'].nunique()}개")
