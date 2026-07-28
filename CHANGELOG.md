@@ -33,6 +33,7 @@
 
 ### 리팩터링
 
+- TF-IDF 분류 대상 경로 명확화 (#60) ([9c36e7c](https://github.com/JungYeoni/da-template/commit/9c36e7c29e068a4768dfe4c3f280558eab794572))
 - 구조환경지표 시각화 산출물 폴더 분리 (#45) ([322b357](https://github.com/JungYeoni/da-template/commit/322b3576fe993531d562de70ecc7438db1319207))
 - Reports 디렉터리 구조 정리 (#33) ([4b300ee](https://github.com/JungYeoni/da-template/commit/4b300eeb2345dca805c42549a612eb980d73f85b))
 - 노트북 비교 셀 공통함수 전환, 셀 단위 결측 집계 보완 (#38) ([7b0d3f2](https://github.com/JungYeoni/da-template/commit/7b0d3f2a5ba1e9e06efe54fcd12c8361c847ebf2))
@@ -50,6 +51,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([e51d720](https://github.com/JungYeoni/da-template/commit/e51d720113b0bfec03859f15b588a51e550c7490))
 - CHANGELOG 자동 업데이트 [skip ci] ([0fa5052](https://github.com/JungYeoni/da-template/commit/0fa50525058ad97edea11156bff4816df0135729))
 - CHANGELOG 자동 업데이트 [skip ci] ([485125d](https://github.com/JungYeoni/da-template/commit/485125d48ce842912d8ee53d69446d538d8baaf6))
 - CHANGELOG 자동 업데이트 [skip ci] ([fc0d39c](https://github.com/JungYeoni/da-template/commit/fc0d39cb1ee74cd9beac8377b1060915fb46b564))
@@ -133,6 +135,7 @@
 
 ### 버그 수정
 
+- TF-IDF 입력 검증 보강 (#60) ([0a5f25a](https://github.com/JungYeoni/da-template/commit/0a5f25ab43a76c84be34a4581bb95d3fff8b6a35))
 - 라벨 취합 원자료 키 검증 보강 (#51) ([8ae3900](https://github.com/JungYeoni/da-template/commit/8ae3900e15ea81ce16e971d32496cb11ad184cb2))
 - 가족실태조사 노트북 실행 경로 정리 (#50) ([cb68e1e](https://github.com/JungYeoni/da-template/commit/cb68e1eb335c77e1149bcf509229a616ffa9dc18))
 - 노트북 로컬 경로 출력 제거 (#48) ([5f87ec4](https://github.com/JungYeoni/da-template/commit/5f87ec4ca7fd280abfd840e19722b6428b0162ca))
@@ -180,6 +183,7 @@
 
 ### 새 기능
 
+- TF-IDF 예측 대상 데이터 통합 (#60) ([dcbfe19](https://github.com/JungYeoni/da-template/commit/dcbfe196dda3005203907c0cca4d81eb3a7ad4cd))
 - 2021년 영역분류 라벨 학습 데이터 취합 (#51) ([33a371e](https://github.com/JungYeoni/da-template/commit/33a371e5b7920a8730f9129d5c9e02a8360d19af))
 - 주거실태조사 주거지표 3종 산출 및 비교 (#49) ([3478c02](https://github.com/JungYeoni/da-template/commit/3478c02e7216789a72da6b32fda23ef2d13ffac1))
 - 주거실태조사 기반 청년가구 주거지표 2종 산출 (#49) ([c1a66c9](https://github.com/JungYeoni/da-template/commit/c1a66c97d7cf082b2e9f99a2f3fb014a72be44f4))
