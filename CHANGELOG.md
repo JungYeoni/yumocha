@@ -50,6 +50,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([485125d](https://github.com/JungYeoni/da-template/commit/485125d48ce842912d8ee53d69446d538d8baaf6))
 - CHANGELOG 자동 업데이트 [skip ci] ([fc0d39c](https://github.com/JungYeoni/da-template/commit/fc0d39cb1ee74cd9beac8377b1060915fb46b564))
 - CHANGELOG 자동 업데이트 [skip ci] ([95cf89a](https://github.com/JungYeoni/da-template/commit/95cf89a35ea697d7b91e7664217a659b9aee97b5))
 - 구조환경지표 지역별 상세 결과 추가 (#45) ([bf6bc86](https://github.com/JungYeoni/da-template/commit/bf6bc865eb6b7a2f103b3279570d0645a8990d94))
@@ -177,6 +178,8 @@
 
 ### 새 기능
 
+- 주거실태조사 주거지표 3종 산출 및 비교 (#49) ([3478c02](https://github.com/JungYeoni/da-template/commit/3478c02e7216789a72da6b32fda23ef2d13ffac1))
+- 주거실태조사 기반 청년가구 주거지표 2종 산출 (#49) ([c1a66c9](https://github.com/JungYeoni/da-template/commit/c1a66c97d7cf082b2e9f99a2f3fb014a72be44f4))
 - 가족실태조사 기반 구조환경지표 3종 산출 (#50) ([dbcfd41](https://github.com/JungYeoni/da-template/commit/dbcfd41ce2b59c0dd47b6a896d8a0b8858d7fb2e))
 - 청년층 정규직 근로자 비율 산출 (#48) ([d823041](https://github.com/JungYeoni/da-template/commit/d8230412baf7aac4bf8a0679ac3707c61316c54f))
 - 검증 원자료 지역·연도 추세 시각화 추가 (#45) ([e4f1720](https://github.com/JungYeoni/da-template/commit/e4f17209e044cafc7217c4e6288a6066cc0dcde2))
