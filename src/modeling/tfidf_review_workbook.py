@@ -28,6 +28,8 @@ REVIEW_COLUMNS = [
     "검토상태",
     "검토메모",
 ]
+REVIEW_KEY_COLUMNS = ["연도", "지역", "원본행"]
+TRANSFER_COLUMNS = ["검토_세부영역", "검토상태", "검토메모"]
 
 
 def validate_review_source(frame: pd.DataFrame) -> None:
@@ -52,13 +54,108 @@ def validate_review_source(frame: pd.DataFrame) -> None:
         raise ValueError("검토 키 또는 예측 라벨에 결측이 있습니다.")
 
 
+def _normalized_review_key(values: tuple[object, object, object]) -> tuple[int, str, int]:
+    """Excel에서 숫자로 읽힌 검토 키를 비교 가능한 형식으로 정규화한다."""
+    year, region, original_row = values
+    if year is None or region is None or original_row is None:
+        raise ValueError("검토 키에 결측이 있습니다.")
+    return int(float(year)), str(region).strip(), int(float(original_row))
+
+
+def _header_positions(sheet) -> dict[str, int]:
+    """검토 시트의 헤더명별 1-based 열 위치를 반환한다."""
+    positions = {
+        str(cell.value).strip(): cell.column for cell in sheet[1] if cell.value is not None
+    }
+    required = [*REVIEW_KEY_COLUMNS, "예측_세부영역", *TRANSFER_COLUMNS]
+    missing = [column for column in required if column not in positions]
+    if missing:
+        raise ValueError(f"검토 Excel 필수 열 누락: {missing}")
+    return positions
+
+
+def transfer_review_progress(
+    existing_review_path: Path,
+    refreshed_review_path: Path,
+    output_path: Path,
+    *,
+    excluded_years: tuple[int, ...] = (),
+) -> dict[str, int]:
+    """기존 검토값을 키가 같은 새 예측 Excel에 이관한다."""
+    from openpyxl import load_workbook
+
+    existing_workbook = load_workbook(existing_review_path, data_only=False)
+    refreshed_workbook = load_workbook(refreshed_review_path, data_only=False)
+    existing_sheet = existing_workbook["영역분류검토"]
+    refreshed_sheet = refreshed_workbook["영역분류검토"]
+    existing_positions = _header_positions(existing_sheet)
+    refreshed_positions = _header_positions(refreshed_sheet)
+
+    progress_by_key: dict[tuple[int, str, int], tuple[object, object, object]] = {}
+    excluded_rows = 0
+    for row_number in range(2, existing_sheet.max_row + 1):
+        raw_key = tuple(
+            existing_sheet.cell(row_number, existing_positions[column]).value
+            for column in REVIEW_KEY_COLUMNS
+        )
+        if all(value is None for value in raw_key):
+            continue
+        key = _normalized_review_key(raw_key)
+        predicted = existing_sheet.cell(row_number, existing_positions["예측_세부영역"]).value
+        reviewed = existing_sheet.cell(row_number, existing_positions["검토_세부영역"]).value
+        status = existing_sheet.cell(row_number, existing_positions["검토상태"]).value
+        memo = existing_sheet.cell(row_number, existing_positions["검토메모"]).value
+        has_progress = (
+            status not in (None, "", "미검토")
+            or reviewed not in (None, "", predicted)
+            or memo not in (None, "")
+        )
+        if not has_progress:
+            continue
+        if key[0] in excluded_years:
+            excluded_rows += 1
+            continue
+        if key in progress_by_key:
+            raise ValueError(f"기존 검토 Excel에 중복 키가 있습니다: {key}")
+        progress_by_key[key] = (reviewed, status, memo)
+
+    refreshed_rows: dict[tuple[int, str, int], int] = {}
+    for row_number in range(2, refreshed_sheet.max_row + 1):
+        raw_key = tuple(
+            refreshed_sheet.cell(row_number, refreshed_positions[column]).value
+            for column in REVIEW_KEY_COLUMNS
+        )
+        key = _normalized_review_key(raw_key)
+        if key in refreshed_rows:
+            raise ValueError(f"새 검토 Excel에 중복 키가 있습니다: {key}")
+        refreshed_rows[key] = row_number
+
+    missing_keys = sorted(set(progress_by_key).difference(refreshed_rows))
+    if missing_keys:
+        raise ValueError(f"새 검토 Excel에서 기존 검토 키를 찾을 수 없습니다: {missing_keys[:5]}")
+
+    for key, values in progress_by_key.items():
+        row_number = refreshed_rows[key]
+        for column, value in zip(TRANSFER_COLUMNS, values, strict=True):
+            if column == "검토상태" and value in (None, ""):
+                continue
+            refreshed_sheet.cell(row_number, refreshed_positions[column]).value = value
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    refreshed_workbook.save(output_path)
+    existing_workbook.close()
+    refreshed_workbook.close()
+    return {
+        "이관건수": len(progress_by_key),
+        "제외건수": excluded_rows,
+        "새파일행수": len(refreshed_rows),
+    }
+
+
 def create_review_workbook(frame: pd.DataFrame, output_path: Path) -> Path:
     """예측값을 초기 검토값으로 채운 드롭다운 Excel을 생성한다."""
     validate_review_source(frame)
-    ordered = frame.sort_values(
-        ["저신뢰_검토대상", "예측_신뢰도", "연도", "지역", "원본행"],
-        ascending=[False, True, True, True, True],
-    ).reset_index(drop=True)
+    ordered = frame.sort_values(["연도", "지역", "원본행"]).reset_index(drop=True)
 
     workbook = Workbook()
     workbook.calculation.calcMode = "auto"
