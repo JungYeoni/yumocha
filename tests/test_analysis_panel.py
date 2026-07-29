@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from src.features.analysis_panel import (
+    add_fiscal_index_features,
     add_fiscal_response_features,
     build_budget_fertility_panel,
     load_budget_qa_panel,
@@ -340,3 +341,73 @@ def test_add_fiscal_response_features_uses_only_prior_tfr():
     assert row_2022["전년도_합계출산율"] == 0.60
     assert row_2022["전전년도_합계출산율"] == 0.70
     assert row_2022["직전1년_출산율하락도"] == pytest.approx(0.10)
+
+
+def test_add_fiscal_index_features_calculates_real_per_capita_and_scores():
+    panel = pd.DataFrame(
+        {
+            "지역": ["부산", "서울", "부산", "서울"],
+            "연도": [2021, 2020, 2020, 2021],
+            "당해계획예산_백만원": [240.0, 100.0, 180.0, 220.0],
+            "소비자물가지수": [120.0, 100.0, 90.0, 110.0],
+            "20_39세_인구_명": [20_000, 10_000, 20_000, 10_000],
+        }
+    )
+
+    result = add_fiscal_index_features(panel)
+
+    seoul_2020 = result.query("지역 == '서울' and 연도 == 2020").iloc[0]
+    seoul_2021 = result.query("지역 == '서울' and 연도 == 2021").iloc[0]
+    assert seoul_2020["실질계획예산_2020년가격_백만원"] == pytest.approx(100.0)
+    assert seoul_2020["20_39세_1인당_실질예산_원"] == pytest.approx(10_000.0)
+    assert seoul_2021["실질계획예산_2020년가격_백만원"] == pytest.approx(200.0)
+    assert seoul_2021["실질예산_전년증감액_백만원"] == pytest.approx(100.0)
+    assert seoul_2021["실질예산_전년증감률"] == pytest.approx(1.0)
+    assert result["재정대응지수_z"].mean() == pytest.approx(0.0, abs=1e-12)
+    assert result["재정대응지수_z"].std(ddof=0) == pytest.approx(1.0)
+    assert result["재정대응점수_0_100"].min() == pytest.approx(0.0)
+    assert result["재정대응점수_0_100"].max() == pytest.approx(100.0)
+    assert result.groupby("지역")["실질예산_전년증감액_백만원"].first().notna().all()
+
+
+@pytest.mark.parametrize(
+    ("column", "invalid_value", "message"),
+    [
+        ("당해계획예산_백만원", -1.0, "계획예산은 0 이상"),
+        ("소비자물가지수", 0.0, "소비자물가지수는 0보다"),
+        ("20_39세_인구_명", 0.0, "대상인구는 0보다"),
+        ("소비자물가지수", None, "결측 또는 비수치"),
+    ],
+)
+def test_add_fiscal_index_features_rejects_invalid_inputs(column, invalid_value, message):
+    panel = pd.DataFrame(
+        {
+            "지역": ["서울", "서울"],
+            "연도": [2020, 2021],
+            "당해계획예산_백만원": [100.0, 120.0],
+            "소비자물가지수": [100.0, 105.0],
+            "20_39세_인구_명": [10_000, 9_000],
+        }
+    )
+    panel.loc[1, column] = invalid_value
+
+    with pytest.raises(ValueError, match=message):
+        add_fiscal_index_features(panel)
+
+
+def test_fiscal_feature_functions_reject_non_contiguous_years():
+    panel = pd.DataFrame(
+        {
+            "지역": ["서울", "서울"],
+            "연도": [2020, 2022],
+            "당해계획예산_백만원": [100.0, 120.0],
+            "소비자물가지수": [100.0, 105.0],
+            "20_39세_인구_명": [10_000, 9_000],
+            "합계출산율": [0.70, 0.60],
+        }
+    )
+
+    with pytest.raises(ValueError, match="연도가 연속적이지"):
+        add_fiscal_index_features(panel)
+    with pytest.raises(ValueError, match="연도가 연속적이지"):
+        add_fiscal_response_features(panel)

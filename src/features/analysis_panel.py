@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 from typing import Sequence
 
+import numpy as np
 import pandas as pd
 
 
@@ -51,6 +52,49 @@ def _validate_unique_panel(
         raise ValueError(
             f"{label} 지역×연도 조합 불일치: 누락={missing[:10]}, 예상외={unexpected[:10]}"
         )
+
+
+def _validate_contiguous_region_years(df: pd.DataFrame, *, label: str) -> None:
+    """지역별 연도가 중복 없이 1년 간격으로 이어지는지 검증한다."""
+
+    _require_columns(df, set(PANEL_KEY), label=label)
+    duplicated = df.duplicated(PANEL_KEY, keep=False)
+    if duplicated.any():
+        duplicate_keys = df.loc[duplicated, PANEL_KEY].drop_duplicates()
+        raise ValueError(f"{label} 지역×연도 중복: {duplicate_keys.to_dict(orient='records')}")
+
+    ordered = df.sort_values(PANEL_KEY)
+    year_gaps = ordered.groupby("지역", sort=False)["연도"].diff()
+    invalid = year_gaps.notna() & year_gaps.ne(1)
+    if invalid.any():
+        samples = ordered.loc[invalid, PANEL_KEY].to_dict(orient="records")
+        raise ValueError(f"{label} 지역별 연도가 연속적이지 않습니다: {samples[:10]}")
+
+
+def _require_finite_numeric(
+    df: pd.DataFrame,
+    columns: Sequence[str],
+    *,
+    label: str,
+) -> None:
+    """지정 열이 결측 없는 유한 숫자인지 검증한다."""
+
+    for column in columns:
+        numeric = pd.to_numeric(df[column], errors="coerce")
+        invalid = ~np.isfinite(numeric.to_numpy(dtype=float))
+        if invalid.any():
+            samples = df.loc[invalid, PANEL_KEY + [column]].head(10).to_dict(orient="records")
+            raise ValueError(f"{label} {column}에 결측 또는 비수치 값이 있습니다: {samples}")
+
+
+def _pooled_z_score(series: pd.Series, *, label: str) -> pd.Series:
+    """전체 관측치 평균과 모집단 표준편차(ddof=0)로 z-score를 계산한다."""
+
+    mean = series.mean()
+    std = series.std(ddof=0)
+    if not np.isfinite(std) or std <= 0:
+        raise ValueError(f"{label} pooled z-score를 계산할 분산이 없습니다.")
+    return (series - mean) / std
 
 
 def load_current_budget_panel(
@@ -396,6 +440,84 @@ def build_budget_fertility_panel(
     return panel
 
 
+def add_fiscal_index_features(
+    panel: pd.DataFrame,
+    *,
+    budget_col: str = "당해계획예산_백만원",
+    cpi_col: str = "소비자물가지수",
+    population_col: str = "20_39세_인구_명",
+    cpi_base_value: float = 100.0,
+) -> pd.DataFrame:
+    """계획예산을 실질화하고 재정대응지수와 전년 변화를 생성한다.
+
+    예산 단위는 백만원, 인구 단위는 명을 전제로 한다. 주 지수는 20~39세
+    1인당 실질예산을 ``log1p`` 변환한 뒤 전체 지역×연도 관측치 기준으로
+    표준화한다. 총액 기준 지수와 표시용 0~100 점수도 함께 반환한다.
+
+    지역별 전년 변화가 실제 t-1 비교가 되도록 지역×연도 키 중복과 연도
+    연속성을 검증한다. CPI와 인구는 양수, 예산은 0 이상이어야 한다.
+    """
+
+    required = {*PANEL_KEY, budget_col, cpi_col, population_col}
+    _require_columns(panel, required, label="재정대응지수 패널")
+    _validate_contiguous_region_years(panel, label="재정대응지수 패널")
+    _require_finite_numeric(
+        panel,
+        [budget_col, cpi_col, population_col],
+        label="재정대응지수 패널",
+    )
+
+    if not np.isfinite(cpi_base_value) or cpi_base_value <= 0:
+        raise ValueError("CPI 기준값은 0보다 큰 유한 숫자여야 합니다.")
+
+    result = panel.sort_values(PANEL_KEY).reset_index(drop=True).copy()
+    budget = pd.to_numeric(result[budget_col])
+    cpi = pd.to_numeric(result[cpi_col])
+    population = pd.to_numeric(result[population_col])
+
+    if budget.lt(0).any():
+        samples = result.loc[budget.lt(0), PANEL_KEY + [budget_col]].head(10)
+        raise ValueError(f"계획예산은 0 이상이어야 합니다: {samples.to_dict(orient='records')}")
+    if cpi.le(0).any():
+        samples = result.loc[cpi.le(0), PANEL_KEY + [cpi_col]].head(10)
+        raise ValueError(f"소비자물가지수는 0보다 커야 합니다: {samples.to_dict(orient='records')}")
+    if population.le(0).any():
+        samples = result.loc[population.le(0), PANEL_KEY + [population_col]].head(10)
+        raise ValueError(f"대상인구는 0보다 커야 합니다: {samples.to_dict(orient='records')}")
+
+    result["실질계획예산_2020년가격_백만원"] = budget * cpi_base_value / cpi
+    result["log1p_실질계획예산"] = np.log1p(result["실질계획예산_2020년가격_백만원"])
+    result["20_39세_1인당_실질예산_원"] = (
+        result["실질계획예산_2020년가격_백만원"] * 1_000_000 / population
+    )
+    result["log1p_20_39세_1인당_실질예산"] = np.log1p(result["20_39세_1인당_실질예산_원"])
+    result["총액기준_재정대응지수_z"] = _pooled_z_score(
+        result["log1p_실질계획예산"],
+        label="총액 기준 재정대응지수",
+    )
+    result["재정대응지수_z"] = _pooled_z_score(
+        result["log1p_20_39세_1인당_실질예산"],
+        label="인구당 재정대응지수",
+    )
+
+    score_range = result["재정대응지수_z"].max() - result["재정대응지수_z"].min()
+    if not np.isfinite(score_range) or score_range <= 0:
+        raise ValueError("재정대응점수 0~100 변환을 계산할 범위가 없습니다.")
+    result["재정대응점수_0_100"] = (
+        100 * (result["재정대응지수_z"] - result["재정대응지수_z"].min()) / score_range
+    )
+
+    grouped = result.groupby("지역", sort=False)
+    result["실질예산_전년증감액_백만원"] = grouped["실질계획예산_2020년가격_백만원"].diff()
+    result["실질예산_전년증감률"] = grouped["실질계획예산_2020년가격_백만원"].pct_change(
+        fill_method=None
+    )
+    result["log실질예산_전년변화"] = grouped["log1p_실질계획예산"].diff()
+    result["log1인당실질예산_전년변화"] = grouped["log1p_20_39세_1인당_실질예산"].diff()
+
+    return result
+
+
 def add_fiscal_response_features(
     panel: pd.DataFrame,
     *,
@@ -403,11 +525,15 @@ def add_fiscal_response_features(
 ) -> pd.DataFrame:
     """재정반응성 기초분석용 선행 출산율 변수를 생성한다.
 
-    지역별 연도가 빠짐없이 연속된 균형패널을 전제로 한다. 연도가 누락된
-    입력에서는 ``shift(1)``과 ``shift(2)``가 실제 t-1, t-2를 뜻하지 않는다.
+    지역별 연도가 빠짐없이 연속됐는지 검증해 ``shift(1)``과 ``shift(2)``가
+    실제 t-1, t-2를 뜻하도록 보장한다.
     """
 
-    result = panel.sort_values(PANEL_KEY).copy()
+    _require_columns(panel, {*PANEL_KEY, tfr_col}, label="재정반응성 패널")
+    _validate_contiguous_region_years(panel, label="재정반응성 패널")
+    _require_finite_numeric(panel, [tfr_col], label="재정반응성 패널")
+
+    result = panel.sort_values(PANEL_KEY).reset_index(drop=True).copy()
     grouped = result.groupby("지역", sort=False)[tfr_col]
     result["전년도_합계출산율"] = grouped.shift(1)
     result["전전년도_합계출산율"] = grouped.shift(2)
