@@ -358,6 +358,32 @@ def test_run_checkpointed_refinement_reruns_legacy_checkpoint_without_source_has
     rerun_call.assert_called_once_with("사업 A", "원문 A")
 
 
+def test_run_checkpointed_refinement_rejects_index_only_legacy_checkpoint(tmp_path):
+    source = pd.DataFrame(
+        {
+            "지역": ["울산"],
+            "원본행": [2795],
+            "세부사업명": ["직장보육시설의 운영"],
+            "주요내용": ["시청어린이집 위탁 운영"],
+        },
+        index=[100],
+    )
+    checkpoint_path = tmp_path / "legacy_checkpoint.csv"
+    pd.DataFrame(
+        {"주요내용_정제": ["임신교직원 편의용품 구입비 지원"]},
+        index=[100],
+    ).to_csv(checkpoint_path, encoding="utf-8-sig")
+
+    with pytest.raises(KeyError, match="체크포인트 신원·결과 컬럼"):
+        run_checkpointed_refinement(
+            source,
+            checkpoint_path=checkpoint_path,
+            call_once=Mock(),
+            max_workers=1,
+            chunk_size=1,
+        )
+
+
 def test_extract_numbers_preserves_order():
     assert extract_numbers("만 0~1세, 월 30만원씩 3개월") == ["0", "1", "30", "3"]
     assert extract_numbers(None) == []

@@ -51,6 +51,8 @@
 
 ### 문서
 
+- PR 리뷰 재현성 정보 보완 (#67) ([8c8d5b5](https://github.com/JungYeoni/da-template/commit/8c8d5b52287ce0ecc61ef77c90ac3e32b1d565fd))
+- CHANGELOG 자동 업데이트 [skip ci] ([3c869d5](https://github.com/JungYeoni/da-template/commit/3c869d572b8bec969f38165e4ade07a9bafbd334))
 - CHANGELOG 자동 업데이트 [skip ci] ([e51d720](https://github.com/JungYeoni/da-template/commit/e51d720113b0bfec03859f15b588a51e550c7490))
 - CHANGELOG 자동 업데이트 [skip ci] ([0fa5052](https://github.com/JungYeoni/da-template/commit/0fa50525058ad97edea11156bff4816df0135729))
 - CHANGELOG 자동 업데이트 [skip ci] ([485125d](https://github.com/JungYeoni/da-template/commit/485125d48ce842912d8ee53d69446d538d8baaf6))
@@ -135,6 +137,7 @@
 
 ### 버그 수정
 
+- 2016 LLM 체크포인트 오연결 방지 (#67) ([d951cec](https://github.com/JungYeoni/da-template/commit/d951cecec91c5cfd008fea0d705b48387de7797e))
 - TF-IDF 입력 검증 보강 (#60) ([0a5f25a](https://github.com/JungYeoni/da-template/commit/0a5f25ab43a76c84be34a4581bb95d3fff8b6a35))
 - 라벨 취합 원자료 키 검증 보강 (#51) ([8ae3900](https://github.com/JungYeoni/da-template/commit/8ae3900e15ea81ce16e971d32496cb11ad184cb2))
 - 가족실태조사 노트북 실행 경로 정리 (#50) ([cb68e1e](https://github.com/JungYeoni/da-template/commit/cb68e1eb335c77e1149bcf509229a616ffa9dc18))
