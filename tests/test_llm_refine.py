@@ -17,6 +17,7 @@ from src.features.llm_refine import (
     preservation_violations,
     refine_sentence,
     run_checkpointed_refinement,
+    semantic_preservation_flags,
 )
 
 
@@ -417,6 +418,29 @@ def test_preservation_violations_detects_proper_name_and_empty_result():
         original,
         "대상에게 복지관에서 월 30만원 지원",
     ) == ("고유명사 불일치",)
+
+
+def test_preservation_violations_detects_hallucination_from_blank_original():
+    assert preservation_violations("", "") == ()
+    assert preservation_violations("   ", None) == ()
+    assert preservation_violations(None, "") == ()
+    assert preservation_violations("", "사업예산 1,200만원 지원") == ("빈 원문 변경",)
+
+
+def test_semantic_preservation_flags_adds_review_only_signals():
+    assert semantic_preservation_flags(
+        "서울시민에게 돌봄 서비스를 제공한다",
+        "원문: 서울시민에게 돌봄 서비스를 제공한다",
+    ) == ("정제문 원문 라벨 추가",)
+    assert semantic_preservation_flags(
+        "서울시민에게 생애주기별 맞춤형 돌봄 서비스를 제공한다",
+        "돌봄 제공",
+    ) == ("극단적 길이비",)
+
+
+def test_semantic_preservation_flags_validates_length_ratio_bounds():
+    with pytest.raises(ValueError, match="길이비 기준"):
+        semantic_preservation_flags("원문", "정제문", min_length_ratio=0)
 
 
 @pytest.mark.parametrize(

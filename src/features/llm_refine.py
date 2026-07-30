@@ -25,13 +25,15 @@ NUMBER_PATTERN = re.compile(r"\d+")
 QUANTITY_PATTERN = re.compile(
     r"[+-]?\d[\d,]*(?:\.\d+)?"
     r"(?:\s*(?:~|∼|～|-|–|—)\s*[+-]?\d[\d,]*(?:\.\d+)?)?"
-    r"\s*(?:%|퍼센트|원|천원|만원|백만원|억원|조원|명|가구|세대|개소|개|회|개월|년|월|일|세)?"
+    r"\s*(?:%|퍼센트|백만\s*원|천\s*원|만\s*원|억\s*원|조\s*원|원|"
+    r"명|가구|세대|개소|개|회|개월|년|월|일|세)?"
 )
 QUOTED_TERM_PATTERN = re.compile(r"[「『\"“‘]([^」』\"”’]{2,})[」』\"”’]")
 PROPER_NAME_TOKEN_PATTERN = re.compile(
     r"[가-힣A-Za-z0-9·]+(?:특별자치도|특별자치시|특별시|광역시|도청|시청|군청|구청|"
     r"위원회|복지관|보건소|대학교|대학|학교|병원|의원|재단|공단|공사|협회|센터|연구원)"
 )
+ADDED_SOURCE_LABEL_PATTERN = re.compile(r"(?:^|\s)원문\s*[:：]")
 
 
 @dataclass(frozen=True)
@@ -168,7 +170,13 @@ def preservation_violations(
 ) -> tuple[str, ...]:
     """빈 결과와 숫자·수량·고유명사 보존 위반 사유를 반환한다."""
     if pd.isna(original):
-        return () if pd.isna(cleaned) else ("결측 원문 변경",)
+        if pd.isna(cleaned) or not str(cleaned).strip():
+            return ()
+        return ("결측 원문 변경",)
+    if not str(original).strip():
+        if pd.isna(cleaned) or not str(cleaned).strip():
+            return ()
+        return ("빈 원문 변경",)
     if pd.isna(cleaned) or not str(cleaned).strip():
         return ("빈 결과",)
 
@@ -188,6 +196,54 @@ def preservation_violations(
         violations.append("고유명사 불일치")
 
     return tuple(violations)
+
+
+def semantic_preservation_flags(
+    original: object,
+    cleaned: object,
+    *,
+    context_terms: tuple[str, ...] = (),
+    min_length_ratio: float = 0.5,
+    max_length_ratio: float = 1.5,
+) -> tuple[str, ...]:
+    """사람의 의미보존 검토가 필요한 후보 사유를 반환한다.
+
+    ``preservation_violations``의 결정적 보존 위반에 더해, 과도한 축약·확장과
+    정제문에만 추가된 ``원문:`` 라벨을 감사 후보로 표시한다. 길이비는 공백을
+    제거한 문자 수를 기준으로 계산하며 자동 복구 판정에는 사용하지 않는다.
+    """
+    if min_length_ratio <= 0 or max_length_ratio < min_length_ratio:
+        raise ValueError("길이비 기준은 0 < min_length_ratio <= max_length_ratio여야 합니다.")
+
+    flags = list(
+        preservation_violations(
+            original,
+            cleaned,
+            context_terms=context_terms,
+        )
+    )
+    if pd.isna(original) or pd.isna(cleaned):
+        return tuple(flags)
+
+    original_value = str(original)
+    cleaned_value = str(cleaned)
+    original_compact = re.sub(r"\s+", "", original_value)
+    cleaned_compact = re.sub(r"\s+", "", cleaned_value)
+
+    if (
+        original_compact
+        and cleaned_compact
+        and not ADDED_SOURCE_LABEL_PATTERN.search(original_value)
+        and ADDED_SOURCE_LABEL_PATTERN.search(cleaned_value)
+    ):
+        flags.append("정제문 원문 라벨 추가")
+
+    if original_compact and cleaned_compact:
+        length_ratio = len(cleaned_compact) / len(original_compact)
+        if length_ratio < min_length_ratio or length_ratio > max_length_ratio:
+            flags.append("극단적 길이비")
+
+    return tuple(dict.fromkeys(flags))
 
 
 def refine_sentence(
@@ -449,4 +505,5 @@ __all__ = [
     "refine_sentence",
     "RefinementResult",
     "run_checkpointed_refinement",
+    "semantic_preservation_flags",
 ]
