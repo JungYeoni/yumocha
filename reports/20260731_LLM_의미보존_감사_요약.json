@@ -83,15 +83,14 @@
   {
     "year": 2023,
     "rows": 7543,
-    "candidate_rows": 71,
-    "candidate_rate": 0.009413,
+    "candidate_rows": 14,
+    "candidate_rate": 0.001856,
     "missing_regions": [],
     "reason_counts": {
       "정제문 원문 라벨 추가": 3,
       "극단적 길이비": 5,
       "고유명사 불일치": 5,
-      "금액·퍼센트·범위 불일치": 3,
-      "결측 원문 변경": 57
+      "금액·퍼센트·범위 불일치": 3
     },
     "output_path": "reports/yearly/2023/2023_LLM_의미보존_감사.csv"
   },
