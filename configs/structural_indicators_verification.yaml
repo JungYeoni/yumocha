@@ -589,7 +589,7 @@ indicators:
     status: 'team_calculated'
     direction: 'positive'
     calculation_type: 'ratio'
-    temporal_resolution: 'semiannual'
+    temporal_resolution: 'annual (연평균, 원자료는 반기)'
     official_formula: >-
       19–34세 청년 정규직 근로자 수 ÷ 19–34세 청년 임금근로자 수 × 100
       (정규직은 상용근로자 중 전일제로 조작화)
@@ -597,9 +597,14 @@ indicators:
       19–34세(노트북 구현은 19–34세 만연령) 임금근로자(종사상지위 1·2) 중
       상용(종사상지위 1)이면서 전일제(근무시간구분 3)인 사람의 가중합 ÷
       임금근로자 전체 가중합 × 100. 상반기는 `시도전국가중값`, 하반기는
-      `시도가중값`을 공통 `가중치`로 매핑한다.
+      `시도가중값`을 공통 `가중치`로 매핑한다. 연도값은 반올림 전
+      반기 비율의 단순평균을 한 번만 반올림해 산출한다(이중 반올림 방지).
     notebook: 'notebooks/20260727_EDA_지역별고용조사_청년층_정규직_근로자_비율_산출.ipynb'
-    output_file: 'data/processed/analysis/2016-2024_지역별고용조사_청년층_정규직_근로자_비율.csv'
+    output_file: 'data/processed/analysis/2016-2024_지역별고용조사_청년층_정규직_근로자_비율_연도평균.csv'
+    intermediate_files:
+      - role: 'semiannual_detail'
+        path: 'data/processed/analysis/2016-2024_지역별고용조사_청년층_정규직_근로자_비율.csv'
+        note: '반기(상/하반기) 18개 열 원본. 연도평균 산출의 입력이자 반기 단위 검토용으로 보존.'
     raw_sources:
       - role: 'microdata'
         source: '통계청 MDIS 지역별고용조사 C형(시도 중분류 부가항목)'
@@ -608,14 +613,13 @@ indicators:
         note: '원자료·MDIS 다운로드 내역은 Git 미포함, 재현 시 MDIS 재다운로드 필요'
     open_issues:
       - >-
-        산출 결과가 반기(상/하반기) 단위 18개 열이라, 기존 21개 지표의
-        연도 단위 패널과 형식이 다르다. 연평균·특정 반기 채택 등 연도
-        집계 방식이 아직 결정되지 않았다(이슈 #59에서 결정 필요, 확정
-        전까지 반기 원본 그대로 보존).
-      - >-
         제주 2024년 상반기 외부 기준값(65.4%, 강권오·황은진 2025)과
         수정 산식 결과(65.478%, 반올림 65.5%)가 0.1%p 차이나며 원인은
         별도 확인 대상으로 남아 있다.
+    resolved_issues:
+      - >-
+        반기→연도 집계 방식: 팀 논의 결과 연평균(상·하반기 단순평균)으로
+        확정(2026-07-31). 반기 원본은 intermediate_files로 계속 보존한다.
     limitations:
       - >-
         조사대상주간에 선거일·대체공휴일이 포함된 시점(2020 상반기,
