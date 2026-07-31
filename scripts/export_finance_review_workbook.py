@@ -11,6 +11,7 @@ from openpyxl import load_workbook
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.datavalidation import DataValidation
 
 MAIN_HEADERS = [
@@ -142,7 +143,7 @@ def _write_main_sheet(sheet, master: pd.DataFrame) -> None:
     sheet.data_validations.dataValidation = []
     label_validation = DataValidation(
         type="list",
-        formula1="'라벨목록'!$A$2:$A$19",
+        formula1="ReviewLabels",
         allow_blank=False,
     )
     status_validation = DataValidation(
@@ -256,6 +257,7 @@ def export_workbook(
     _write_main_sheet(workbook["영역분류검토"], master)
     _write_similarity_sheet(workbook, similarity)
     _write_qa_sheet(workbook, qa, master)
+    workbook.defined_names.add(DefinedName("ReviewLabels", attr_text="'라벨목록'!$A$2:$A$19"))
     workbook["라벨목록"].sheet_state = "hidden"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(output_path)
