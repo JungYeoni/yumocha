@@ -77,6 +77,8 @@ TRAIN_COLUMNS = [
     "대영역",
     "세부영역",
 ]
+LABEL_COLUMNS = ["대영역", "세부영역", "라벨원본파일"]
+SOURCE_COLUMNS = [column for column in BASE_COLUMNS if column not in {"대영역", "세부영역"}]
 
 
 def normalize_text(value: object) -> str:
@@ -173,6 +175,41 @@ def validate_source_keys(combined: pd.DataFrame, source_dir: Path) -> None:
         raise ValueError(f"원자료 키 대조 실패: {failures}")
 
 
+def refresh_from_sources(combined: pd.DataFrame, source_dir: Path) -> pd.DataFrame:
+    """수작업 라벨은 유지하고 비라벨 필드는 최신 지역별 정제 CSV에서 가져온다."""
+    frames: list[pd.DataFrame] = []
+    for region in REGION_ORDER:
+        source_path = source_dir / region / f"2021_{region}_세부사업_정제.csv"
+        source = pd.read_csv(source_path, usecols=SOURCE_COLUMNS)
+        source["지역"] = source["지역"].map(normalize_text)
+        frames.append(source)
+
+    latest = pd.concat(frames, ignore_index=True)
+    key_columns = ["지역", "원본행"]
+    if latest.duplicated(key_columns).any():
+        duplicate = latest.loc[
+            latest.duplicated(key_columns, keep=False),
+            key_columns,
+        ].drop_duplicates()
+        raise ValueError(f"최신 원자료 지역·원본행 중복: {duplicate.to_dict('records')}")
+
+    labels = combined[[*key_columns, *LABEL_COLUMNS]].copy()
+    refreshed = latest.merge(
+        labels,
+        on=key_columns,
+        how="left",
+        validate="one_to_one",
+    )
+    required_labels = ["세부영역", "라벨원본파일"]
+    if refreshed[required_labels].isna().any().any():
+        missing = refreshed.loc[
+            refreshed[required_labels].isna().any(axis=1),
+            key_columns,
+        ]
+        raise ValueError(f"최신 원자료에 대응하는 라벨 누락: {missing.to_dict('records')}")
+    return refreshed[[*BASE_COLUMNS, "라벨원본파일"]]
+
+
 def consolidate_labels(
     input_dir: Path,
     source_dir: Path = Path("data/interim"),
@@ -202,6 +239,7 @@ def consolidate_labels(
         ]
         raise ValueError(f"지역·원본행 중복: {duplicate.drop_duplicates().to_dict('records')}")
     validate_source_keys(combined, source_dir)
+    combined = refresh_from_sources(combined, source_dir)
 
     combined["대영역_원본"] = combined["대영역"]
     canonical_major = combined["세부영역"].map(MAJOR_BY_SUBCATEGORY)
