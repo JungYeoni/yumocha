@@ -170,8 +170,8 @@ def _write_main_sheet(sheet, master: pd.DataFrame) -> None:
     sheet.conditional_formatting.add(
         f"A2:S{last_row}",
         FormulaRule(
-            formula=["$S2=TRUE"],
-            fill=PatternFill("solid", fgColor="F4CCCC"),
+            formula=["$R2=TRUE"],
+            fill=PatternFill("solid", fgColor="FFF4CCCC"),
             stopIfTrue=True,
         ),
     )
@@ -179,14 +179,14 @@ def _write_main_sheet(sheet, master: pd.DataFrame) -> None:
         f"A2:S{last_row}",
         FormulaRule(
             formula=['$L2="수정"'],
-            fill=PatternFill("solid", fgColor="FFF2CC"),
+            fill=PatternFill("solid", fgColor="FFFFF2CC"),
         ),
     )
     sheet.conditional_formatting.add(
         f"A2:S{last_row}",
         FormulaRule(
             formula=["$I2=TRUE"],
-            fill=PatternFill("solid", fgColor="DDEBF7"),
+            fill=PatternFill("solid", fgColor="FFDDEBF7"),
         ),
     )
     sheet.title = "전체검토"
