@@ -7,7 +7,7 @@ from copy import copy
 from pathlib import Path
 
 import pandas as pd
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
@@ -51,6 +51,9 @@ SIMILAR_HEADERS = [
     "#72_정제변경",
     "#72_재확인대상",
 ]
+DISPLAY_HEADERS = {
+    "#72_정제변경": "정제문 수정 여부",
+}
 
 
 def _read_csv(path: Path) -> pd.DataFrame:
@@ -87,15 +90,22 @@ def _copy_row_style(sheet, source_row: int, target_row: int, columns: int) -> No
 
 
 def _write_main_sheet(sheet, master: pd.DataFrame) -> None:
-    template_header_styles = [copy(sheet.cell(1, column)._style) for column in range(1, 17)]
-    template_data_styles = [copy(sheet.cell(2, column)._style) for column in range(1, 17)]
-    template_row_height = sheet.row_dimensions[2].height
-    if sheet.max_row > 1:
-        sheet.delete_rows(2, sheet.max_row - 1)
+    header_fill = PatternFill("solid", fgColor="1F4E78")
+    header_font = Font(color="FFFFFF", bold=True)
+    thin_gray = Side(style="thin", color="999999")
+    data_border = Border(
+        left=thin_gray,
+        right=thin_gray,
+        top=thin_gray,
+        bottom=thin_gray,
+    )
 
     for column, header in enumerate(MAIN_HEADERS, start=1):
-        cell = sheet.cell(1, column, header)
-        cell._style = copy(template_header_styles[min(column - 1, 15)])
+        cell = sheet.cell(1, column, DISPLAY_HEADERS.get(header, header))
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = data_border
 
     rows = []
     for record in master[MAIN_HEADERS].itertuples(index=False, name=None):
@@ -103,11 +113,11 @@ def _write_main_sheet(sheet, master: pd.DataFrame) -> None:
     for row_index, record in enumerate(rows, start=2):
         for column_index, value in enumerate(record, start=1):
             cell = sheet.cell(row_index, column_index, value)
-            cell._style = copy(template_data_styles[min(column_index - 1, 15)])
+            cell.alignment = Alignment(vertical="top")
+            cell.border = data_border
         sheet.cell(
             row_index, 10, f"=IFERROR(VLOOKUP(K{row_index},'라벨목록'!$A$2:$B$19,2,FALSE),\"\")"
         )
-        sheet.row_dimensions[row_index].height = template_row_height
 
     last_row = len(master) + 1
     sheet.auto_filter.ref = f"A1:S{last_row}"
@@ -200,7 +210,7 @@ def _write_similarity_sheet(workbook, similarity: pd.DataFrame) -> None:
     if "유사사업명검토" in workbook.sheetnames:
         del workbook["유사사업명검토"]
     sheet = workbook.create_sheet("유사사업명검토")
-    sheet.append(SIMILAR_HEADERS)
+    sheet.append([DISPLAY_HEADERS.get(header, header) for header in SIMILAR_HEADERS])
     for record in similarity[SIMILAR_HEADERS].itertuples(index=False, name=None):
         sheet.append([_excel_value(value) for value in record])
     _style_table_sheet(sheet, SIMILAR_HEADERS, len(similarity))
@@ -228,7 +238,7 @@ def _write_qa_sheet(workbook, qa: pd.DataFrame, master: pd.DataFrame) -> None:
     sheet.append([])
     sheet.append(["추가 확인", "행수"])
     sheet.append(["기존 검토본 대비 최신 정제문 갱신", int(master["최신정제문_갱신여부"].sum())])
-    sheet.append(["#72 정제 변경", int(master["#72_정제변경"].sum())])
+    sheet.append(["정제문 수정 행", int(master["#72_정제변경"].sum())])
     sheet.append(["#72 기존 검토 완료 행 재확인", int(master["#72_재확인대상"].sum())])
     sheet.column_dimensions["A"].width = 42
     sheet.column_dimensions["B"].width = 16
@@ -251,10 +261,20 @@ def export_workbook(
     master = _read_csv(master_path)
     similarity = _read_csv(similarity_path)
     qa = _read_csv(qa_path)
-    workbook = load_workbook(source_workbook)
-    if "시트1" in workbook.sheetnames:
-        del workbook["시트1"]
-    _write_main_sheet(workbook["영역분류검토"], master)
+    source = load_workbook(source_workbook, read_only=True, data_only=True)
+    label_rows = list(
+        source["라벨목록"].iter_rows(min_row=1, max_row=19, max_col=2, values_only=True)
+    )
+    source.close()
+
+    workbook = Workbook()
+    main_sheet = workbook.active
+    main_sheet.title = "전체검토"
+    label_sheet = workbook.create_sheet("라벨목록")
+    for row in label_rows:
+        label_sheet.append(list(row))
+
+    _write_main_sheet(main_sheet, master)
     _write_similarity_sheet(workbook, similarity)
     _write_qa_sheet(workbook, qa, master)
     workbook.defined_names.add(DefinedName("ReviewLabels", attr_text="'라벨목록'!$A$2:$A$19"))
