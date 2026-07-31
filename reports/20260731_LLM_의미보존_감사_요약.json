@@ -97,14 +97,12 @@
   {
     "year": 2024,
     "rows": 7154,
-    "candidate_rows": 36,
-    "candidate_rate": 0.005032,
+    "candidate_rows": 28,
+    "candidate_rate": 0.003914,
     "missing_regions": [],
     "reason_counts": {
       "고유명사 불일치": 19,
-      "정제문 원문 라벨 추가": 3,
-      "극단적 길이비": 5,
-      "금액·퍼센트·범위 불일치": 11
+      "금액·퍼센트·범위 불일치": 9
     },
     "output_path": "reports/yearly/2024/2024_LLM_의미보존_감사.csv"
   }
