@@ -47,13 +47,10 @@
   {
     "year": 2020,
     "rows": 6858,
-    "candidate_rows": 3,
-    "candidate_rate": 0.000437,
+    "candidate_rows": 0,
+    "candidate_rate": 0.0,
     "missing_regions": [],
-    "reason_counts": {
-      "정제문 원문 라벨 추가": 3,
-      "극단적 길이비": 2
-    },
+    "reason_counts": {},
     "output_path": "reports/yearly/2020/2020_LLM_의미보존_감사.csv"
   },
   {
