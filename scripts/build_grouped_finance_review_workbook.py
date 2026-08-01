@@ -22,6 +22,7 @@ GROUP_COLUMNS = [
     "당해예산(백만원)",
     "전년도예산(백만원)",
 ]
+MAX_AUTO_HOLD_ROWS = 1_000
 REGION_ORDER = [
     "서울",
     "부산",
@@ -41,6 +42,15 @@ REGION_ORDER = [
     "경남",
     "제주",
 ]
+SHEET_NAMES = {
+    "유사사업별 전체검토": "작업용_유사사업순",
+    "전체검토": "백업_원본순서",
+    "모아보기": "참고_국제해외교류",
+    "모아보기..2": "참고_행사축제",
+    "라벨목록": "설정_라벨목록",
+    "유사사업명검토": "참고_이전유사사업",
+    "통합QA": "QA_최초통합점검",
+}
 
 
 def _key(year: object, region: object, source_row: object) -> tuple[int, str, str]:
@@ -64,6 +74,66 @@ def _read_lookup(path: Path) -> pd.DataFrame:
     if frame.duplicated(KEY_COLUMNS).any():
         raise ValueError("유사사업 파일의 연도·지역·원본행 키가 중복됩니다.")
     return frame
+
+
+def _rename_sheets(workbook) -> None:
+    """시트 역할이 드러나도록 이름과 수식 참조를 함께 갱신한다."""
+    old_label_ref = "'라벨목록'!"
+    new_label_ref = "'설정_라벨목록'!"
+    for sheet in workbook.worksheets:
+        for row in sheet.iter_rows():
+            for cell in row:
+                if isinstance(cell.value, str) and cell.value.startswith("="):
+                    cell.value = cell.value.replace(old_label_ref, new_label_ref)
+    for defined_name in workbook.defined_names.values():
+        if defined_name.attr_text:
+            defined_name.attr_text = defined_name.attr_text.replace(old_label_ref, new_label_ref)
+    for old_name, new_name in SHEET_NAMES.items():
+        if old_name in workbook.sheetnames:
+            workbook[old_name].title = new_name
+
+
+def _replace_hold_sheet(workbook, source_sheet) -> None:
+    """정적 보류 사본을 작업 시트에 연동되는 자동 목록으로 교체한다."""
+    if "보류" in workbook.sheetnames:
+        del workbook["보류"]
+    if "자동_보류목록" in workbook.sheetnames:
+        del workbook["자동_보류목록"]
+    hold_sheet = workbook.create_sheet("자동_보류목록", 1)
+    for column in range(1, source_sheet.max_column + 1):
+        source_cell = source_sheet.cell(1, column)
+        target_cell = hold_sheet.cell(1, column, source_cell.value)
+        target_cell._style = copy(source_cell._style)
+        target_cell.alignment = copy(source_cell.alignment)
+        letter = get_column_letter(column)
+        hold_sheet.column_dimensions[letter].width = source_sheet.column_dimensions[letter].width
+        hold_sheet.column_dimensions[letter].hidden = source_sheet.column_dimensions[letter].hidden
+    helper_column = source_sheet.max_column + 1
+    helper_letter = get_column_letter(helper_column)
+    hold_sheet.cell(1, helper_column, "보류행_자동추출번호")
+    hold_sheet.column_dimensions[helper_letter].hidden = True
+    source_status_range = "'작업용_유사사업순'!$L$2:$L$57980"
+    for row in range(2, MAX_AUTO_HOLD_ROWS + 2):
+        hold_sheet.cell(row, helper_column).value = (
+            f"=IFERROR(AGGREGATE(15,6,(ROW({source_status_range})-"
+            f"ROW('작업용_유사사업순'!$L$2)+1)/({source_status_range}=\"보류\"),"
+            f'ROWS(${helper_letter}$2:{helper_letter}{row})),"")'
+        )
+        for column in range(1, source_sheet.max_column + 1):
+            letter = get_column_letter(column)
+            cell = hold_sheet.cell(row, column)
+            cell.value = (
+                f'=IF(${helper_letter}{row}="","",INDEX('
+                f"'작업용_유사사업순'!{letter}$2:{letter}$57980,${helper_letter}{row}))"
+            )
+            cell._style = copy(source_sheet.cell(2, column)._style)
+            cell.alignment = copy(source_sheet.cell(2, column).alignment)
+    hold_sheet.freeze_panes = "A2"
+    hold_sheet.auto_filter.ref = f"A1:AA{MAX_AUTO_HOLD_ROWS + 1}"
+    hold_sheet.sheet_view.showGridLines = source_sheet.sheet_view.showGridLines
+    workbook.calculation.calcMode = "auto"
+    workbook.calculation.fullCalcOnLoad = True
+    workbook.calculation.forceFullCalc = True
 
 
 def build_grouped_workbook(source_path: Path, lookup_path: Path, output_path: Path) -> None:
@@ -191,6 +261,8 @@ def build_grouped_workbook(source_path: Path, lookup_path: Path, output_path: Pa
 
     workbook._sheets.remove(target)
     workbook._sheets.insert(0, target)
+    _replace_hold_sheet(workbook, target)
+    _rename_sheets(workbook)
     workbook.active = 0
     output_path.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(output_path)
