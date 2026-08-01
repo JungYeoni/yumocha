@@ -1,7 +1,9 @@
+from pathlib import Path
+
 import pandas as pd
 import pytest
 
-from scripts.audit_llm_semantic_preservation import build_audit_candidates
+from scripts.audit_llm_semantic_preservation import build_audit_candidates, load_year_wide_files
 
 
 def test_build_audit_candidates_keeps_only_flagged_rows():
@@ -46,3 +48,26 @@ def test_build_audit_candidates_rejects_duplicate_grain():
 
     with pytest.raises(ValueError, match="키 중복"):
         build_audit_candidates(frame)
+
+
+def test_load_year_wide_files_rejects_path_scope_mismatch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr("scripts.audit_llm_semantic_preservation.REGIONS", ("서울",))
+    region_root = tmp_path / "서울"
+    region_root.mkdir()
+    pd.DataFrame(
+        [
+            {
+                "연도": 2024,
+                "지역": "부산",
+                "원본행": "1",
+                "세부사업명": "사업",
+                "주요내용": "내용",
+                "주요내용_정제": "내용",
+            }
+        ]
+    ).to_csv(region_root / "2023_서울_세부사업_정제.csv", index=False, encoding="utf-8-sig")
+
+    with pytest.raises(ValueError, match="연도·지역 불일치"):
+        load_year_wide_files(2023, data_root=tmp_path)

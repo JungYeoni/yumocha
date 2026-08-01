@@ -76,6 +76,15 @@ def load_year_wide_files(
         missing_columns = REQUIRED_COLUMNS.difference(frame.columns)
         if missing_columns:
             raise KeyError(f"{path}: 필수 컬럼 누락 {sorted(missing_columns)}")
+        wrong_scope = frame.loc[
+            frame["연도"].ne(year) | frame["지역"].ne(region),
+            ["연도", "지역", "원본행"],
+        ]
+        if not wrong_scope.empty:
+            raise ValueError(
+                f"{path}: 경로와 파일 내용의 연도·지역 불일치 "
+                f"{wrong_scope.head(10).to_dict('records')}"
+            )
         frames.append(frame)
 
     if not frames:

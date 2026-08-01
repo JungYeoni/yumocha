@@ -10,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 
 from scripts.audit_llm_semantic_preservation import REGIONS
+from src.features.review_keys import normalize_review_keys
 
 KNOWN_FAKE_SIGNATURES = (
     "1,200,000,000원",
@@ -44,6 +45,8 @@ def verify_recovery(data_root: Path) -> dict[str, object]:
     checkpoint = _read_csv(checkpoint_path, index_col=0)
     wide = _load_region_files(data_root, long=False)
     long = _load_region_files(data_root, long=True)
+    wide = normalize_review_keys(wide.assign(연도=2023)).drop(columns="연도")
+    long = normalize_review_keys(long.assign(연도=2023)).drop(columns="연도")
 
     key_columns = ["지역", "원본행"]
     wide_duplicate_keys = int(wide.duplicated(key_columns, keep=False).sum())
@@ -58,15 +61,19 @@ def verify_recovery(data_root: Path) -> dict[str, object]:
     merged = wide.merge(
         long_cleaned,
         on=key_columns,
-        how="left",
-        validate="one_to_one",
+        how="outer",
+        indicator=True,
         suffixes=("_wide", "_long"),
     )
+    wide_only_key_count = int(merged["_merge"].eq("left_only").sum())
+    long_only_key_count = int(merged["_merge"].eq("right_only").sum())
     wide_long_mismatch = int(
-        merged.apply(
+        merged.loc[merged["_merge"].eq("both")]
+        .apply(
             lambda row: row["주요내용_정제_long"] != (row["주요내용_정제_wide"],),
             axis=1,
-        ).sum()
+        )
+        .sum()
     )
 
     checkpoint_values = Counter(checkpoint["주요내용_정제"].astype(str))
@@ -120,6 +127,10 @@ def verify_recovery(data_root: Path) -> dict[str, object]:
             for example in recovered_examples
         )
         and not wide_long_mismatch
+        and not wide_only_key_count
+        and not long_only_key_count
+        and not wide_duplicate_keys
+        and not invalid_long_group_count
     )
 
     return {
@@ -129,6 +140,8 @@ def verify_recovery(data_root: Path) -> dict[str, object]:
         "wide_duplicate_keys": wide_duplicate_keys,
         "invalid_long_group_count": invalid_long_group_count,
         "wide_long_cleaned_mismatch": wide_long_mismatch,
+        "wide_only_key_count": wide_only_key_count,
+        "long_only_key_count": long_only_key_count,
         "checkpoint_wide_cleaned_multiset_match": checkpoint_wide_multiset_match,
         "checkpoint_only_value_count": sum(checkpoint_only.values()),
         "wide_only_value_count": sum(wide_only.values()),
@@ -150,6 +163,8 @@ def verify_recovery(data_root: Path) -> dict[str, object]:
             and not wide_long_mismatch
             and not wide_duplicate_keys
             and not invalid_long_group_count
+            and not wide_only_key_count
+            and not long_only_key_count
         ),
         "broader_blank_input_recovery_complete": len(blank_input_changed) == 0,
     }

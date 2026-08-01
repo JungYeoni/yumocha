@@ -31,7 +31,8 @@ def strip_source_label(cleaned: str) -> str:
     """정제문에 삽입된 사업명과 ``원문:`` 접두부를 제거한다."""
     marker = "원문:"
     if marker not in cleaned:
-        raise ValueError("정제문에서 `원문:` 라벨을 찾지 못했습니다.")
+        # 이미 수정된 산출물에 다시 실행해도 값이 바뀌지 않게 한다.
+        return cleaned
     return cleaned.split(marker, 1)[1].strip()
 
 
@@ -45,6 +46,7 @@ def apply_corrections(data_root: Path, audit: pd.DataFrame) -> pd.DataFrame:
     review["사람검토결과"] = "의미보존 오류 수정"
     review["조치내용"] = "사업명과 `원문:` 메타 라벨 접두부 제거"
     review["TFIDF_영향"] = "예측 입력 변경·후속 재예측 필요"
+    region_updates: dict[str, tuple[Path, pd.DataFrame, Path, pd.DataFrame]] = {}
 
     for review_index, row in review.iterrows():
         new_cleaned = strip_source_label(str(row["주요내용_정제"]))
@@ -65,8 +67,14 @@ def apply_corrections(data_root: Path, audit: pd.DataFrame) -> pd.DataFrame:
         region = row["지역"]
         wide_path = data_root / region / f"2020_{region}_세부사업_정제.csv"
         long_path = data_root / region / f"2020_{region}_세부사업_정제_long.csv"
-        wide = _read_csv(wide_path)
-        long = _read_csv(long_path)
+        if region not in region_updates:
+            region_updates[region] = (
+                wide_path,
+                _read_csv(wide_path),
+                long_path,
+                _read_csv(long_path),
+            )
+        _, wide, _, long = region_updates[region]
         wide_mask = wide["원본행"].eq(row["원본행"]) & wide["세부사업명"].eq(row["세부사업명"])
         long_mask = long["원본행"].eq(row["원본행"]) & long["세부사업명"].eq(row["세부사업명"])
         if int(wide_mask.sum()) != 1 or int(long_mask.sum()) != 2:
@@ -77,10 +85,12 @@ def apply_corrections(data_root: Path, audit: pd.DataFrame) -> pd.DataFrame:
             raise ValueError(f"long 수정전 값 불일치: {region}/{row['원본행']}")
         wide.loc[wide_mask, "주요내용_정제"] = new_cleaned
         long.loc[long_mask, "주요내용_정제"] = new_cleaned
-        _write_csv(wide, wide_path)
-        _write_csv(long, long_path)
         review.loc[review_index, "수정후_주요내용_정제"] = new_cleaned
 
+    # 모든 키·기존값 검증이 끝난 뒤에만 산출물을 기록한다.
+    for wide_path, wide, long_path, long in region_updates.values():
+        _write_csv(wide, wide_path)
+        _write_csv(long, long_path)
     _write_csv(checkpoint, checkpoint_path, index=True)
     return review
 

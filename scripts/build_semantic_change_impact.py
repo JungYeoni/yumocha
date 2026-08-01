@@ -8,18 +8,21 @@ from pathlib import Path
 import pandas as pd
 
 from scripts.apply_2021_semantic_corrections import CORRECTIONS
+from src.features.review_keys import KEY_COLUMNS, normalize_review_keys
 
-KEY_COLUMNS = ["연도", "지역", "원본행"]
 BUDGET_COLUMNS = ["사업분류재정구분", "당해예산", "전년도예산", "증감액", "증감율"]
 
 
 def _read_csv(path: Path) -> pd.DataFrame:
-    return pd.read_csv(
+    frame = pd.read_csv(
         path,
         encoding="utf-8-sig",
         keep_default_na=False,
         dtype={"원본행": "string"},
     )
+    if set(KEY_COLUMNS).issubset(frame.columns):
+        frame = normalize_review_keys(frame)
+    return frame
 
 
 def _standardize(
@@ -101,8 +104,7 @@ def collect_changed_rows(reports_root: Path) -> pd.DataFrame:
     standard_frames.append(rows_2021)
 
     combined = pd.concat(standard_frames, ignore_index=True)
-    combined["연도"] = pd.to_numeric(combined["연도"], errors="raise").astype("int64")
-    combined["원본행"] = combined["원본행"].astype("string")
+    combined = normalize_review_keys(combined)
     if len(combined) != 79:
         raise ValueError(f"정제값 변경 행은 79건이어야 합니다: {len(combined)}")
     if combined.duplicated(KEY_COLUMNS).any():
@@ -113,11 +115,12 @@ def collect_changed_rows(reports_root: Path) -> pd.DataFrame:
 
 def attach_latest_budget(changed: pd.DataFrame, data_root: Path) -> pd.DataFrame:
     """최신 wide를 키로 연결하고 정제문·예산의 일대일 정합성을 검증한다."""
+    changed = normalize_review_keys(changed)
     source_frames: list[pd.DataFrame] = []
     for (year, region), _ in changed.groupby(["연도", "지역"], sort=True):
         path = data_root / str(region) / f"{year}_{region}_세부사업_정제.csv"
         source = _read_csv(path)
-        source["연도"] = pd.to_numeric(source["연도"], errors="raise").astype("int64")
+        source = normalize_review_keys(source)
         source_frames.append(source[KEY_COLUMNS + ["세부사업명", "주요내용_정제", *BUDGET_COLUMNS]])
 
     latest = pd.concat(source_frames, ignore_index=True)

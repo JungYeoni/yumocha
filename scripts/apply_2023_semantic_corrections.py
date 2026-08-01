@@ -113,6 +113,7 @@ def apply_corrections(data_root: Path, audit: pd.DataFrame) -> pd.DataFrame:
     review["수정전_주요내용_정제"] = review["주요내용_정제"]
     review["수정후_주요내용_정제"] = review["주요내용_정제"]
     review["TFIDF_영향"] = "없음"
+    region_updates: dict[str, tuple[Path, pd.DataFrame, Path, pd.DataFrame]] = {}
 
     for wide_index, target in targets.iterrows():
         key = (target["지역"], target["원본행"])
@@ -132,8 +133,14 @@ def apply_corrections(data_root: Path, audit: pd.DataFrame) -> pd.DataFrame:
         region = target["지역"]
         wide_path = data_root / region / f"2023_{region}_세부사업_정제.csv"
         long_path = data_root / region / f"2023_{region}_세부사업_정제_long.csv"
-        region_wide = _read_csv(wide_path)
-        region_long = _read_csv(long_path)
+        if region not in region_updates:
+            region_updates[region] = (
+                wide_path,
+                _read_csv(wide_path),
+                long_path,
+                _read_csv(long_path),
+            )
+        _, region_wide, _, region_long = region_updates[region]
         wide_mask = region_wide["원본행"].eq(target["원본행"]) & region_wide["세부사업명"].eq(
             target["세부사업명"]
         )
@@ -148,9 +155,6 @@ def apply_corrections(data_root: Path, audit: pd.DataFrame) -> pd.DataFrame:
             raise ValueError(f"long 수정전 값 불일치: {key}")
         region_wide.loc[wide_mask, "주요내용_정제"] = new_cleaned
         region_long.loc[long_mask, "주요내용_정제"] = new_cleaned
-        _write_csv(region_wide, wide_path)
-        _write_csv(region_long, long_path)
-
         review_mask = review["지역"].eq(region) & review["원본행"].eq(target["원본행"])
         if int(review_mask.sum()) != 1:
             raise ValueError(f"감사표 키 연결 실패: {key}")
@@ -159,6 +163,10 @@ def apply_corrections(data_root: Path, audit: pd.DataFrame) -> pd.DataFrame:
         review.loc[review_mask, "수정후_주요내용_정제"] = new_cleaned
         review.loc[review_mask, "TFIDF_영향"] = "예측 입력 변경·후속 재예측 필요"
 
+    # 모든 키·기존값 검증이 끝난 뒤에만 산출물을 기록한다.
+    for wide_path, region_wide, long_path, region_long in region_updates.values():
+        _write_csv(region_wide, wide_path)
+        _write_csv(region_long, long_path)
     _write_csv(checkpoint, checkpoint_path, index=True)
     return review
 

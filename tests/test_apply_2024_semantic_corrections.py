@@ -1,5 +1,3 @@
-import pytest
-
 from scripts.apply_2024_semantic_corrections import (
     CorrectionRule,
     corrected_text,
@@ -25,8 +23,7 @@ def test_corrected_text_strips_added_source_label():
     )
 
 
-def test_corrected_text_requires_source_label():
+def test_corrected_text_is_idempotent_after_source_label_removed():
     rule = CorrectionRule("서울", "1", "strip_source_label", "라벨 제거")
 
-    with pytest.raises(ValueError, match="원문"):
-        corrected_text(rule, original="원문", cleaned="라벨 없는 정제문")
+    assert corrected_text(rule, original="원문", cleaned="라벨 없는 정제문") == "라벨 없는 정제문"

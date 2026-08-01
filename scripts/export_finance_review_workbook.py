@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-from copy import copy
 from pathlib import Path
 
 import pandas as pd
@@ -78,18 +77,7 @@ def _excel_value(value: object) -> object:
     return value
 
 
-def _copy_row_style(sheet, source_row: int, target_row: int, columns: int) -> None:
-    sheet.row_dimensions[target_row].height = sheet.row_dimensions[source_row].height
-    for column in range(1, columns + 1):
-        source = sheet.cell(source_row, column)
-        target = sheet.cell(target_row, column)
-        if source.has_style:
-            target._style = copy(source._style)
-        target.number_format = source.number_format
-        target.alignment = copy(source.alignment)
-
-
-def _write_main_sheet(sheet, master: pd.DataFrame) -> None:
+def _write_main_sheet(sheet, master: pd.DataFrame, label_last_row: int) -> None:
     header_fill = PatternFill("solid", fgColor="1F4E78")
     header_font = Font(color="FFFFFF", bold=True)
     thin_gray = Side(style="thin", color="999999")
@@ -100,11 +88,14 @@ def _write_main_sheet(sheet, master: pd.DataFrame) -> None:
         bottom=thin_gray,
     )
 
+    header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    top_alignment = Alignment(vertical="top")
+    wrap_alignment = Alignment(vertical="top", wrap_text=True)
     for column, header in enumerate(MAIN_HEADERS, start=1):
         cell = sheet.cell(1, column, DISPLAY_HEADERS.get(header, header))
         cell.fill = header_fill
         cell.font = header_font
-        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.alignment = header_alignment
         cell.border = data_border
 
     rows = []
@@ -113,10 +104,12 @@ def _write_main_sheet(sheet, master: pd.DataFrame) -> None:
     for row_index, record in enumerate(rows, start=2):
         for column_index, value in enumerate(record, start=1):
             cell = sheet.cell(row_index, column_index, value)
-            cell.alignment = Alignment(vertical="top")
+            cell.alignment = top_alignment
             cell.border = data_border
         sheet.cell(
-            row_index, 10, f"=IFERROR(VLOOKUP(K{row_index},'라벨목록'!$A$2:$B$19,2,FALSE),\"\")"
+            row_index,
+            10,
+            f"=IFERROR(VLOOKUP(K{row_index},'라벨목록'!$A$2:$B${label_last_row},2,FALSE),\"\")",
         )
 
     last_row = len(master) + 1
@@ -148,7 +141,7 @@ def _write_main_sheet(sheet, master: pd.DataFrame) -> None:
         sheet.column_dimensions[column].width = width
     for column in ("D", "E", "M", "N", "O", "P"):
         for cell in sheet[column][1:]:
-            cell.alignment = Alignment(vertical="top", wrap_text=True)
+            cell.alignment = wrap_alignment
 
     sheet.data_validations.dataValidation = []
     label_validation = DataValidation(
@@ -262,10 +255,14 @@ def export_workbook(
     similarity = _read_csv(similarity_path)
     qa = _read_csv(qa_path)
     source = load_workbook(source_workbook, read_only=True, data_only=True)
-    label_rows = list(
-        source["라벨목록"].iter_rows(min_row=1, max_row=19, max_col=2, values_only=True)
-    )
+    label_rows = list(source["라벨목록"].iter_rows(min_row=1, max_col=2, values_only=True))
     source.close()
+    while label_rows and not any(value not in (None, "") for value in label_rows[-1]):
+        label_rows.pop()
+    if not label_rows or tuple(label_rows[0]) != ("세부영역", "대영역"):
+        raise ValueError("라벨목록의 첫 두 컬럼은 `세부영역`, `대영역` 순서여야 합니다.")
+    if len(label_rows) < 2:
+        raise ValueError("라벨목록에 사용할 라벨이 없습니다.")
 
     workbook = Workbook()
     main_sheet = workbook.active
@@ -274,10 +271,13 @@ def export_workbook(
     for row in label_rows:
         label_sheet.append(list(row))
 
-    _write_main_sheet(main_sheet, master)
+    label_last_row = len(label_rows)
+    _write_main_sheet(main_sheet, master, label_last_row)
     _write_similarity_sheet(workbook, similarity)
     _write_qa_sheet(workbook, qa, master)
-    workbook.defined_names.add(DefinedName("ReviewLabels", attr_text="'라벨목록'!$A$2:$A$19"))
+    workbook.defined_names.add(
+        DefinedName("ReviewLabels", attr_text=f"'라벨목록'!$A$2:$A${label_last_row}")
+    )
     workbook["라벨목록"].sheet_state = "hidden"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(output_path)

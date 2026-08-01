@@ -12,8 +12,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
 
 from scripts.consolidate_2021_area_labels import consolidate_labels
+from src.features.review_keys import KEY_COLUMNS, normalize_review_keys
 
-KEY_COLUMNS = ["연도", "지역", "원본행"]
 REVIEW_COLUMNS = [
     "예측_대영역",
     "예측_세부영역",
@@ -36,14 +36,6 @@ def _read_csv(path: Path) -> pd.DataFrame:
     )
 
 
-def _normalize_keys(frame: pd.DataFrame) -> pd.DataFrame:
-    output = frame.copy()
-    output["연도"] = pd.to_numeric(output["연도"], errors="raise").astype("int64")
-    output["지역"] = output["지역"].astype("string")
-    output["원본행"] = output["원본행"].astype("string").str.replace(r"\.0$", "", regex=True)
-    return output
-
-
 def changed_cleaned_flags(
     previous: pd.Series,
     latest: pd.Series,
@@ -62,7 +54,7 @@ def read_review_workbook(path: Path) -> tuple[pd.DataFrame, dict[str, str]]:
         engine="openpyxl",
     )
     labels = pd.read_excel(path, sheet_name="라벨목록", engine="openpyxl")
-    review = _normalize_keys(review)
+    review = normalize_review_keys(review)
     label_map = dict(zip(labels["세부영역"], labels["대영역"], strict=False))
     review["검토_대영역"] = review["검토_세부영역"].map(label_map)
     if review["검토_대영역"].isna().any():
@@ -80,10 +72,10 @@ def build_master(
     semantic_impact: pd.DataFrame,
 ) -> pd.DataFrame:
     """최신 정제 57,979건에 사람 검토 라벨을 키 기준으로 결합한다."""
-    review = _normalize_keys(review)
-    labels_2021 = _normalize_keys(labels_2021)
-    prediction_targets = _normalize_keys(prediction_targets)
-    semantic_impact = _normalize_keys(semantic_impact)
+    review = normalize_review_keys(review)
+    labels_2021 = normalize_review_keys(labels_2021)
+    prediction_targets = normalize_review_keys(prediction_targets)
+    semantic_impact = normalize_review_keys(semantic_impact)
 
     base_columns = [
         "연도",
@@ -118,9 +110,31 @@ def build_master(
     review["_기존검토순서"] = range(len(review))
     metadata = review[KEY_COLUMNS + REVIEW_COLUMNS + ["_기존검토순서"]]
     master = latest.merge(metadata, on=KEY_COLUMNS, how="left", validate="one_to_one")
+    matched_review_rows = int(master["_기존검토순서"].notna().sum())
+    if matched_review_rows != len(review):
+        latest_keys = set(latest[KEY_COLUMNS].itertuples(index=False, name=None))
+        missing = review.loc[
+            [
+                key not in latest_keys
+                for key in review[KEY_COLUMNS].itertuples(index=False, name=None)
+            ],
+            KEY_COLUMNS,
+        ]
+        raise ValueError(
+            "기존 검토본 키가 최신 정제본에 없습니다: "
+            f"matched={matched_review_rows}/{len(review)}, "
+            f"missing={missing.head(10).to_dict('records')}"
+        )
     master = master.merge(old_text, on=KEY_COLUMNS, how="left", validate="one_to_one")
 
     rows_2021 = master["연도"].eq(2021)
+    new_rows = master["_기존검토순서"].isna()
+    if not new_rows.eq(rows_2021).all():
+        unexpected = master.loc[new_rows.ne(rows_2021), KEY_COLUMNS]
+        raise ValueError(
+            "기존 검토본과 최신 정제본의 차이가 2021년 행 집합과 다릅니다: "
+            f"{unexpected.head(10).to_dict('records')}"
+        )
     label_columns = labels_2021[KEY_COLUMNS + ["대영역", "세부영역"]].rename(
         columns={"대영역": "2021_대영역", "세부영역": "2021_세부영역"}
     )
@@ -138,7 +152,7 @@ def build_master(
     master["최신정제문_갱신여부"] = changed_cleaned_flags(
         master["기존검토본_주요내용_정제"],
         master["주요내용_정제"],
-        rows_2021,
+        new_rows,
     )
     impact_keys = set(semantic_impact[KEY_COLUMNS].itertuples(index=False, name=None))
     master["#72_정제변경"] = [
@@ -286,14 +300,20 @@ def main() -> None:
     old_labels = _read_csv(
         args.data_root / "영역분류_라벨링/2021/통합/2021_17개시도_영역분류_라벨_통합.csv"
     )
-    old_labels = _normalize_keys(old_labels)
-    new_labels = _normalize_keys(labels_2021)
+    old_labels = normalize_review_keys(old_labels)
+    new_labels = normalize_review_keys(labels_2021)
     comparison = old_labels[KEY_COLUMNS + ["대영역", "세부영역"]].merge(
         new_labels[KEY_COLUMNS + ["대영역", "세부영역"]],
         on=KEY_COLUMNS,
+        how="outer",
         validate="one_to_one",
         suffixes=("_기존", "_신규"),
+        indicator=True,
     )
+    if not comparison["_merge"].eq("both").all():
+        missing = comparison.loc[comparison["_merge"].ne("both"), [*KEY_COLUMNS, "_merge"]]
+        raise ValueError(f"2021 기존·신규 라벨 키 집합 불일치: {missing.to_dict('records')}")
+    comparison = comparison.drop(columns="_merge")
     label_changes = comparison.loc[
         comparison["대영역_기존"].ne(comparison["대영역_신규"])
         | comparison["세부영역_기존"].ne(comparison["세부영역_신규"])

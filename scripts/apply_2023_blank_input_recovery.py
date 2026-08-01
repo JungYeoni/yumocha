@@ -150,6 +150,7 @@ def apply_recovery(
             )
         checkpoint.loc[checkpoint_index, "주요내용_정제"] = ""
 
+    region_updates: list[tuple[Path, pd.DataFrame, Path, pd.DataFrame]] = []
     for region, region_targets in targets.groupby("지역", sort=False):
         wide_path = data_root / region / f"2023_{region}_세부사업_정제.csv"
         long_path = data_root / region / f"2023_{region}_세부사업_정제_long.csv"
@@ -170,9 +171,12 @@ def apply_recovery(
                 raise ValueError(f"long 복구전 값 불일치: {region}/{target['원본행']}")
             region_wide.loc[key_mask, "주요내용_정제"] = ""
             region_long.loc[long_mask, "주요내용_정제"] = ""
+        region_updates.append((wide_path, region_wide, long_path, region_long))
+
+    # 모든 지역 검증이 끝난 뒤에만 산출물을 기록한다.
+    for wide_path, region_wide, long_path, region_long in region_updates:
         _write_csv(region_wide, wide_path)
         _write_csv(region_long, long_path)
-
     _write_csv(checkpoint, checkpoint_path, index=True)
     return review.reset_index(drop=True)
 

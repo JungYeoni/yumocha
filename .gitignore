@@ -34,6 +34,8 @@ data/processed/
 # 로컬 라벨 검토 원본
 /drive-download-*/
 /2016_2020_2022_2024_TFIDF_영역분류_검토*.xlsx
+**/재정팀_검토본/**
+2021포함_전체57979건_*.xlsx
 
 # 모델 아티팩트
 models/

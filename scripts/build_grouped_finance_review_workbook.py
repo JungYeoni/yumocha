@@ -13,7 +13,8 @@ from openpyxl.formatting.formatting import ConditionalFormattingList
 from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 
-KEY_COLUMNS = ["연도", "지역", "원본행"]
+from src.features.review_keys import KEY_COLUMNS, normalize_source_row
+
 GROUP_COLUMNS = [
     "유사사업그룹ID",
     "유사그룹행수",
@@ -54,7 +55,7 @@ SHEET_NAMES = {
 
 
 def _key(year: object, region: object, source_row: object) -> tuple[int, str, str]:
-    return int(float(year)), str(region).strip(), str(int(float(source_row)))
+    return int(float(year)), str(region).strip(), normalize_source_row(source_row)
 
 
 def _read_lookup(path: Path) -> pd.DataFrame:
@@ -93,7 +94,7 @@ def _rename_sheets(workbook) -> None:
             workbook[old_name].title = new_name
 
 
-def _replace_hold_sheet(workbook, source_sheet) -> None:
+def _replace_hold_sheet(workbook, source_sheet, header_by_name: dict[object, int]) -> None:
     """정적 보류 사본을 작업 시트에 연동되는 자동 목록으로 교체한다."""
     if "보류" in workbook.sheetnames:
         del workbook["보류"]
@@ -112,11 +113,14 @@ def _replace_hold_sheet(workbook, source_sheet) -> None:
     helper_letter = get_column_letter(helper_column)
     hold_sheet.cell(1, helper_column, "보류행_자동추출번호")
     hold_sheet.column_dimensions[helper_letter].hidden = True
-    source_status_range = "'작업용_유사사업순'!$L$2:$L$57980"
+    source_name = SHEET_NAMES["유사사업별 전체검토"]
+    status_letter = get_column_letter(header_by_name["검토상태"])
+    source_last_row = source_sheet.max_row
+    source_status_range = f"'{source_name}'!${status_letter}$2:${status_letter}${source_last_row}"
     for row in range(2, MAX_AUTO_HOLD_ROWS + 2):
         hold_sheet.cell(row, helper_column).value = (
             f"=IFERROR(AGGREGATE(15,6,(ROW({source_status_range})-"
-            f"ROW('작업용_유사사업순'!$L$2)+1)/({source_status_range}=\"보류\"),"
+            f"ROW('{source_name}'!${status_letter}$2)+1)/({source_status_range}=\"보류\"),"
             f'ROWS(${helper_letter}$2:{helper_letter}{row})),"")'
         )
         for column in range(1, source_sheet.max_column + 1):
@@ -124,12 +128,21 @@ def _replace_hold_sheet(workbook, source_sheet) -> None:
             cell = hold_sheet.cell(row, column)
             cell.value = (
                 f'=IF(${helper_letter}{row}="","",INDEX('
-                f"'작업용_유사사업순'!{letter}$2:{letter}$57980,${helper_letter}{row}))"
+                f"'{source_name}'!{letter}$2:{letter}${source_last_row},${helper_letter}{row}))"
             )
             cell._style = copy(source_sheet.cell(2, column)._style)
             cell.alignment = copy(source_sheet.cell(2, column).alignment)
     hold_sheet.freeze_panes = "A2"
     hold_sheet.auto_filter.ref = f"A1:AA{MAX_AUTO_HOLD_ROWS + 1}"
+    warning_column = helper_column + 1
+    warning_letter = get_column_letter(warning_column)
+    hold_sheet.cell(1, warning_column, "자동목록 상태")
+    hold_sheet.cell(2, warning_column).value = (
+        f'=IF(COUNTIF({source_status_range},"보류")>{MAX_AUTO_HOLD_ROWS},'
+        f'"⚠ 보류가 {MAX_AUTO_HOLD_ROWS:,}건을 초과했습니다: 원본 시트에서 확인",'
+        '"보류 자동목록 정상")'
+    )
+    hold_sheet.column_dimensions[warning_letter].width = 48
     hold_sheet.sheet_view.showGridLines = source_sheet.sheet_view.showGridLines
     workbook.calculation.calcMode = "auto"
     workbook.calculation.fullCalcOnLoad = True
@@ -156,13 +169,15 @@ def build_grouped_workbook(source_path: Path, lookup_path: Path, output_path: Pa
     target.sheet_view.showGridLines = source.sheet_view.showGridLines
     target.data_validations = deepcopy(source.data_validations)
     target.conditional_formatting = ConditionalFormattingList()
-    for rules in source.conditional_formatting._cf_rules.values():
-        for rule in rules:
-            target.conditional_formatting.add("A2:AA57980", deepcopy(rule))
+    # 그룹·예산 컬럼까지 행 강조가 이어지도록 원본 규칙만 공개 API로 복사한다.
+    for conditional_formatting in source.conditional_formatting:
+        for rule in source.conditional_formatting[conditional_formatting]:
+            target.conditional_formatting.add(f"A2:AA{source.max_row}", deepcopy(rule))
 
     header_by_name = {
         source.cell(1, column).value: column for column in range(1, source.max_column + 1)
     }
+    label_last_row = workbook["라벨목록"].max_row
     key_indexes = [header_by_name[name] for name in KEY_COLUMNS]
     source_data_columns = 19
     records = []
@@ -224,7 +239,8 @@ def build_grouped_workbook(source_path: Path, lookup_path: Path, output_path: Pa
         target.cell(
             target_row,
             header_by_name["검토_대영역"],
-            f"=IFERROR(VLOOKUP(K{target_row},'라벨목록'!$A$2:$B$19,2,FALSE),\"\")",
+            f"=IFERROR(VLOOKUP({get_column_letter(header_by_name['검토_세부영역'])}{target_row},"
+            f"'라벨목록'!$A$2:$B${label_last_row},2,FALSE),\"\")",
         )
         for column, hyperlink in hyperlink_by_key.get(row_key, {}).items():
             target.cell(target_row, column).hyperlink = copy(hyperlink)
@@ -233,7 +249,7 @@ def build_grouped_workbook(source_path: Path, lookup_path: Path, output_path: Pa
             str(info.유사사업그룹ID),
             int(info.유사그룹행수),
             float(info.최근접유사도),
-            str(info.최근접사업명),
+            None if pd.isna(info.최근접사업명) else str(info.최근접사업명),
             None if pd.isna(info.당해예산) else float(info.당해예산),
             None if pd.isna(info.전년도예산) else float(info.전년도예산),
         ]
@@ -261,7 +277,7 @@ def build_grouped_workbook(source_path: Path, lookup_path: Path, output_path: Pa
 
     workbook._sheets.remove(target)
     workbook._sheets.insert(0, target)
-    _replace_hold_sheet(workbook, target)
+    _replace_hold_sheet(workbook, target, header_by_name)
     _rename_sheets(workbook)
     workbook.active = 0
     output_path.parent.mkdir(parents=True, exist_ok=True)
