@@ -121,22 +121,26 @@ def evaluate_text_variant(
     if frame["지역"].nunique() < n_splits:
         raise ValueError("교차검증 fold 수보다 지역 수가 적습니다.")
 
-    text = build_text(frame, text_variant)
     labels = frame["세부영역"].astype("string")
     groups = frame["지역"].astype("string")
     # 분할 기준: 지역을 그룹으로 완전히 분리하고 세부영역 라벨을 stratify한다.
     # n_splits는 지역 그룹을 나눌 교차검증 fold 수를 결정한다.
+    # 피처(텍스트) 생성보다 분할을 먼저 확정하기 위해 fold 인덱스를 미리
+    # 계산한다. StratifiedGroupKFold.split은 X의 값이 아니라 길이만
+    # 사용하므로 자리표시자로도 동일한 분할이 나온다.
     splitter = StratifiedGroupKFold(
         n_splits=n_splits,
         shuffle=True,
         random_state=RANDOM_STATE,
     )
+    fold_indices = list(splitter.split(np.zeros(len(frame)), labels, groups))
+
+    text = build_text(frame, text_variant)
     probabilities = cross_val_predict(
         build_pipeline(),
         text,
         labels,
-        groups=groups,
-        cv=splitter,
+        cv=fold_indices,
         method="predict_proba",
         n_jobs=1,
     )

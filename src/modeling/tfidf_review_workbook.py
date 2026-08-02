@@ -135,6 +135,8 @@ def transfer_review_progress(
             refreshed_sheet.cell(row_number, refreshed_positions[column]).value
             for column in REVIEW_KEY_COLUMNS
         )
+        if all(value is None for value in raw_key):
+            continue
         key = _normalized_review_key(raw_key)
         if key in refreshed_rows:
             raise ValueError(f"새 검토 Excel에 중복 키가 있습니다: {key}")
