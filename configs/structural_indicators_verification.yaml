@@ -1,15 +1,27 @@
 manifest_version: 3
-issue: 38
-verified_date: '2026-07-24'
+issue: 59
+verified_date: '2026-08-02'
 
 scope:
   official_indicators: 31
-  project_structural_indicators: 30
-  completed_indicators_to_validate: 21
+  project_structural_indicators: 28
+  completed_indicators_to_validate: 28
   note: >-
     제주여성가족연구원 공식 31개 지표 중 저출생 대응 예산액을 별도
-    재정대응지수로 분리한 프로젝트 구조환경지표는 30개이며, 이번 검증
-    범위는 현재 측정값이 만들어진 21개다.
+    재정대응지수로 분리한 프로젝트 구조환경지표는 원래 30개였다. 이슈
+    #38에서 21개를 검증했고, 이슈 #44(하위 #48·#49·#50)에서 청년층
+    정규직 근로자 비율·주거지표 3종(현재 주택가격·전체 가구
+    자가점유비율·임차가구 연간 주거비 HCC)·가사수행 격차 2종·
+    사회경제적 지위 인식까지 7개를 추가 구축해 이슈 #59에서 28개로
+    매니페스트를 최신화했다. 원 데이터셋(taxonomy
+    번호 17 난임시술기관 보급도, 21 학교폭력 발생률)은 재정팀 원본에
+    '(폐기?)'로 표시돼 있었는데, 둘 다 폐기로 확정되어 매니페스트
+    대상에서 제외했다. 이에 따라 프로젝트 구조환경지표 목표치도
+    30개에서 28개로 조정됐다.
+  taxonomy_source: >-
+    '수정_데이터셋_목록' 시트, 제주여성가족연구원(2025) 출생환경지수
+    데이터셋 수정·검증본(공유 Drive의 drive.reference_dataset 참고).
+    번호·대분류·중분류·지표특성(+/-)·측정방법의 1차 근거로 사용한다.
 
 rules:
   source_priority:
@@ -562,3 +574,300 @@ indicators:
       - role: 'response_distribution'
         id: '1JeHiUpiZQHy_T3Qjb5y89yRIxCRtLT_g'
         file_name: '2016,2018,2020,2022,2024_가사_분담에_대한_견해_13세_이상_인구__20260715194953.csv'
+
+  # 이하 7개는 이슈 #44(하위 #48·#49·#50)에서 재정팀 산출 파일 없이
+  # 팀이 MDIS/KOSIS 원자료를 직접 내려받아 산출했다. 기존 21개와 달리
+  # finance_team_value가 없고, 대신 notebook·output_file로 재현 경로를
+  # 명시한다. project_code·category·subcategory·direction(지표특성)은
+  # taxonomy_source(제주 수정 데이터셋 '수정_데이터셋_목록' 시트,
+  # 번호 2·3·4·5·14·15·30)를 그대로 따른다.
+
+  - id: 'youth_regular_employment_rate'
+    project_code: '1-1.2'
+    category: '경제·고용·주거'
+    subcategory: '고용여건'
+    name: '청년층 정규직 근로자 비율'
+    status: 'team_calculated'
+    direction: 'positive'
+    calculation_type: 'ratio'
+    temporal_resolution: 'annual (연평균, 원자료는 반기)'
+    official_formula: >-
+      19–34세 청년 정규직 근로자 수 ÷ 19–34세 청년 임금근로자 수 × 100
+      (정규직은 상용근로자 중 전일제로 조작화)
+    recommended_formula: >-
+      19–34세(노트북 구현은 19–34세 만연령) 임금근로자(종사상지위 1·2) 중
+      상용(종사상지위 1)이면서 전일제(근무시간구분 3)인 사람의 가중합 ÷
+      임금근로자 전체 가중합 × 100. 상반기는 `시도전국가중값`, 하반기는
+      `시도가중값`을 공통 `가중치`로 매핑한다. 연도값은 반올림 전
+      반기 비율의 단순평균을 한 번만 반올림해 산출한다(이중 반올림 방지).
+    notebook: 'notebooks/20260727_EDA_지역별고용조사_청년층_정규직_근로자_비율_산출.ipynb'
+    output_file: 'data/processed/analysis/2016-2024_지역별고용조사_청년층_정규직_근로자_비율_연도평균.csv'
+    intermediate_files:
+      - role: 'semiannual_detail'
+        path: 'data/processed/analysis/2016-2024_지역별고용조사_청년층_정규직_근로자_비율.csv'
+        note: '반기(상/하반기) 18개 열 원본. 연도평균 산출의 입력이자 반기 단위 검토용으로 보존.'
+    raw_sources:
+      - role: 'microdata'
+        source: '통계청 MDIS 지역별고용조사 C형(시도 중분류 부가항목)'
+        survey_name: '지역별고용조사'
+        data_type: 'C형 시도 중분류 부가항목 마이크로데이터 CSV'
+        analysis_years: '2016–2024년 상·하반기(18개 시점)'
+        mdis_extract: '반기 C형 시도 중분류 부가항목'
+        file_pattern: '{연도}_{상반기|하반기}(C형_시도_중분류_부가항목)_*.csv'
+        local_path: 'data/raw/구조환경지수 원데이터 구축용/지역별고용조사/'
+        auxiliary_materials:
+          - '지역별고용조사 연도별 파일설계서·코드북'
+          - '시도 지역코드 매핑 자료'
+          - '강권오·황은진(2025), 제주지역 출산환경지수 개발 연구 p.87의 2024년 상반기 제주 기준값'
+        note: '원자료·MDIS 다운로드 내역은 Git 미포함, 재현 시 MDIS 재다운로드 필요'
+    open_issues:
+      - >-
+        제주 2024년 상반기 외부 기준값(65.4%, 강권오·황은진 2025)과
+        수정 산식 결과(65.478%, 반올림 65.5%)가 0.1%p 차이나며 원인은
+        별도 확인 대상으로 남아 있다.
+    resolved_issues:
+      - >-
+        반기→연도 집계 방식: 팀 논의 결과 연평균(상·하반기 단순평균)으로
+        확정(2026-07-31). 반기 원본은 intermediate_files로 계속 보존한다.
+    limitations:
+      - >-
+        조사대상주간에 선거일·대체공휴일이 포함된 시점(2020 상반기,
+        2021 하반기, 2022 하반기)은 36시간 이상 근로자 비율이 기계적으로
+        낮아질 수 있다. 2020 상반기는 코로나19 영향도 함께 고려해야 한다.
+      - 세종·제주처럼 분모 표본이 작은 시도는 반기별 추정치 변동성이 크다.
+      - 복합표본설계 표준오차·신뢰구간은 제공하지 않는다.
+
+  - id: 'housing_price'
+    project_code: '1-2.1'
+    category: '경제·고용·주거'
+    subcategory: '주거 안정성'
+    name: '현재 주택가격'
+    status: 'team_calculated'
+    direction: 'negative'
+    calculation_type: 'regional_mean_unweighted'
+    official_formula: '현재 주택가격 응답값의 지역별 산술평균'
+    recommended_formula: >-
+      0717 원자료의 유효 현재 주택가격 응답값을 전국·시도별로 비가중
+      산술평균한다. 조사 가중치는 사용하지 않는다.
+    notebook: 'notebooks/20260727_EDA_주거실태조사_주거지표3종산출_비교.ipynb'
+    output_file: 'data/processed/현재_주택가격_2016-2024.csv'
+    raw_sources:
+      - role: 'microdata'
+        source: 'MDIS 주거실태조사 일반가구(제공) 0717 추출본'
+        survey_name: '주거실태조사'
+        data_type: '일반가구(제공) 마이크로데이터 CSV'
+        analysis_years: '2016–2024년'
+        mdis_extract: '0717 추출본(현재 주택가격용)'
+        file_pattern: '{연도}_일반가구_*.csv'
+        local_path: 'data/raw/구조환경지수 원데이터 구축용/주거실태조사/0717/'
+        auxiliary_materials:
+          - '0717 CSV 헤더의 현재 주택가격(만원) 변수 정의'
+          - '연도별 지역코드 매핑 자료'
+          - '제주여성가족연구원(2025), 제주지역 출산환경지수 개발 연구의 1/n 산술평균 정의와 2023년 제주 기준값'
+      - role: 'comparison_series'
+        source: '한국부동산원 월별 중위매매가격(주택종합)'
+        data_type: '전국·17개 시도 월별 CSV'
+        analysis_years: '2016–2024년(108개월)'
+        file_pattern: '(월) 중위매매가격_주택종합.csv'
+        local_path: 'data/raw/구조환경지수 원데이터 구축용/주거실태조사/'
+        note: '현재 주택가격 본계열과의 비교 보조자료로만 사용'
+    parallel_series:
+      existing_substitute: '시도별 중위매매가격(연평균·12월 값)'
+      note: >-
+        0717 현재 주택가격을 최종 본계열로 사용한다. 중위매매가격은
+        노트북의 비교 보조계열로만 유지하며 본계열을 대체하지 않는다.
+    limitations:
+      - 코드북이 없어 헤더 단위(만원)·결측 코드(9999999) 등을 사용자 확인으로 판정했다.
+      - 비가중 평균이라 지역별 표본 구성 차이에 따른 대표성 한계가 있다.
+      - 2016년 세종은 결측(시도코드 29·34를 충남·세종 결합표본으로 처리해 충남만 산출).
+
+  - id: 'household_own_occupancy_rate'
+    project_code: '1-2.2'
+    category: '경제·고용·주거'
+    subcategory: '주거 안정성'
+    name: '전체 가구 자가점유비율'
+    status: 'team_calculated'
+    direction: 'positive'
+    calculation_type: 'weighted_ratio'
+    official_formula: '자가 점유 전체 가구 가중치 합 ÷ 전체 유효 가구 가중치 합 × 100'
+    recommended_formula: >-
+      점유형태 1–7과 양수 최종가중치를 가진 전체 가구의 가중치 합 대비
+      자가(점유형태 1) 가구의 가중치 합 비율. 자가소유율이 아닌
+      자가점유율 변수를 사용한다.
+    notebook: 'notebooks/20260727_EDA_주거실태조사_주거지표3종산출_비교.ipynb'
+    output_file: 'data/processed/전체_가구_자가점유비율_2016-2024.csv'
+    raw_sources:
+      - role: 'microdata'
+        source: 'MDIS 주거실태조사 일반가구(제공) 0727 추출본'
+        survey_name: '주거실태조사'
+        data_type: '일반가구(제공) 마이크로데이터 CSV'
+        analysis_years: '2016–2024년'
+        mdis_extract: '0727 추출본(점유형태·최종가중치 포함)'
+        file_pattern: '{연도}_일반가구_*.csv'
+        local_path: 'data/raw/구조환경지수 원데이터 구축용/주거실태조사/0727/'
+        auxiliary_materials:
+          - '2016–2024년 주거실태조사 파일설계서·코드북'
+          - '전국·17개 시도 지역코드 매핑 자료'
+          - '제주여성가족연구원(2025), 제주지역 출산환경지수 개발 연구의 2023년 제주 기준값'
+    limitations:
+      - 2016년 세종은 결측(주택가격과 동일하게 충남·세종 결합표본 처리).
+
+  - id: 'renter_household_annual_housing_cost_hcc'
+    project_code: '1-2.3'
+    category: '경제·고용·주거'
+    subcategory: '주거 안정성'
+    name: '임차가구 연간 주거비 HCC'
+    status: 'team_calculated'
+    direction: 'negative'
+    calculation_type: 'regional_mean_unweighted'
+    official_formula: >-
+      표본별 [(보증금 × 해당 지역 연평균 전월세전환율) + (월세 × 12)]
+      산출 후 유효 임차가구의 지역별 비가중 산술평균
+    recommended_formula: >-
+      임차가구(점유형태 2–6)별 HCC = 보증금 × 연평균 전월세전환율/100
+      + 월세 × 12를 계산한 뒤 조사 가중치 없이 산술평균한다. 임차료
+      결측·음수·전환율 매칭 누락은 제외하며 극단값은 제거하지 않는다.
+    notebook: 'notebooks/20260727_EDA_주거실태조사_주거지표3종산출_비교.ipynb'
+    output_file: 'data/processed/임차가구_연간_주거비_HCC_2016-2024.csv'
+    raw_sources:
+      - role: 'microdata'
+        source: 'MDIS 주거실태조사 일반가구(제공) 0727 추출본'
+        survey_name: '주거실태조사'
+        data_type: '일반가구(제공) 마이크로데이터 CSV'
+        analysis_years: '2016–2024년'
+        mdis_extract: '0727 추출본(점유형태·보증금·월세 포함)'
+        file_pattern: '{연도}_일반가구_*.csv'
+        local_path: 'data/raw/구조환경지수 원데이터 구축용/주거실태조사/0727/'
+        auxiliary_materials:
+          - '2016–2024년 주거실태조사 파일설계서·코드북'
+          - '전국·17개 시도 지역코드 매핑 자료'
+          - '보증금·월세·점유형태 변수 및 HCC 산식 정의 자료'
+      - role: 'conversion_rate'
+        source: 'KOSIS 한국부동산원 지역별 전월세전환율'
+        data_type: '전국·17개 시도 월별 CSV'
+        analysis_years: '2016–2024년(108개월)'
+        file_pattern: '*KOSIS*전월세전환율*.csv'
+        local_path: 'data/raw/구조환경지수 원데이터 구축용/주거실태조사/'
+        note: '지역·연도별 월값 12개의 연평균을 HCC 계산에 적용'
+    limitations:
+      - 2016년 세종은 결측(주택가격·자가점유비율과 동일 결합표본 처리).
+      - 전세(2)의 월세, 무보증 월세 계열(4–6)의 보증금 등 구조적 공란에만 0을 부여했다.
+
+  - id: 'household_chore_equal_participation'
+    project_code: '2-3.1'
+    category: '가족·생활'
+    subcategory: '가사수행 격차'
+    name: '가사노동 공동 참여도'
+    status: 'team_calculated'
+    direction: 'positive'
+    calculation_type: 'ratio'
+    survey_cycle: '가족실태조사(비정기, 2005·2010·2015·2020·2023 실시). 이번 산출은 2020·2023만 사용'
+    official_formula: >-
+      '남편과 아내가 똑같이' 가사노동을 수행한다고 응답한 가구의
+      가중비율
+    recommended_formula: >-
+      가사노동 수행주체 문항(1=남편, 2=아내, 3=똑같이, 4=해당없음)에서
+      유효응답(1–3) 가중합 대비 3(똑같이) 응답 가중합의 비율 × 100.
+    notebook: 'notebooks/20260727_EDA_가족실태조사_공동참여도_계층인식_지표_3종_산출.ipynb'
+    output_file: 'data/processed/가족실태조사_가사노동_공동_참여도_2020_2023.csv'
+    raw_sources:
+      - role: 'microdata'
+        source: '국가데이터처 MDIS 가족실태조사 총괄 원자료'
+        survey_name: '가족실태조사'
+        data_type: '총괄 마이크로데이터 CSV'
+        analysis_years: '2020년·2023년'
+        mdis_extract: '2020·2023년 총괄, 2026-07-26 추출(88104)'
+        file_pattern: '{2020|2023}_총괄_20260726_88104.csv'
+        local_path: 'data/raw/구조환경지수 원데이터 구축용/가족실태조사/'
+        auxiliary_materials:
+          - '2020년 가족실태조사 조사표·파일설계서'
+          - '2023년 제5차 가족실태조사 조사표 부록·파일설계서'
+          - '전국·17개 시도 지역코드 매핑 자료'
+    external_validation: '2023년 제주 공식값 30.6%와 계산값 일치 확인'
+    limitations:
+      - 2015년 자료는 공개 지역변수가 시도가 아니고 문항 정의도 달라 제외했다(대체·보간 없음).
+      - 2020·2023 응답코드 설계가 다르다(2020 가사노동 1–3, 2023 1–4이나 실제 코드4는 0건).
+      - >-
+        조사주기가 5년 내외로 비정기라, 기존 21개 중 격년 사회조사
+        그룹(A그룹)보다 더 희소하다. 이슈 #70 결측치 처리 시 별도
+        그룹으로 분류해야 한다.
+
+  - id: 'childcare_equal_participation'
+    project_code: '2-3.2'
+    category: '가족·생활'
+    subcategory: '가사수행 격차'
+    name: '돌봄노동 공동 참여도'
+    status: 'team_calculated'
+    direction: 'positive'
+    calculation_type: 'ratio'
+    survey_cycle: '가족실태조사(비정기, 2005·2010·2015·2020·2023 실시). 이번 산출은 2020·2023만 사용'
+    official_formula: >-
+      '남편과 아내가 똑같이' 자녀 양육·교육을 수행한다고 응답한 가구의
+      가중비율
+    recommended_formula: >-
+      자녀양육(과 교육) 수행주체 문항에서 유효응답(1–3) 가중합 대비
+      3(똑같이) 응답 가중합의 비율 × 100.
+    notebook: 'notebooks/20260727_EDA_가족실태조사_공동참여도_계층인식_지표_3종_산출.ipynb'
+    output_file: 'data/processed/가족실태조사_돌봄노동_공동_참여도_2020_2023.csv'
+    raw_sources:
+      - role: 'microdata'
+        source: '국가데이터처 MDIS 가족실태조사 총괄 원자료'
+        survey_name: '가족실태조사'
+        data_type: '총괄 마이크로데이터 CSV'
+        analysis_years: '2020년·2023년'
+        mdis_extract: '2020·2023년 총괄, 2026-07-26 추출(88104)'
+        file_pattern: '{2020|2023}_총괄_20260726_88104.csv'
+        local_path: 'data/raw/구조환경지수 원데이터 구축용/가족실태조사/'
+        auxiliary_materials:
+          - '2020년 가족실태조사 조사표·파일설계서'
+          - '2023년 제5차 가족실태조사 조사표 부록·파일설계서'
+          - '전국·17개 시도 지역코드 매핑 자료'
+    external_validation: '2023년 제주 공식값 43.5%와 계산값 일치 확인'
+    limitations:
+      - 2015년 자료는 공개 지역변수·문항 정의가 달라 제외했다(대체·보간 없음).
+      - 돌봄 코드 4(해당 없음)는 자녀 유무와 무관하게 관측돼, 자녀유무를 별도 필터로 중복 적용하지 않고 수행주체 1–3만 분모로 삼았다.
+      - >-
+        조사주기가 5년 내외로 비정기라, 기존 21개 중 격년 사회조사
+        그룹(A그룹)보다 더 희소하다. 이슈 #70 결측치 처리 시 별도
+        그룹으로 분류해야 한다.
+
+  - id: 'socioeconomic_status_perception'
+    project_code: '4-2.4'
+    category: '사회·문화'
+    subcategory: '사회적 가치관'
+    name: '사회경제적 지위에 대한 인식'
+    status: 'team_calculated'
+    direction: 'positive'
+    calculation_type: 'weighted_likert'
+    survey_cycle: '가족실태조사(비정기, 2005·2010·2015·2020·2023 실시). 이번 산출은 2020·2023만 사용'
+    official_formula: '가족실태조사 주관적 사회경제적 지위 5점 응답의 가중평균'
+    recommended_formula: >-
+      1(하층)–5(상층) 응답의 가구원 가중평균. 높을수록 인식 지위가
+      높으므로 역코딩하지 않는다.
+    notebook: 'notebooks/20260727_EDA_가족실태조사_공동참여도_계층인식_지표_3종_산출.ipynb'
+    output_file: 'data/processed/가족실태조사_사회경제적_지위에_대한_인식_2020_2023.csv'
+    raw_sources:
+      - role: 'microdata'
+        source: '국가데이터처 MDIS 가족실태조사 총괄 원자료'
+        survey_name: '가족실태조사'
+        data_type: '총괄 마이크로데이터 CSV'
+        analysis_years: '2020년·2023년'
+        mdis_extract: '2020·2023년 총괄, 2026-07-26 추출(88104)'
+        file_pattern: '{2020|2023}_총괄_20260726_88104.csv'
+        local_path: 'data/raw/구조환경지수 원데이터 구축용/가족실태조사/'
+        auxiliary_materials:
+          - '2020년 가족실태조사 조사표·파일설계서'
+          - '2023년 제5차 가족실태조사 조사표 부록·파일설계서'
+          - '전국·17개 시도 지역코드 매핑 자료'
+    external_validation: '2023년 제주 공식값 2.61점과 계산값 일치 확인'
+    limitations:
+      - 2015년 자료는 공개 지역변수·문항 정의가 달라 제외했다(대체·보간 없음).
+      - >-
+        조사주기가 5년 내외로 비정기라, 기존 21개 중 격년 사회조사
+        그룹(A그룹)보다 더 희소하다. 이슈 #70 결측치 처리 시 별도
+        그룹으로 분류해야 한다.
+
+# 원 데이터셋(taxonomy) 번호 17 '난임시술기관 보급도', 21 '학교폭력
+# 발생률'은 재정팀 원본 파일에 '(폐기?)'로 표시돼 있었다.
+# 둘 다 폐기로 확정되어 이 매니페스트에 등록하지 않는다.
+# (프로젝트 구조환경지표 목표치: 30개 → 28개로 조정)
