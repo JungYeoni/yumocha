@@ -20,6 +20,7 @@
 
 ### 기타
 
+- 주거실태조사·가족실태조사 노트북 커널 재시작 전체 실행 검증 (#44) (#59) ([f9f6cd7](https://github.com/JungYeoni/da-template/commit/f9f6cd76c334b4c29e18fa84ebceb87216aeb4e6))
 - Interim 출력 경로 정리 및 지표체계·방향성 확정 반영 (#38) ([a77981e](https://github.com/JungYeoni/da-template/commit/a77981eb5b1a1bff2efc0288fc5ae462b74dfd50))
 - 노트북 커널스펙을 프로젝트 전용 yumocha 커널로 통일 (#38) ([7e8cc43](https://github.com/JungYeoni/da-template/commit/7e8cc43708fd853b5d9f12a77938ba20ff640497))
 - 노트북 난수 시드 고정 (#17) ([aa2a674](https://github.com/JungYeoni/da-template/commit/aa2a674405caba7f89663d7ab14c50293ab1a1ac))
@@ -51,6 +52,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([4ec848c](https://github.com/JungYeoni/da-template/commit/4ec848cdb6fe3b5b2b0ffa4cf54cc43cfd9dae4a))
 - CHANGELOG 자동 업데이트 [skip ci] ([94e91a1](https://github.com/JungYeoni/da-template/commit/94e91a1eb50b27a0a11ad0ffd3d4e1937b0214a2))
 - PR 리뷰 재현성 정보 보완 (#67) ([8c8d5b5](https://github.com/JungYeoni/da-template/commit/8c8d5b52287ce0ecc61ef77c90ac3e32b1d565fd))
 - CHANGELOG 자동 업데이트 [skip ci] ([3c869d5](https://github.com/JungYeoni/da-template/commit/3c869d572b8bec969f38165e4ade07a9bafbd334))
@@ -138,7 +140,10 @@
 
 ### 버그 수정
 
+- #59 고용 연평균 검증과 한계 보강 ([902a2a0](https://github.com/JungYeoni/da-template/commit/902a2a0b861316789047871a0a6fa75c3d4833d2))
+- #59 매니페스트와 검증 결과 최신화 ([1a1ba55](https://github.com/JungYeoni/da-template/commit/1a1ba55b6f67c9a7d0c5f330e191fbe683ee07d2))
 - #49 주거지표 재산출 ([87bf5c1](https://github.com/JungYeoni/da-template/commit/87bf5c130858d9aa666e526b15193819d75e1ac0))
+- 구조환경지표 매니페스트 폐기 지표 확정 및 경로 오표기 수정 (#59) ([d9610df](https://github.com/JungYeoni/da-template/commit/d9610dfeb3dc4c91a344005d2c84156aea99aa09))
 - 2016 LLM 체크포인트 오연결 방지 (#67) ([d951cec](https://github.com/JungYeoni/da-template/commit/d951cecec91c5cfd008fea0d705b48387de7797e))
 - TF-IDF 입력 검증 보강 (#60) ([0a5f25a](https://github.com/JungYeoni/da-template/commit/0a5f25ab43a76c84be34a4581bb95d3fff8b6a35))
 - 라벨 취합 원자료 키 검증 보강 (#51) ([8ae3900](https://github.com/JungYeoni/da-template/commit/8ae3900e15ea81ce16e971d32496cb11ad184cb2))
@@ -188,6 +193,8 @@
 
 ### 새 기능
 
+- 청년층 정규직 근로자 비율 반기→연도 집계를 연평균으로 확정 (#59) ([52b29d6](https://github.com/JungYeoni/da-template/commit/52b29d605613bfe25bc6facdfb6d64d0b8e06a52))
+- 구조환경지표 검증 매니페스트에 신규 7개 지표 등록 (#59) ([555a0e6](https://github.com/JungYeoni/da-template/commit/555a0e6368374225fb023c1cb93547b70cd4967e))
 - TF-IDF 예측 대상 데이터 통합 (#60) ([dcbfe19](https://github.com/JungYeoni/da-template/commit/dcbfe196dda3005203907c0cca4d81eb3a7ad4cd))
 - 2021년 영역분류 라벨 학습 데이터 취합 (#51) ([33a371e](https://github.com/JungYeoni/da-template/commit/33a371e5b7920a8730f9129d5c9e02a8360d19af))
 - 주거실태조사 주거지표 3종 산출 및 비교 (#49) ([3478c02](https://github.com/JungYeoni/da-template/commit/3478c02e7216789a72da6b32fda23ef2d13ffac1))
