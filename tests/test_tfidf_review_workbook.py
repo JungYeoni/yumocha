@@ -10,6 +10,13 @@ from src.modeling.tfidf_review_workbook import (
     create_review_workbook,
     transfer_review_progress,
 )
+from src.modeling.similarity_grouping import (
+    CONTENT_GROUP_COLUMN,
+    CONTENT_GROUP_SCORE_COLUMN,
+    NAME_GROUP_COLUMN,
+    NAME_GROUP_SCORE_COLUMN,
+    assign_similarity_groups,
+)
 
 
 def _prediction_frame() -> pd.DataFrame:
@@ -50,6 +57,38 @@ def test_create_review_workbook_adds_dropdowns_and_formulas(tmp_path):
     assert validations["K2:K3"] == "'라벨목록'!$A$2:$A$13"
     assert validations["L2:L3"] == "'라벨목록'!$A$16:$A$19"
     assert workbook["라벨목록"].sheet_state == "hidden"
+
+
+def test_create_review_workbook_preserve_order_keeps_input_row_order(tmp_path):
+    path = tmp_path / "review.xlsx"
+    frame = _prediction_frame()  # 기본 정렬이면 2019/부산이 먼저 옴
+
+    create_review_workbook(frame, path, preserve_order=True)
+
+    workbook = load_workbook(path, data_only=False)
+    sheet = workbook["영역분류검토"]
+    assert sheet["A2"].value == 2020
+    assert sheet["B2"].value == "서울"
+    assert sheet["A3"].value == 2019
+    assert sheet["B3"].value == "부산"
+
+
+def test_create_review_workbook_exposes_similarity_group_columns(tmp_path):
+    path = tmp_path / "grouped-review.xlsx"
+    grouped = assign_similarity_groups(_prediction_frame())
+
+    create_review_workbook(grouped, path, preserve_order=True)
+
+    workbook = load_workbook(path, data_only=False)
+    sheet = workbook["영역분류검토"]
+    assert [sheet.cell(1, column).value for column in range(14, 18)] == [
+        NAME_GROUP_COLUMN,
+        NAME_GROUP_SCORE_COLUMN,
+        CONTENT_GROUP_COLUMN,
+        CONTENT_GROUP_SCORE_COLUMN,
+    ]
+    assert sheet["N2"].value
+    assert sheet.auto_filter.ref == "A1:Q3"
 
 
 def test_create_review_workbook_rejects_missing_prediction_columns(tmp_path):

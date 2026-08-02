@@ -33,6 +33,8 @@ def test_load_reusable_summary_reuses_only_matching_complete_outputs(tmp_path):
         "prediction_sha256": file_sha256(prediction),
         "low_confidence_threshold": 0.5,
         "n_splits": 5,
+        "name_similarity_threshold": 0.45,
+        "content_similarity_threshold": 0.3,
         "reused_existing": False,
     }
     summary_path.write_text(json.dumps(summary), encoding="utf-8")
@@ -65,6 +67,8 @@ def test_load_reusable_summary_rejects_missing_additional_output(tmp_path):
                 "prediction_sha256": "b",
                 "low_confidence_threshold": 0.5,
                 "n_splits": 5,
+                "name_similarity_threshold": 0.45,
+                "content_similarity_threshold": 0.3,
             }
         ),
         encoding="utf-8",
@@ -98,6 +102,8 @@ def test_load_reusable_summary_rejects_changed_setting(tmp_path):
                 "prediction_sha256": "b",
                 "low_confidence_threshold": 0.5,
                 "n_splits": 5,
+                "name_similarity_threshold": 0.45,
+                "content_similarity_threshold": 0.3,
             }
         ),
         encoding="utf-8",
@@ -130,6 +136,8 @@ def test_load_reusable_summary_rejects_changed_input(tmp_path):
                 "prediction_sha256": "same",
                 "low_confidence_threshold": 0.5,
                 "n_splits": 5,
+                "name_similarity_threshold": 0.45,
+                "content_similarity_threshold": 0.3,
             }
         ),
         encoding="utf-8",

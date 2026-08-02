@@ -24,6 +24,11 @@ from src.modeling.tfidf_area_classifier import (
     save_model_bundle,
 )
 from src.modeling.tfidf_review_workbook import create_review_workbook
+from src.modeling.similarity_grouping import (
+    DEFAULT_CONTENT_SIMILARITY_THRESHOLD,
+    DEFAULT_NAME_SIMILARITY_THRESHOLD,
+    assign_similarity_groups,
+)
 
 np.random.seed(RANDOM_STATE)
 
@@ -47,6 +52,8 @@ def load_reusable_summary(
     prediction_sha256: str,
     low_confidence_threshold: float,
     n_splits: int,
+    name_similarity_threshold: float = DEFAULT_NAME_SIMILARITY_THRESHOLD,
+    content_similarity_threshold: float = DEFAULT_CONTENT_SIMILARITY_THRESHOLD,
     additional_output_paths: tuple[Path, ...] = (),
 ) -> dict[str, object] | None:
     """입력·설정이 같은 기존 실행 결과가 완전하면 요약을 반환한다."""
@@ -71,6 +78,8 @@ def load_reusable_summary(
         "prediction_sha256": prediction_sha256,
         "low_confidence_threshold": low_confidence_threshold,
         "n_splits": n_splits,
+        "name_similarity_threshold": name_similarity_threshold,
+        "content_similarity_threshold": content_similarity_threshold,
     }
     if any(summary.get(key) != value for key, value in expected.items()):
         return None
@@ -102,11 +111,13 @@ def run_training(
     """모델 비교·최종 적합·예측·산출물 저장을 한 번에 수행한다."""
     summary_path = output_dir / "TFIDF_학습_예측_요약.json"
     prediction_output_path = output_dir / "2016_2020_2022_2024_TFIDF_영역분류_예측.csv"
+    similarity_output_path = output_dir / "2016_2020_2022_2024_TFIDF_영역분류_유사사업순.csv"
     review_workbook_path = output_dir / "2016_2020_2022_2024_TFIDF_영역분류_검토.xlsx"
     evaluation_output_paths = (
         output_dir / "TFIDF_모델_비교.csv",
         output_dir / "2016_2020_2022_2024_TFIDF_저신뢰_검토대상.csv",
         output_dir / "2016_2020_2022_2024_TFIDF_예측_QA.csv",
+        similarity_output_path,
         *(
             output_dir / f"TFIDF_{text_variant}_{suffix}.csv"
             for text_variant in TEXT_VARIANTS
@@ -192,7 +203,9 @@ def run_training(
         index=False,
         encoding="utf-8-sig",
     )
-    create_review_workbook(predicted, review_workbook_path)
+    grouped = assign_similarity_groups(predicted)
+    grouped.to_csv(similarity_output_path, index=False, encoding="utf-8-sig")
+    create_review_workbook(grouped, review_workbook_path, preserve_order=True)
 
     metadata = {
         "created_at": datetime.now().astimezone().isoformat(),
@@ -205,6 +218,8 @@ def run_training(
         "prediction_rows": len(targets),
         "cv_strategy": f"StratifiedGroupKFold(n_splits={n_splits}, groups=지역)",
         "low_confidence_threshold": low_confidence_threshold,
+        "name_similarity_threshold": DEFAULT_NAME_SIMILARITY_THRESHOLD,
+        "content_similarity_threshold": DEFAULT_CONTENT_SIMILARITY_THRESHOLD,
         "python_version": platform.python_version(),
         "pandas_version": pd.__version__,
         "numpy_version": np.__version__,
@@ -225,11 +240,14 @@ def run_training(
         "low_confidence_rows": int(predicted["저신뢰_검토대상"].sum()),
         "low_confidence_threshold": low_confidence_threshold,
         "n_splits": n_splits,
+        "name_similarity_threshold": DEFAULT_NAME_SIMILARITY_THRESHOLD,
+        "content_similarity_threshold": DEFAULT_CONTENT_SIMILARITY_THRESHOLD,
         "training_sha256": training_sha256,
         "prediction_sha256": prediction_sha256,
         "model_sha256": model_checksum_path(model_path).read_text(encoding="ascii").strip(),
         "model_path": str(model_path),
         "review_workbook_path": str(review_workbook_path),
+        "similarity_output_path": str(similarity_output_path),
         "reused_existing": False,
     }
     summary_path.write_text(

@@ -11,6 +11,12 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.worksheet.datavalidation import DataValidation
 
 from scripts.consolidate_2021_area_labels import MAJOR_BY_SUBCATEGORY
+from src.modeling.similarity_grouping import (
+    CONTENT_GROUP_COLUMN,
+    CONTENT_GROUP_SCORE_COLUMN,
+    NAME_GROUP_COLUMN,
+    NAME_GROUP_SCORE_COLUMN,
+)
 
 REVIEW_STATUSES = ["미검토", "확정", "수정", "보류"]
 REVIEW_COLUMNS = [
@@ -27,6 +33,10 @@ REVIEW_COLUMNS = [
     "검토_세부영역",
     "검토상태",
     "검토메모",
+    NAME_GROUP_COLUMN,
+    NAME_GROUP_SCORE_COLUMN,
+    CONTENT_GROUP_COLUMN,
+    CONTENT_GROUP_SCORE_COLUMN,
 ]
 REVIEW_KEY_COLUMNS = ["연도", "지역", "원본행"]
 TRANSFER_COLUMNS = ["검토_세부영역", "검토상태", "검토메모"]
@@ -152,10 +162,22 @@ def transfer_review_progress(
     }
 
 
-def create_review_workbook(frame: pd.DataFrame, output_path: Path) -> Path:
-    """예측값을 초기 검토값으로 채운 드롭다운 Excel을 생성한다."""
+def create_review_workbook(
+    frame: pd.DataFrame, output_path: Path, *, preserve_order: bool = False
+) -> Path:
+    """예측값을 초기 검토값으로 채운 드롭다운 Excel을 생성한다.
+
+    ``preserve_order``가 True면 전달된 프레임의 행 순서를 그대로 쓴다.
+    `similarity_grouping.assign_similarity_groups`처럼 이미 원하는 순서로
+    정렬해 둔 프레임을 넘길 때 사용한다. False(기본값)면 기존과 동일하게
+    연도·지역·원본행 순으로 정렬한다.
+    """
     validate_review_source(frame)
-    ordered = frame.sort_values(["연도", "지역", "원본행"]).reset_index(drop=True)
+    ordered = (
+        frame.reset_index(drop=True)
+        if preserve_order
+        else frame.sort_values(["연도", "지역", "원본행"]).reset_index(drop=True)
+    )
 
     workbook = Workbook()
     workbook.calculation.calcMode = "auto"
@@ -190,6 +212,10 @@ def create_review_workbook(frame: pd.DataFrame, output_path: Path) -> Path:
                 row.예측_세부영역,
                 "미검토",
                 None,
+                getattr(row, NAME_GROUP_COLUMN, None),
+                getattr(row, NAME_GROUP_SCORE_COLUMN, None),
+                getattr(row, CONTENT_GROUP_COLUMN, None),
+                getattr(row, CONTENT_GROUP_SCORE_COLUMN, None),
             ]
         )
 
@@ -232,11 +258,11 @@ def create_review_workbook(frame: pd.DataFrame, output_path: Path) -> Path:
             cell.fill = editable_fill
 
     review_sheet.conditional_formatting.add(
-        f"A2:M{last_row}",
+        f"A2:Q{last_row}",
         FormulaRule(formula=["$I2=TRUE"], fill=low_confidence_fill),
     )
     review_sheet.conditional_formatting.add(
-        f"A2:M{last_row}",
+        f"A2:Q{last_row}",
         FormulaRule(
             formula=['$L2="수정"'],
             fill=PatternFill("solid", fgColor="E2F0D9"),
@@ -244,7 +270,7 @@ def create_review_workbook(frame: pd.DataFrame, output_path: Path) -> Path:
     )
 
     review_sheet.freeze_panes = "D2"
-    review_sheet.auto_filter.ref = f"A1:M{last_row}"
+    review_sheet.auto_filter.ref = f"A1:Q{last_row}"
     review_sheet.sheet_view.showGridLines = False
     review_sheet.row_dimensions[1].height = 28
 
@@ -262,6 +288,10 @@ def create_review_workbook(frame: pd.DataFrame, output_path: Path) -> Path:
         "K": 27,
         "L": 12,
         "M": 35,
+        "N": 18,
+        "O": 20,
+        "P": 22,
+        "Q": 23,
     }
     for column, width in widths.items():
         review_sheet.column_dimensions[column].width = width
@@ -269,6 +299,8 @@ def create_review_workbook(frame: pd.DataFrame, output_path: Path) -> Path:
         for cell in row:
             cell.alignment = Alignment(vertical="top", wrap_text=False)
         row[7].number_format = "0.000"
+        for index in (14, 16):
+            row[index].number_format = "0.000"
     for column in ("D", "E", "M"):
         for cell in review_sheet[column][1:]:
             cell.alignment = Alignment(vertical="top", wrap_text=True)
