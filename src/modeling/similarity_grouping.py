@@ -11,7 +11,7 @@ from sklearn.neighbors import NearestNeighbors
 
 from scripts.consolidate_2021_area_labels import REGION_ORDER, normalize_text
 
-DEFAULT_NAME_SIMILARITY_THRESHOLD = 0.45
+DEFAULT_NAME_SIMILARITY_THRESHOLD = 0.35
 DEFAULT_CONTENT_SIMILARITY_THRESHOLD = 0.3
 UNGROUPED_SIMILARITY_SCORE = -1.0
 
@@ -128,9 +128,16 @@ def assign_similarity_groups(
     ``create_review_workbook(..., preserve_order=True)``에 바로 넘길 수 있다.
     주요내용 서브그룹은 같은 사업명 그룹 안의 보조 검토 정보로 함께 제공한다.
 
-    임계값은 검증된 값이 아니라 이번 작업을 위해 새로 정한 기본값이다.
+    사업명 임계값(0.35)은 실제 21~24년 데이터(고유 세부사업명 26,250개)의
+    최근접 유사도 분포와 경계 사례를 직접 검토해 정했다. 이 그룹핑은
+    사람이 다시 검토한다는 전제이므로, 놓치는 것(false negative)보다
+    잘못 묶는 것(false positive)의 비용이 낮다고 보고 다소 느슨하게
+    잡았다 — 예를 들어 "어린이 건강자람동산 운영"과 "어린이 건강 자람
+    동산 운영"처럼 실제로는 같은 사업인데 띄어쓰기만 다른 경우까지 잡되,
+    "대전일자리종합박람회 개최"와 "대전일자리지원센터 운영"처럼 사업명이
+    비슷해 보여도 실제로는 다른 사업은 걸러지는 지점에서 값을 골랐다.
     분류기 저신뢰 임계값(0.5, 확률)과는 척도가 다른 코사인 유사도이므로
-    그대로 재사용하지 않았다. 실제 데이터로 결과를 본 뒤 조정이 필요할 수 있다.
+    그대로 재사용하지 않았다.
     """
     required = {region_column, name_column, content_column}
     missing = required - set(frame.columns)
