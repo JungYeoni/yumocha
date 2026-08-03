@@ -108,15 +108,25 @@ def run_training(
     n_splits: int = 5,
     force: bool = False,
 ) -> dict[str, object]:
-    """모델 비교·최종 적합·예측·산출물 저장을 한 번에 수행한다."""
+    """모델 비교·최종 적합·예측·산출물 저장을 한 번에 수행한다.
+
+    산출 파일명에는 대상 연도 범위를 넣지 않는다. 학습·예측 대상 연도
+    범위는 실행마다 바뀔 수 있으므로(예: 2021년만 -> 2021~2024년,
+    2016~2020+2022~2024 -> 2016~2020), 그 범위 정보는 파일명이 아니라
+    ``output_dir`` 자체로 구분한다(예: `TFIDF_예측_2021_2024재학습/`).
+    파일명을 연도에 고정하면 범위가 바뀔 때마다 이 함수도 같이 고쳐야
+    한다.
+    """
     summary_path = output_dir / "TFIDF_학습_예측_요약.json"
-    prediction_output_path = output_dir / "2016_2020_2022_2024_TFIDF_영역분류_예측.csv"
-    similarity_output_path = output_dir / "2016_2020_2022_2024_TFIDF_영역분류_유사사업순.csv"
-    review_workbook_path = output_dir / "2016_2020_2022_2024_TFIDF_영역분류_검토.xlsx"
+    prediction_output_path = output_dir / "TFIDF_영역분류_예측.csv"
+    similarity_output_path = output_dir / "TFIDF_영역분류_유사사업순.csv"
+    review_workbook_path = output_dir / "TFIDF_영역분류_검토.xlsx"
+    low_confidence_output_path = output_dir / "TFIDF_저신뢰_검토대상.csv"
+    prediction_qa_path = output_dir / "TFIDF_예측_QA.csv"
     evaluation_output_paths = (
         output_dir / "TFIDF_모델_비교.csv",
-        output_dir / "2016_2020_2022_2024_TFIDF_저신뢰_검토대상.csv",
-        output_dir / "2016_2020_2022_2024_TFIDF_예측_QA.csv",
+        low_confidence_output_path,
+        prediction_qa_path,
         similarity_output_path,
         *(
             output_dir / f"TFIDF_{text_variant}_{suffix}.csv"
@@ -183,7 +193,7 @@ def run_training(
 
     predicted.to_csv(prediction_output_path, index=False, encoding="utf-8-sig")
     predicted.loc[predicted["저신뢰_검토대상"]].sort_values("예측_신뢰도").to_csv(
-        output_dir / "2016_2020_2022_2024_TFIDF_저신뢰_검토대상.csv",
+        low_confidence_output_path,
         index=False,
         encoding="utf-8-sig",
     )
@@ -199,7 +209,7 @@ def run_training(
     )
     qa["저신뢰_비율"] = qa["저신뢰_건수"] / qa["행수"]
     qa.to_csv(
-        output_dir / "2016_2020_2022_2024_TFIDF_예측_QA.csv",
+        prediction_qa_path,
         index=False,
         encoding="utf-8-sig",
     )

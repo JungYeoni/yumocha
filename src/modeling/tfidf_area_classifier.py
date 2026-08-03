@@ -62,7 +62,13 @@ def build_text(frame: pd.DataFrame, text_variant: str) -> pd.Series:
 
 
 def validate_training_data(frame: pd.DataFrame) -> None:
-    """학습 데이터의 필수 열·키·taxonomy를 검증한다."""
+    """학습 데이터의 필수 열·키·taxonomy를 검증한다.
+
+    2021년 단일 연도 학습본에는 ``연도`` 열이 없어 지역·원본행만으로도
+    키가 유일했다. 2021~2024년을 합친 학습본은 같은 지역·원본행 번호가
+    연도마다 반복되므로, ``연도`` 열이 있으면 연도·지역·원본행을 키로
+    쓰고 없으면 기존과 동일하게 지역·원본행만 쓴다.
+    """
     required = ["지역", "원본행", "세부사업명", "주요내용_정제", "대영역", "세부영역"]
     missing_columns = [column for column in required if column not in frame.columns]
     if missing_columns:
@@ -71,8 +77,11 @@ def validate_training_data(frame: pd.DataFrame) -> None:
         raise ValueError("학습 데이터가 비어 있습니다.")
     if frame[["지역", "원본행", "대영역", "세부영역"]].isna().any().any():
         raise ValueError("학습 키 또는 라벨에 결측이 있습니다.")
-    if frame.duplicated(["지역", "원본행"]).any():
-        raise ValueError("학습 데이터의 지역·원본행 키가 중복되었습니다.")
+    if "연도" in frame.columns and frame["연도"].isna().any():
+        raise ValueError("학습 키 또는 라벨에 결측이 있습니다.")
+    key_columns = ["연도", "지역", "원본행"] if "연도" in frame.columns else ["지역", "원본행"]
+    if frame.duplicated(key_columns).any():
+        raise ValueError(f"학습 데이터의 {'·'.join(key_columns)} 키가 중복되었습니다.")
 
     canonical_major = frame["세부영역"].map(MAJOR_BY_SUBCATEGORY)
     if canonical_major.isna().any():
