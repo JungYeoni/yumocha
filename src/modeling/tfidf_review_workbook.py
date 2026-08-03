@@ -230,8 +230,8 @@ def _add_status_sheet(
                     f'=COUNTIF({source_range},"신규 예측(2016-2020)")',
                 ),
                 (
-                    "자료구분: 기존 확정(2021-2024)",
-                    f'=COUNTIF({source_range},"기존 확정(2021-2024)")',
+                    "자료구분: 기존 자료(2021-2024)",
+                    f'=COUNTIF({source_range},"기존 자료(2021-2024)")',
                 ),
                 (
                     "신규 예측 중 미검토",

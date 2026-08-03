@@ -15,7 +15,6 @@ from pathlib import Path
 import pandas as pd
 
 from scripts.consolidate_2021_2024_confirmed_labels import (
-    CONFIRMED_STATUSES,
     MASTER_NOTE_COLUMN,
     REVIEW_SHEET_NAME,
     TRAINING_YEARS,
@@ -27,7 +26,7 @@ from src.modeling.tfidf_review_workbook import create_review_workbook
 DISPLAY_NOTE_COLUMN = "명칭_내용_불일치_복합대응"
 SOURCE_LABEL_COLUMN = "자료구분"
 NEW_PREDICTION_LABEL = "신규 예측(2016-2020)"
-CONFIRMED_LABEL = "기존 확정(2021-2024)"
+CONFIRMED_LABEL = "기존 자료(2021-2024)"
 
 DISPLAY_COLUMNS = [
     "연도",
@@ -88,7 +87,13 @@ def load_2016_2020_rows(prediction_path: Path, budget_path: Path) -> pd.DataFram
 
 
 def load_2021_2024_confirmed_rows(review: pd.DataFrame) -> pd.DataFrame:
-    """검토완료 워크북에서 확정 라벨을 예측·검토·예산·메모까지 보존해 그대로 가져온다."""
+    """검토완료 워크북에서 2021-2024년 행을 예측·검토·예산·메모까지 보존해 그대로 가져온다.
+
+    검토상태로 거르지 않고 2021-2024년 전체를 가져온다. 확정·수정만
+    걸러내면 논의필요·보류·다문화 상태인 미해결 행(2026-08-03 기준
+    148행)이 통합 워크북에서 조용히 빠지는 문제가 있었다. 미해결
+    행도 실제 검토상태 그대로 표시해야 재정팀이 놓치지 않는다.
+    """
     required = [
         "연도",
         "지역",
@@ -114,31 +119,29 @@ def load_2021_2024_confirmed_rows(review: pd.DataFrame) -> pd.DataFrame:
     frame = review[required].copy()
     frame["연도"] = pd.to_numeric(frame["연도"], errors="raise").astype("int64")
     frame["지역"] = frame["지역"].map(normalize_text)
-    confirmed = frame.loc[
-        frame["연도"].isin(TRAINING_YEARS) & frame["검토상태"].isin(CONFIRMED_STATUSES)
-    ].copy()
-    if confirmed.empty:
-        raise ValueError("확정·수정 상태인 2021-2024년 행이 없습니다.")
+    rows = frame.loc[frame["연도"].isin(TRAINING_YEARS)].copy()
+    if rows.empty:
+        raise ValueError("2021-2024년 행이 없습니다.")
 
     # 2021년 원본 라벨은 TF-IDF가 아니라 사람이 직접 붙인 정답이라
     # 예측_* 열 자체가 없다(마스터 파일에서 결측으로 비워 둠). 검토용
     # 워크북 표시를 위해 확정값을 예측값 자리에 채우고 신뢰도는 1.0,
     # 저신뢰 플래그는 False로 둔다(모델 추측이 아니라 원 정답이라는 뜻).
-    no_prediction = confirmed["예측_세부영역"].isna()
-    confirmed.loc[no_prediction, "예측_대영역"] = confirmed.loc[no_prediction, "검토_대영역"]
-    confirmed.loc[no_prediction, "예측_세부영역"] = confirmed.loc[no_prediction, "검토_세부영역"]
-    confirmed.loc[no_prediction, "예측_신뢰도"] = 1.0
-    confirmed.loc[no_prediction, "저신뢰_검토대상"] = False
+    no_prediction = rows["예측_세부영역"].isna()
+    rows.loc[no_prediction, "예측_대영역"] = rows.loc[no_prediction, "검토_대영역"]
+    rows.loc[no_prediction, "예측_세부영역"] = rows.loc[no_prediction, "검토_세부영역"]
+    rows.loc[no_prediction, "예측_신뢰도"] = 1.0
+    rows.loc[no_prediction, "저신뢰_검토대상"] = False
 
-    confirmed = confirmed.rename(
+    rows = rows.rename(
         columns={
             MASTER_NOTE_COLUMN: DISPLAY_NOTE_COLUMN,
             "당해예산(백만원)": "당해예산",
             "전년도예산(백만원)": "전년도예산",
         }
     )
-    confirmed[SOURCE_LABEL_COLUMN] = CONFIRMED_LABEL
-    return confirmed[DISPLAY_COLUMNS]
+    rows[SOURCE_LABEL_COLUMN] = CONFIRMED_LABEL
+    return rows[DISPLAY_COLUMNS]
 
 
 def build_combined_frame(
@@ -210,7 +213,7 @@ def main() -> None:
         f"  신규 예측(2016-2020): {int((combined[SOURCE_LABEL_COLUMN] == NEW_PREDICTION_LABEL).sum()):,}개"
     )
     print(
-        f"  기존 확정(2021-2024): {int((combined[SOURCE_LABEL_COLUMN] == CONFIRMED_LABEL).sum()):,}개"
+        f"  기존 자료(2021-2024): {int((combined[SOURCE_LABEL_COLUMN] == CONFIRMED_LABEL).sum()):,}개"
     )
     print(f"저장: {args.output_path}")
 

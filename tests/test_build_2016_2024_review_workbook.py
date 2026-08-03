@@ -51,22 +51,22 @@ def _write_prediction_and_budget(tmp_path: Path) -> tuple[Path, Path]:
 def _review_frame() -> pd.DataFrame:
     return pd.DataFrame(
         {
-            "연도": [2021, 2022, 2016],
-            "지역": ["서울", "부산", "서울"],
-            "원본행": [10, 20, 99],
-            "세부사업명": ["청년 창업 지원", "노인 일자리", "미검토 사업"],
-            "주요내용_정제": ["창업자금 지원", "일자리 연계", "내용"],
-            "예측_대영역": ["1. 경제·고용·주거", "1. 경제·고용·주거", "지표체계 외"],
-            "예측_세부영역": ["1-1. 고용여건", "1-1. 고용여건", "지표체계 외"],
-            "예측_신뢰도": [0.9, 0.6, 0.1],
-            "저신뢰_검토대상": [False, False, True],
-            "검토상태": ["확정", "수정", "미검토"],
-            "검토_대영역": ["1. 경제·고용·주거", "1. 경제·고용·주거", None],
-            "검토_세부영역": ["1-1. 고용여건", "1-3. 경제적 여건", None],
-            "검토메모": ["확인완료", None, None],
-            MASTER_NOTE_COLUMN: ["복합대응", None, None],
-            "당해예산(백만원)": [50.0, 30.0, 0.0],
-            "전년도예산(백만원)": [40.0, 25.0, 0.0],
+            "연도": [2021, 2022, 2023, 2016],
+            "지역": ["서울", "부산", "대구", "서울"],
+            "원본행": [10, 20, 30, 99],
+            "세부사업명": ["청년 창업 지원", "노인 일자리", "협의 대상 사업", "미검토 사업"],
+            "주요내용_정제": ["창업자금 지원", "일자리 연계", "논의 필요 내용", "내용"],
+            "예측_대영역": ["1. 경제·고용·주거", "1. 경제·고용·주거", None, "지표체계 외"],
+            "예측_세부영역": ["1-1. 고용여건", "1-1. 고용여건", None, "지표체계 외"],
+            "예측_신뢰도": [0.9, 0.6, 0.3, 0.1],
+            "저신뢰_검토대상": [False, False, True, True],
+            "검토상태": ["확정", "수정", "논의필요", "미검토"],
+            "검토_대영역": ["1. 경제·고용·주거", "1. 경제·고용·주거", None, None],
+            "검토_세부영역": ["1-1. 고용여건", "1-3. 경제적 여건", None, None],
+            "검토메모": ["확인완료", None, "재정팀 협의 필요", None],
+            MASTER_NOTE_COLUMN: ["복합대응", None, None, None],
+            "당해예산(백만원)": [50.0, 30.0, 20.0, 0.0],
+            "전년도예산(백만원)": [40.0, 25.0, 18.0, 0.0],
         }
     )
 
@@ -105,16 +105,27 @@ def test_load_2016_2020_rows_rejects_unmatched_budget(tmp_path):
         load_2016_2020_rows(prediction_path, budget_path)
 
 
-def test_load_2021_2024_confirmed_rows_filters_status_and_year():
+def test_load_2021_2024_confirmed_rows_filters_by_year_only():
     result = load_2021_2024_confirmed_rows(_review_frame())
 
-    assert len(result) == 2
-    assert set(result["연도"]) == {2021, 2022}
+    assert len(result) == 3
+    assert set(result["연도"]) == {2021, 2022, 2023}
     assert "미검토 사업" not in result["세부사업명"].tolist()
     row = result.loc[result["세부사업명"].eq("청년 창업 지원")].iloc[0]
     assert row["당해예산"] == 50.0
     assert row[DISPLAY_NOTE_COLUMN] == "복합대응"
     assert (result[SOURCE_LABEL_COLUMN] == CONFIRMED_LABEL).all()
+
+
+def test_load_2021_2024_confirmed_rows_keeps_unresolved_statuses():
+    # 논의필요·보류·다문화처럼 아직 미해결인 상태도 확정·수정만 걸러내면
+    # 조용히 빠졌었다. 실제 검토상태 그대로 나와야 재정팀이 놓치지 않는다.
+    result = load_2021_2024_confirmed_rows(_review_frame())
+
+    row = result.loc[result["세부사업명"].eq("협의 대상 사업")].iloc[0]
+    assert row["검토상태"] == "논의필요"
+    assert pd.isna(row["검토_대영역"])
+    assert row["검토메모"] == "재정팀 협의 필요"
 
 
 def test_load_2021_2024_confirmed_rows_fills_missing_prediction_from_review():
@@ -142,8 +153,8 @@ def test_build_combined_frame_concatenates_both_periods(tmp_path):
 
     combined = build_combined_frame(prediction_path, budget_path, review_path)
 
-    assert len(combined) == 4  # 2016-2020 신규 2건 + 2021-2024 확정 2건
-    assert set(combined["연도"]) == {2018, 2019, 2021, 2022}
+    assert len(combined) == 5  # 2016-2020 신규 2건 + 2021-2024 전체 3건(미해결 1건 포함)
+    assert set(combined["연도"]) == {2018, 2019, 2021, 2022, 2023}
     assert set(combined[SOURCE_LABEL_COLUMN]) == {NEW_PREDICTION_LABEL, CONFIRMED_LABEL}
 
 
