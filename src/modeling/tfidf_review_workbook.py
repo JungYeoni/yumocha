@@ -186,6 +186,76 @@ def _prefill(row: object, column: str, default: object) -> object:
     return value
 
 
+def _add_status_sheet(
+    workbook: Workbook,
+    *,
+    review_sheet_name: str,
+    last_row: int,
+    present_optional: list[str],
+) -> None:
+    """검토 진행 현황을 실시간 집계하는 COUNTIF 시트를 추가한다.
+
+    수식이 `영역분류검토` 시트를 그대로 참조하므로, 사람이 검토상태를
+    바꿀 때마다 Excel에서 자동으로 다시 계산된다. 별도로 새로고침하는
+    스크립트 없이 지금 진행 상황을 바로 확인할 수 있다.
+    """
+    status_sheet = workbook.create_sheet("현황", 1)
+    ref = f"'{review_sheet_name}'"
+    status_range = f"{ref}!$L$2:$L${last_row}"
+    low_confidence_range = f"{ref}!$I$2:$I${last_row}"
+
+    rows: list[tuple[str, str]] = [
+        ("전체 행수", f"=COUNTA({ref}!$A$2:$A${last_row})"),
+        ("", ""),
+        ("검토상태: 미검토", f'=COUNTIF({status_range},"미검토")'),
+        ("검토상태: 확정", f'=COUNTIF({status_range},"확정")'),
+        ("검토상태: 수정", f'=COUNTIF({status_range},"수정")'),
+        ("검토상태: 보류", f'=COUNTIF({status_range},"보류")'),
+        ("", ""),
+        ("저신뢰 검토대상", f"=COUNTIF({low_confidence_range},TRUE)"),
+        (
+            "저신뢰 중 미검토",
+            f'=COUNTIFS({low_confidence_range},TRUE,{status_range},"미검토")',
+        ),
+    ]
+
+    if SOURCE_LABEL_COLUMN in present_optional:
+        source_column = get_column_letter(18 + present_optional.index(SOURCE_LABEL_COLUMN))
+        source_range = f"{ref}!${source_column}$2:${source_column}${last_row}"
+        rows.extend(
+            [
+                ("", ""),
+                (
+                    "자료구분: 신규 예측(2016-2020)",
+                    f'=COUNTIF({source_range},"신규 예측(2016-2020)")',
+                ),
+                (
+                    "자료구분: 기존 확정(2021-2024)",
+                    f'=COUNTIF({source_range},"기존 확정(2021-2024)")',
+                ),
+                (
+                    "신규 예측 중 미검토",
+                    f'=COUNTIFS({source_range},"신규 예측(2016-2020)",{status_range},"미검토")',
+                ),
+            ]
+        )
+
+    status_sheet.append(["항목", "값"])
+    for label, formula in rows:
+        status_sheet.append([label, formula])
+
+    header_fill = PatternFill("solid", fgColor="1F4E78")
+    for cell in status_sheet[1]:
+        cell.fill = header_fill
+        cell.font = Font(color="FFFFFF", bold=True)
+    status_sheet.column_dimensions["A"].width = 30
+    status_sheet.column_dimensions["B"].width = 16
+    for row in status_sheet.iter_rows(
+        min_row=2, max_row=status_sheet.max_row, min_col=2, max_col=2
+    ):
+        row[0].number_format = "#,##0"
+
+
 def create_review_workbook(
     frame: pd.DataFrame, output_path: Path, *, preserve_order: bool = False
 ) -> Path:
@@ -378,6 +448,13 @@ def create_review_workbook(
     label_sheet.column_dimensions["A"].width = 30
     label_sheet.column_dimensions["B"].width = 24
     label_sheet.sheet_state = "hidden"
+
+    _add_status_sheet(
+        workbook,
+        review_sheet_name=review_sheet.title,
+        last_row=last_row,
+        present_optional=present_optional,
+    )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(output_path)

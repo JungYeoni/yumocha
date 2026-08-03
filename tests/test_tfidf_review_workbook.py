@@ -135,6 +135,23 @@ def test_create_review_workbook_appends_optional_budget_and_note_columns(tmp_pat
     assert sheet.auto_filter.ref.startswith("A1:U")
 
 
+def test_create_review_workbook_adds_status_sheet_with_live_formulas(tmp_path):
+    path = tmp_path / "review-status.xlsx"
+    frame = _prediction_frame()
+    frame["자료구분"] = ["신규 예측(2016-2020)", "신규 예측(2016-2020)"]
+
+    create_review_workbook(frame, path, preserve_order=True)
+
+    workbook = load_workbook(path, data_only=False)
+    assert "현황" in workbook.sheetnames
+    status = workbook["현황"]
+    values = {row[0].value: row[1].value for row in status.iter_rows(min_row=2) if row[0].value}
+    assert values["전체 행수"] == "=COUNTA('영역분류검토'!$A$2:$A$3)"
+    assert values["검토상태: 미검토"] == "=COUNTIF('영역분류검토'!$L$2:$L$3,\"미검토\")"
+    assert values["저신뢰 검토대상"] == "=COUNTIF('영역분류검토'!$I$2:$I$3,TRUE)"
+    assert "자료구분: 신규 예측(2016-2020)" in values
+
+
 def test_create_review_workbook_rejects_missing_prediction_columns(tmp_path):
     with pytest.raises(ValueError, match="필수 열 누락"):
         create_review_workbook(pd.DataFrame({"연도": [2020]}), tmp_path / "review.xlsx")
