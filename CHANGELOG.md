@@ -34,6 +34,7 @@
 
 ### 리팩터링
 
+- 학습·예측 산출 파일명에서 연도 범위 제거 (#77) ([bba7eab](https://github.com/JungYeoni/da-template/commit/bba7eab3ba1d0a4dc3ee4a198a59cd5481dd4213))
 - TF-IDF 분류 대상 경로 명확화 (#60) ([9c36e7c](https://github.com/JungYeoni/da-template/commit/9c36e7c29e068a4768dfe4c3f280558eab794572))
 - 구조환경지표 시각화 산출물 폴더 분리 (#45) ([322b357](https://github.com/JungYeoni/da-template/commit/322b3576fe993531d562de70ecc7438db1319207))
 - Reports 디렉터리 구조 정리 (#33) ([4b300ee](https://github.com/JungYeoni/da-template/commit/4b300eeb2345dca805c42549a612eb980d73f85b))
@@ -52,6 +53,12 @@
 
 ### 문서
 
+- 검토상태 운영 방침과 후속 작업 정리 (#77) ([db81e68](https://github.com/JungYeoni/da-template/commit/db81e688fac6ba2543c60c097ba1371eb4b4f4f1))
+- M열 제외 성능 해석 표현 보완 (#77) ([6c1e315](https://github.com/JungYeoni/da-template/commit/6c1e315d2c8999e6030a9ddfee7231ae6b3fc6fe))
+- M열 제외·최종 성능·통합 검토 워크북 반영해 보고서 갱신 (#77) ([86b8226](https://github.com/JungYeoni/da-template/commit/86b8226254189e2786819f389e327e41c1c61ceb))
+- 저신뢰 임계값별 검토 대상 비교표 추가 (#77) ([0b77ae6](https://github.com/JungYeoni/da-template/commit/0b77ae64d9226c9baff9999042a2ae0f2c3e7022))
+- 2021-2024 통합 라벨 TF-IDF 재학습 결과 보고서 (#77) ([e8a2fb3](https://github.com/JungYeoni/da-template/commit/e8a2fb3e77a120f0ba02760505413671eec75eca))
+- CHANGELOG 자동 업데이트 [skip ci] ([4ea7aca](https://github.com/JungYeoni/da-template/commit/4ea7acacccdb78ca02d6cb124c7709ecbb3ecc21))
 - TF-IDF 취약 클래스 분석 보강 (#65) ([25d47a9](https://github.com/JungYeoni/da-template/commit/25d47a92ba91b5993852ae91fa6e4167f557a89c))
 - CHANGELOG 자동 업데이트 [skip ci] ([fb64442](https://github.com/JungYeoni/da-template/commit/fb644425a23a2c977f23febe500c4f6fb65f89cc))
 - CHANGELOG 자동 업데이트 [skip ci] ([4ec848c](https://github.com/JungYeoni/da-template/commit/4ec848cdb6fe3b5b2b0ffa4cf54cc43cfd9dae4a))
@@ -142,6 +149,11 @@
 
 ### 버그 수정
 
+- 2021-2024 미해결 검토행이 통합 워크북에서 빠지던 문제 수정 (#77) ([c9f0c2a](https://github.com/JungYeoni/da-template/commit/c9f0c2a12f8d61ffd4a91e79aa91efcf6e239daa))
+- M열에 메모가 있는 확정 라벨은 학습에서 전부 제외 (#77) ([9f31baa](https://github.com/JungYeoni/da-template/commit/9f31baa73a047689b756bea56d1d1d11449b242a))
+- 예산 단위 문서화 및 병합 실패 검증 보강 (#77) ([d67a03e](https://github.com/JungYeoni/da-template/commit/d67a03e19ed6f4709e4db4c6d8a4aae9a1f45563))
+- CodeRabbit 리뷰 반영 - 학습·예측 대상 겹침 및 연도 결측 검사 (#77) ([1792bf2](https://github.com/JungYeoni/da-template/commit/1792bf29cfd346bec4d7525ea665790972a7aa06))
+- 다년도 학습 데이터의 지역·원본행 키 중복 검사 보정 (#77) ([27c396a](https://github.com/JungYeoni/da-template/commit/27c396af9da6ad581ba4c2f67a4383e6ec5806f0))
 - 테스트에 하드코딩된 옛 유사도 임계값 제거 (#65) ([c2d8faf](https://github.com/JungYeoni/da-template/commit/c2d8fafd07238e3cc911d4a57dbcca5d65d6dc8e))
 - 사업명 유사도 임계값을 실제 데이터 기준 0.35로 조정 (#65) ([fec0d5b](https://github.com/JungYeoni/da-template/commit/fec0d5bef29e357c707c716680b402650a4405f2))
 - 유사도 그룹핑 소그룹 반복 호출 병렬화 오버헤드 제거 (#65) ([cb3b461](https://github.com/JungYeoni/da-template/commit/cb3b461aa4cacc92e9122983b4c3914c92f91a8c))
@@ -201,6 +213,10 @@
 
 ### 새 기능
 
+- 검토 워크북에 실시간 진행현황 시트 추가 (#77) ([abd3009](https://github.com/JungYeoni/da-template/commit/abd30095b7af377aea4fd0cf2acd5373db87f8d7))
+- 2016-2020 예측과 2021-2024 확정 라벨을 예산·메모까지 합친 통합 검토 워크북 (#77) ([a032db9](https://github.com/JungYeoni/da-template/commit/a032db9b468029bf40c816b05cb4eb8f40ff8a9c))
+- 2016-2020 전용 TF-IDF 예측 대상 취합 스크립트 추가 (#77) ([d70fb6f](https://github.com/JungYeoni/da-template/commit/d70fb6f00dd5a88409cbd0979f139454c8c27410))
+- 2021-2024 검토완료 확정 라벨 통합 스크립트 추가 (#77) ([491a633](https://github.com/JungYeoni/da-template/commit/491a633fb1901ee88ee67b44e0c74ecda8ea2172))
 - TF-IDF 영역분류 모델링 및 검토 자동화 (#65) ([a1b9a9c](https://github.com/JungYeoni/da-template/commit/a1b9a9c94e91586ab965c2bc32355cbe73c3e5b8))
 - 청년층 정규직 근로자 비율 반기→연도 집계를 연평균으로 확정 (#59) ([52b29d6](https://github.com/JungYeoni/da-template/commit/52b29d605613bfe25bc6facdfb6d64d0b8e06a52))
 - 구조환경지표 검증 매니페스트에 신규 7개 지표 등록 (#59) ([555a0e6](https://github.com/JungYeoni/da-template/commit/555a0e6368374225fb023c1cb93547b70cd4967e))
