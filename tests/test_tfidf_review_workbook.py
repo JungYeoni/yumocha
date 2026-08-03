@@ -91,6 +91,50 @@ def test_create_review_workbook_exposes_similarity_group_columns(tmp_path):
     assert sheet.auto_filter.ref == "A1:Q3"
 
 
+def test_create_review_workbook_keeps_prefilled_review_state(tmp_path):
+    # 2021-2024 확정 라벨처럼 이미 검토가 끝난 행은 검토_*/메모를 그대로 쓰고,
+    # 아직 검토 안 한 신규 예측 행(NaN)은 기존처럼 예측값·"미검토"로 채운다.
+    path = tmp_path / "review.xlsx"
+    frame = _prediction_frame()
+    frame["검토_대영역"] = ["1. 경제·고용·주거", pd.NA]
+    frame["검토_세부영역"] = ["1-1. 고용여건", pd.NA]
+    frame["검토상태"] = ["확정", pd.NA]
+    frame["검토메모"] = ["기존 확정 메모", pd.NA]
+
+    create_review_workbook(frame, path, preserve_order=True)
+
+    workbook = load_workbook(path, data_only=False)
+    sheet = workbook["영역분류검토"]
+    assert sheet["K2"].value == "1-1. 고용여건"
+    assert sheet["L2"].value == "확정"
+    assert sheet["M2"].value == "기존 확정 메모"
+    assert sheet["K3"].value == "2-1. 돌봄 여건"  # 예측값으로 기본 채움
+    assert sheet["L3"].value == "미검토"
+    assert sheet["M3"].value is None
+
+
+def test_create_review_workbook_appends_optional_budget_and_note_columns(tmp_path):
+    path = tmp_path / "review-with-budget.xlsx"
+    frame = _prediction_frame()
+    frame["당해예산"] = [120.0, pd.NA]
+    frame["전년도예산"] = [100.0, 90.0]
+    frame["명칭_내용_불일치_복합대응"] = ["복합대응", pd.NA]
+    frame["자료구분"] = ["신규 예측", "신규 예측"]
+
+    create_review_workbook(frame, path, preserve_order=True)
+
+    workbook = load_workbook(path, data_only=False)
+    sheet = workbook["영역분류검토"]
+    headers = [cell.value for cell in sheet[1]]
+    assert headers[-4:] == ["명칭_내용_불일치_복합대응", "당해예산", "전년도예산", "자료구분"]
+    assert sheet["R2"].value == "복합대응"
+    assert sheet["S2"].value == 120.0
+    assert sheet["T2"].value == 100.0
+    assert sheet["U2"].value == "신규 예측"
+    assert sheet["S3"].value is None
+    assert sheet.auto_filter.ref.startswith("A1:U")
+
+
 def test_create_review_workbook_rejects_missing_prediction_columns(tmp_path):
     with pytest.raises(ValueError, match="필수 열 누락"):
         create_review_workbook(pd.DataFrame({"연도": [2020]}), tmp_path / "review.xlsx")

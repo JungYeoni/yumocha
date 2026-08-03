@@ -1,0 +1,137 @@
+"""2016-2020 예측과 2021-2024 확정 라벨 통합 검토 워크북 조립 테스트."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pandas as pd
+import pytest
+
+from scripts.build_2016_2024_review_workbook import (
+    CONFIRMED_LABEL,
+    DISPLAY_COLUMNS,
+    DISPLAY_NOTE_COLUMN,
+    MASTER_NOTE_COLUMN,
+    NEW_PREDICTION_LABEL,
+    SOURCE_LABEL_COLUMN,
+    build_combined_frame,
+    load_2016_2020_rows,
+    load_2021_2024_confirmed_rows,
+)
+
+
+def _write_prediction_and_budget(tmp_path: Path) -> tuple[Path, Path]:
+    prediction_path = tmp_path / "prediction.csv"
+    budget_path = tmp_path / "budget.csv"
+    pd.DataFrame(
+        {
+            "연도": [2018, 2019],
+            "지역": ["서울", "부산"],
+            "원본행": [1, 2],
+            "세부사업명": ["청년 취업 지원", "아이 돌봄"],
+            "주요내용_정제": ["고용 지원", "돌봄 서비스"],
+            "예측_대영역": ["1. 경제·고용·주거", "2. 가족·생활"],
+            "예측_세부영역": ["1-1. 고용여건", "2-1. 돌봄 여건"],
+            "예측_신뢰도": [0.7, 0.4],
+            "저신뢰_검토대상": [False, True],
+        }
+    ).to_csv(prediction_path, index=False)
+    pd.DataFrame(
+        {
+            "연도": [2018, 2019],
+            "지역": ["서울", "부산"],
+            "원본행": [1, 2],
+            "당해예산": [120.0, 80.0],
+            "전년도예산": [100.0, 90.0],
+        }
+    ).to_csv(budget_path, index=False)
+    return prediction_path, budget_path
+
+
+def _review_frame() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "연도": [2021, 2022, 2016],
+            "지역": ["서울", "부산", "서울"],
+            "원본행": [10, 20, 99],
+            "세부사업명": ["청년 창업 지원", "노인 일자리", "미검토 사업"],
+            "주요내용_정제": ["창업자금 지원", "일자리 연계", "내용"],
+            "예측_대영역": ["1. 경제·고용·주거", "1. 경제·고용·주거", "지표체계 외"],
+            "예측_세부영역": ["1-1. 고용여건", "1-1. 고용여건", "지표체계 외"],
+            "예측_신뢰도": [0.9, 0.6, 0.1],
+            "저신뢰_검토대상": [False, False, True],
+            "검토상태": ["확정", "수정", "미검토"],
+            "검토_대영역": ["1. 경제·고용·주거", "1. 경제·고용·주거", None],
+            "검토_세부영역": ["1-1. 고용여건", "1-3. 경제적 여건", None],
+            "검토메모": ["확인완료", None, None],
+            MASTER_NOTE_COLUMN: ["복합대응", None, None],
+            "당해예산(백만원)": [50.0, 30.0, 0.0],
+            "전년도예산(백만원)": [40.0, 25.0, 0.0],
+        }
+    )
+
+
+def test_load_2016_2020_rows_merges_budget_and_blanks_review_state(tmp_path):
+    prediction_path, budget_path = _write_prediction_and_budget(tmp_path)
+
+    result = load_2016_2020_rows(prediction_path, budget_path)
+
+    assert list(result.columns) == DISPLAY_COLUMNS
+    assert result["당해예산"].tolist() == [120.0, 80.0]
+    assert result["검토_세부영역"].isna().all()
+    assert (result[SOURCE_LABEL_COLUMN] == NEW_PREDICTION_LABEL).all()
+
+
+def test_load_2021_2024_confirmed_rows_filters_status_and_year():
+    result = load_2021_2024_confirmed_rows(_review_frame())
+
+    assert len(result) == 2
+    assert set(result["연도"]) == {2021, 2022}
+    assert "미검토 사업" not in result["세부사업명"].tolist()
+    row = result.loc[result["세부사업명"].eq("청년 창업 지원")].iloc[0]
+    assert row["당해예산"] == 50.0
+    assert row[DISPLAY_NOTE_COLUMN] == "복합대응"
+    assert (result[SOURCE_LABEL_COLUMN] == CONFIRMED_LABEL).all()
+
+
+def test_load_2021_2024_confirmed_rows_fills_missing_prediction_from_review():
+    # 2021년 원본 라벨처럼 예측_* 열이 통째로 결측인 행은 검토(확정)값으로
+    # 채우고 신뢰도 1.0·저신뢰 아님으로 표시해야 한다.
+    frame = _review_frame()
+    frame["저신뢰_검토대상"] = frame["저신뢰_검토대상"].astype("object")
+    frame.loc[0, "예측_대영역"] = None
+    frame.loc[0, "예측_세부영역"] = None
+    frame.loc[0, "예측_신뢰도"] = None
+    frame.loc[0, "저신뢰_검토대상"] = None
+
+    result = load_2021_2024_confirmed_rows(frame)
+
+    row = result.loc[result["세부사업명"].eq("청년 창업 지원")].iloc[0]
+    assert row["예측_세부영역"] == "1-1. 고용여건"
+    assert row["예측_신뢰도"] == 1.0
+    assert row["저신뢰_검토대상"] is False
+
+
+def test_build_combined_frame_concatenates_both_periods(tmp_path):
+    prediction_path, budget_path = _write_prediction_and_budget(tmp_path)
+    review_path = tmp_path / "review.xlsx"
+    _review_frame().to_excel(review_path, sheet_name="작업용_유사사업순", index=False)
+
+    combined = build_combined_frame(prediction_path, budget_path, review_path)
+
+    assert len(combined) == 4  # 2016-2020 신규 2건 + 2021-2024 확정 2건
+    assert set(combined["연도"]) == {2018, 2019, 2021, 2022}
+    assert set(combined[SOURCE_LABEL_COLUMN]) == {NEW_PREDICTION_LABEL, CONFIRMED_LABEL}
+
+
+def test_build_combined_frame_rejects_duplicate_keys(tmp_path):
+    prediction_path, budget_path = _write_prediction_and_budget(tmp_path)
+    review_path = tmp_path / "review.xlsx"
+    duplicate_review = _review_frame()
+    # 부산·2022·20 확정 행의 키를 서울·2021·10(이미 확정 상태인 다른 행)과
+    # 겹치게 만들어, 두 확정 행이 같은 키를 갖는 상황을 재현한다.
+    duplicate_review.loc[1, ["연도", "지역", "원본행"]] = [2021, "서울", 10]
+    duplicate_review.to_excel(review_path, sheet_name="작업용_유사사업순", index=False)
+
+    with pytest.raises(ValueError, match="키 중복"):
+        build_combined_frame(prediction_path, budget_path, review_path)
