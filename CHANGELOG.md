@@ -21,6 +21,7 @@
 ### 기타
 
 - 주거실태조사·가족실태조사 노트북 커널 재시작 전체 실행 검증 (#44) (#59) ([f9f6cd7](https://github.com/JungYeoni/da-template/commit/f9f6cd76c334b4c29e18fa84ebceb87216aeb4e6))
+- 로컬 라벨 검토 데이터 제외 (#72) ([31ed4bf](https://github.com/JungYeoni/da-template/commit/31ed4bfd5072c19992c75cbb7f0686fc8a44c453))
 - Interim 출력 경로 정리 및 지표체계·방향성 확정 반영 (#38) ([a77981e](https://github.com/JungYeoni/da-template/commit/a77981eb5b1a1bff2efc0288fc5ae462b74dfd50))
 - 노트북 커널스펙을 프로젝트 전용 yumocha 커널로 통일 (#38) ([7e8cc43](https://github.com/JungYeoni/da-template/commit/7e8cc43708fd853b5d9f12a77938ba20ff640497))
 - 노트북 난수 시드 고정 (#17) ([aa2a674](https://github.com/JungYeoni/da-template/commit/aa2a674405caba7f89663d7ab14c50293ab1a1ac))
@@ -53,6 +54,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([61d7c97](https://github.com/JungYeoni/da-template/commit/61d7c97fd7ae468c39a272c9e883813784409584))
 - 검토상태 운영 방침과 후속 작업 정리 (#77) ([db81e68](https://github.com/JungYeoni/da-template/commit/db81e688fac6ba2543c60c097ba1371eb4b4f4f1))
 - M열 제외 성능 해석 표현 보완 (#77) ([6c1e315](https://github.com/JungYeoni/da-template/commit/6c1e315d2c8999e6030a9ddfee7231ae6b3fc6fe))
 - M열 제외·최종 성능·통합 검토 워크북 반영해 보고서 갱신 (#77) ([86b8226](https://github.com/JungYeoni/da-template/commit/86b8226254189e2786819f389e327e41c1c61ceb))
@@ -62,6 +64,10 @@
 - TF-IDF 취약 클래스 분석 보강 (#65) ([25d47a9](https://github.com/JungYeoni/da-template/commit/25d47a92ba91b5993852ae91fa6e4167f557a89c))
 - CHANGELOG 자동 업데이트 [skip ci] ([fb64442](https://github.com/JungYeoni/da-template/commit/fb644425a23a2c977f23febe500c4f6fb65f89cc))
 - CHANGELOG 자동 업데이트 [skip ci] ([4ec848c](https://github.com/JungYeoni/da-template/commit/4ec848cdb6fe3b5b2b0ffa4cf54cc43cfd9dae4a))
+- 2018 LLM 의미보존 후보 검토 (#72) ([a87b645](https://github.com/JungYeoni/da-template/commit/a87b6459abbd490480c146f4a8fb155ecdc5c79a))
+- 2019 LLM 의미보존 후보 검토 (#72) ([5bc8db8](https://github.com/JungYeoni/da-template/commit/5bc8db86864a8c916ab8748f9f57742a6e11debb))
+- 2022 LLM 의미보존 후보 검토 (#72) ([c3e93ba](https://github.com/JungYeoni/da-template/commit/c3e93bae3ffa52a3e5712dd02183dd09a0e8d573))
+- 2017 LLM 의미보존 후보 검토 (#72) ([ac323fa](https://github.com/JungYeoni/da-template/commit/ac323fa32c4ee2020efc2ee91e703cf3b05dde80))
 - CHANGELOG 자동 업데이트 [skip ci] ([94e91a1](https://github.com/JungYeoni/da-template/commit/94e91a1eb50b27a0a11ad0ffd3d4e1937b0214a2))
 - PR 리뷰 재현성 정보 보완 (#67) ([8c8d5b5](https://github.com/JungYeoni/da-template/commit/8c8d5b52287ce0ecc61ef77c90ac3e32b1d565fd))
 - CHANGELOG 자동 업데이트 [skip ci] ([3c869d5](https://github.com/JungYeoni/da-template/commit/3c869d572b8bec969f38165e4ade07a9bafbd334))
@@ -149,6 +155,7 @@
 
 ### 버그 수정
 
+- 검토 워크북 조건부 서식 범위 보존 (#72) ([b111372](https://github.com/JungYeoni/da-template/commit/b11137229f62ef2ce043944d1e8a269a9bb817b8))
 - 2021-2024 미해결 검토행이 통합 워크북에서 빠지던 문제 수정 (#77) ([c9f0c2a](https://github.com/JungYeoni/da-template/commit/c9f0c2a12f8d61ffd4a91e79aa91efcf6e239daa))
 - M열에 메모가 있는 확정 라벨은 학습에서 전부 제외 (#77) ([9f31baa](https://github.com/JungYeoni/da-template/commit/9f31baa73a047689b756bea56d1d1d11449b242a))
 - 예산 단위 문서화 및 병합 실패 검증 보강 (#77) ([d67a03e](https://github.com/JungYeoni/da-template/commit/d67a03e19ed6f4709e4db4c6d8a4aae9a1f45563))
@@ -164,6 +171,14 @@
 - #59 매니페스트와 검증 결과 최신화 ([1a1ba55](https://github.com/JungYeoni/da-template/commit/1a1ba55b6f67c9a7d0c5f330e191fbe683ee07d2))
 - #49 주거지표 재산출 ([87bf5c1](https://github.com/JungYeoni/da-template/commit/87bf5c130858d9aa666e526b15193819d75e1ac0))
 - 구조환경지표 매니페스트 폐기 지표 확정 및 경로 오표기 수정 (#59) ([d9610df](https://github.com/JungYeoni/da-template/commit/d9610dfeb3dc4c91a344005d2c84156aea99aa09))
+- 정제문 수정 행 강조 표시 (#72) ([569bb69](https://github.com/JungYeoni/da-template/commit/569bb69f5a637d0b8cd5a70e7863fad6103edb32))
+- 검토용 Excel 호환성과 컬럼명 개선 (#72) ([9da978d](https://github.com/JungYeoni/da-template/commit/9da978d489620e28ff39defb3370040e2bdc62fe))
+- Excel 라벨 목록 호환성 개선 (#72) ([69d9c3b](https://github.com/JungYeoni/da-template/commit/69d9c3b3256c6fadd0ab085169778abe80cc58a6))
+- 2020 LLM 의미보존 오류 복구 (#72) ([8b54eee](https://github.com/JungYeoni/da-template/commit/8b54eee596a8f64a29664bebeb29188a8754b50a))
+- 2023 LLM 의미보존 잔여 오류 복구 (#72) ([df1bf6c](https://github.com/JungYeoni/da-template/commit/df1bf6cf07af9166dffe657468a35ed3b8d8a682))
+- 2024 LLM 의미보존 오류 선별 복구 (#72) ([37a5aa7](https://github.com/JungYeoni/da-template/commit/37a5aa7974259a80bea47570be208f67ed11e1e7))
+- 2023 빈 원문 LLM 환각 복구 (#72) ([30debd6](https://github.com/JungYeoni/da-template/commit/30debd69b96e2957fd7b6cfda331a2a9ea23c84d))
+- 2021 LLM 의미보존 오류 선별 복구 (#72) ([d611a82](https://github.com/JungYeoni/da-template/commit/d611a8203d358803d39584213fa535c7e18be38b))
 - 2016 LLM 체크포인트 오연결 방지 (#67) ([d951cec](https://github.com/JungYeoni/da-template/commit/d951cecec91c5cfd008fea0d705b48387de7797e))
 - TF-IDF 입력 검증 보강 (#60) ([0a5f25a](https://github.com/JungYeoni/da-template/commit/0a5f25ab43a76c84be34a4581bb95d3fff8b6a35))
 - 라벨 취합 원자료 키 검증 보강 (#51) ([8ae3900](https://github.com/JungYeoni/da-template/commit/8ae3900e15ea81ce16e971d32496cb11ad184cb2))
@@ -220,6 +235,11 @@
 - TF-IDF 영역분류 모델링 및 검토 자동화 (#65) ([a1b9a9c](https://github.com/JungYeoni/da-template/commit/a1b9a9c94e91586ab965c2bc32355cbe73c3e5b8))
 - 청년층 정규직 근로자 비율 반기→연도 집계를 연평균으로 확정 (#59) ([52b29d6](https://github.com/JungYeoni/da-template/commit/52b29d605613bfe25bc6facdfb6d64d0b8e06a52))
 - 구조환경지표 검증 매니페스트에 신규 7개 지표 등록 (#59) ([555a0e6](https://github.com/JungYeoni/da-template/commit/555a0e6368374225fb023c1cb93547b70cd4967e))
+- 검토 시트 역할과 보류 자동목록 정리 (#72) ([8ab0c15](https://github.com/JungYeoni/da-template/commit/8ab0c159e7952949048762c2e3d9328d0a39d94d))
+- 유사사업별 재정팀 검토본 생성 (#72) ([a9d8dd8](https://github.com/JungYeoni/da-template/commit/a9d8dd83a4cd3f8f079f73931862e6977694a76b))
+- 재정팀 전체연도 검토본 통합 (#72) ([56b8fbf](https://github.com/JungYeoni/da-template/commit/56b8fbf99fd56d1783f700d3597a0e0b98e2179c))
+- LLM 정제변경 라벨 예산 영향표 생성 (#72) ([3736e4d](https://github.com/JungYeoni/da-template/commit/3736e4da26a7fee66534815a7a1439e64eb8046c))
+- LLM 정제 의미보존 감사 기반 추가 (#72) ([3718b72](https://github.com/JungYeoni/da-template/commit/3718b72c3cf3dab0a7dd396ff22195e0d1858739))
 - TF-IDF 예측 대상 데이터 통합 (#60) ([dcbfe19](https://github.com/JungYeoni/da-template/commit/dcbfe196dda3005203907c0cca4d81eb3a7ad4cd))
 - 2021년 영역분류 라벨 학습 데이터 취합 (#51) ([33a371e](https://github.com/JungYeoni/da-template/commit/33a371e5b7920a8730f9129d5c9e02a8360d19af))
 - 주거실태조사 주거지표 3종 산출 및 비교 (#49) ([3478c02](https://github.com/JungYeoni/da-template/commit/3478c02e7216789a72da6b32fda23ef2d13ffac1))
