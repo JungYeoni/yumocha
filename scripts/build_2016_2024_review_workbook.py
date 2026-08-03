@@ -16,6 +16,7 @@ import pandas as pd
 
 from scripts.consolidate_2021_2024_confirmed_labels import (
     CONFIRMED_STATUSES,
+    MASTER_NOTE_COLUMN,
     REVIEW_SHEET_NAME,
     TRAINING_YEARS,
 )
@@ -23,7 +24,6 @@ from scripts.consolidate_2021_area_labels import normalize_text
 from src.modeling.similarity_grouping import assign_similarity_groups
 from src.modeling.tfidf_review_workbook import create_review_workbook
 
-MASTER_NOTE_COLUMN = "명칭-내용 불일치 / 원본PDF 동일 여부\n & 복합대응사업 여부"
 DISPLAY_NOTE_COLUMN = "명칭_내용_불일치_복합대응"
 SOURCE_LABEL_COLUMN = "자료구분"
 NEW_PREDICTION_LABEL = "신규 예측(2016-2020)"

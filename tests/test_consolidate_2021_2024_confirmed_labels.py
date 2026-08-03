@@ -6,8 +6,11 @@ import pandas as pd
 import pytest
 
 from scripts.consolidate_2021_2024_confirmed_labels import (
+    MASTER_NOTE_COLUMN,
     TRAIN_COLUMNS,
     build_qa,
+    find_misaligned_rows,
+    is_content_misaligned,
     load_confirmed_labels,
 )
 from scripts.consolidate_2021_area_labels import REGION_ORDER
@@ -23,9 +26,44 @@ def _review_frame(**overrides: list) -> pd.DataFrame:
         "검토상태": ["확정", "수정", "확정", "미검토"],
         "검토_대영역": ["1. 경제·고용·주거", "2. 가족·생활", "1. 경제·고용·주거", None],
         "검토_세부영역": ["1-1. 고용여건", "2-1. 돌봄 여건", "1-1. 고용여건", None],
+        MASTER_NOTE_COLUMN: [None, None, None, None],
     }
     base.update(overrides)
     return pd.DataFrame(base)
+
+
+def test_is_content_misaligned_flags_any_non_null_note():
+    assert is_content_misaligned("불일치/동일/셀밀림") is True
+    assert is_content_misaligned("주요내용 미표기") is True
+    assert is_content_misaligned("복합대응") is True
+    assert is_content_misaligned("예산 불일치/동일") is True
+    assert is_content_misaligned("연호) cf 수정") is True
+
+
+def test_is_content_misaligned_keeps_blank_notes():
+    assert is_content_misaligned(None) is False
+    assert is_content_misaligned(float("nan")) is False
+
+
+def test_load_confirmed_labels_excludes_any_flagged_row():
+    frame = _review_frame()
+    frame[MASTER_NOTE_COLUMN] = ["불일치/동일/셀밀림", "복합대응", None, None]
+
+    result = load_confirmed_labels(frame)
+
+    assert len(result) == 1  # 확정 대상 3건 중 M열에 뭐라도 적힌 2건 제외
+    assert result["세부사업명"].tolist() == ["노인 일자리"]
+
+
+def test_find_misaligned_rows_returns_only_confirmed_flagged_rows():
+    frame = _review_frame()
+    frame[MASTER_NOTE_COLUMN] = ["불일치/동일/셀밀림", "복합대응", None, "불일치/동일"]
+    # 마지막 행(2016, 미검토)은 확정 대상이 아니므로 플래그가 있어도 제외 목록에서 빠져야 한다.
+
+    excluded = find_misaligned_rows(frame)
+
+    assert len(excluded) == 2
+    assert set(excluded["세부사업명"]) == {"청년 취업 지원", "아이 돌봄"}
 
 
 def test_keeps_only_confirmed_and_revised_rows():
@@ -86,6 +124,7 @@ def test_empty_frame_raises():
             "검토상태",
             "검토_대영역",
             "검토_세부영역",
+            MASTER_NOTE_COLUMN,
         ]
     )
     with pytest.raises(ValueError, match="비어 있습니다"):
@@ -144,10 +183,13 @@ def test_blank_business_name_raises():
 def test_build_qa_reports_status_distribution_and_yearly_counts():
     review = _review_frame()
     confirmed = load_confirmed_labels(review)
+    excluded = find_misaligned_rows(review)
 
-    qa = build_qa(review, confirmed)
+    qa = build_qa(review, confirmed, excluded)
 
     status_rows = qa.loc[qa["구분"].eq("전체_검토상태분포")]
     assert status_rows["건수"].sum() == len(review)
     year_rows = qa.loc[qa["구분"].eq("확정라벨_연도별건수")]
     assert dict(zip(year_rows["검토상태"], year_rows["건수"], strict=True)) == {2021: 2, 2022: 1}
+    excluded_rows = qa.loc[qa["구분"].eq("텍스트손상_제외건수")]
+    assert excluded_rows["건수"].iloc[0] == 0

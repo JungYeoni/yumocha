@@ -23,6 +23,7 @@ from scripts.consolidate_2021_area_labels import (
 REVIEW_SHEET_NAME = "작업용_유사사업순"
 CONFIRMED_STATUSES = ("확정", "수정")
 TRAINING_YEARS = {2021, 2022, 2023, 2024}
+MASTER_NOTE_COLUMN = "명칭-내용 불일치 / 원본PDF 동일 여부\n & 복합대응사업 여부"
 REQUIRED_COLUMNS = [
     "연도",
     "지역",
@@ -32,6 +33,7 @@ REQUIRED_COLUMNS = [
     "검토상태",
     "검토_대영역",
     "검토_세부영역",
+    MASTER_NOTE_COLUMN,
 ]
 TRAIN_COLUMNS = [
     "연도",
@@ -42,6 +44,16 @@ TRAIN_COLUMNS = [
     "대영역",
     "세부영역",
 ]
+
+
+def is_content_misaligned(note: object) -> bool:
+    """M열에 메모가 하나라도 있으면(값 종류 무관) 학습에서 제외 대상으로 본다.
+
+    "복합대응"이든 "불일치"든 재정팀이 이 열에 뭔가 표시를 해 둔 행은
+    검토자가 원본 PDF와 대조하며 별도로 주의가 필요하다고 판단한
+    행이므로, 값의 구체적인 내용과 무관하게 전부 학습에서 뺀다.
+    """
+    return pd.notna(note)
 
 
 def load_confirmed_labels(review: pd.DataFrame) -> pd.DataFrame:
@@ -66,6 +78,11 @@ def load_confirmed_labels(review: pd.DataFrame) -> pd.DataFrame:
     ].drop(columns="검토상태")
     if confirmed.empty:
         raise ValueError("확정·수정 상태인 행이 없습니다.")
+
+    misaligned = confirmed[MASTER_NOTE_COLUMN].map(is_content_misaligned)
+    confirmed = confirmed.loc[~misaligned].drop(columns=MASTER_NOTE_COLUMN)
+    if confirmed.empty:
+        raise ValueError("텍스트 손상 행 제외 후 남은 확정 라벨이 없습니다.")
 
     if confirmed[["검토_대영역", "검토_세부영역"]].isna().any().any():
         missing = confirmed.loc[
@@ -106,7 +123,18 @@ def load_confirmed_labels(review: pd.DataFrame) -> pd.DataFrame:
     return confirmed[TRAIN_COLUMNS]
 
 
-def build_qa(review: pd.DataFrame, confirmed: pd.DataFrame) -> pd.DataFrame:
+def find_misaligned_rows(review: pd.DataFrame) -> pd.DataFrame:
+    """학습에서 제외한 텍스트 손상 행을 감사용으로 따로 뽑는다."""
+    frame = review[REQUIRED_COLUMNS].copy()
+    frame["지역"] = frame["지역"].map(normalize_text)
+    frame["연도"] = pd.to_numeric(frame["연도"], errors="raise").astype("int64")
+    frame["원본행"] = pd.to_numeric(frame["원본행"], errors="raise").astype("int64")
+    confirmed_mask = frame["연도"].isin(TRAINING_YEARS) & frame["검토상태"].isin(CONFIRMED_STATUSES)
+    misaligned_mask = frame[MASTER_NOTE_COLUMN].map(is_content_misaligned)
+    return frame.loc[confirmed_mask & misaligned_mask].reset_index(drop=True)
+
+
+def build_qa(review: pd.DataFrame, confirmed: pd.DataFrame, excluded: pd.DataFrame) -> pd.DataFrame:
     """검토상태 분포와 연도별 확정 건수를 요약한다."""
     status_counts = (
         review["검토상태"]
@@ -120,18 +148,29 @@ def build_qa(review: pd.DataFrame, confirmed: pd.DataFrame) -> pd.DataFrame:
     year_counts.insert(0, "구분", "확정라벨_연도별건수")
     year_counts = year_counts.rename(columns={"연도": "검토상태"})
 
-    return pd.concat([status_counts, year_counts], ignore_index=True)
+    excluded_row = pd.DataFrame(
+        [{"구분": "텍스트손상_제외건수", "검토상태": "합계", "건수": len(excluded)}]
+    )
+
+    return pd.concat([status_counts, year_counts, excluded_row], ignore_index=True)
 
 
-def save_outputs(confirmed: pd.DataFrame, qa: pd.DataFrame, output_dir: Path) -> dict[str, Path]:
-    """확정 라벨 통합본과 QA를 UTF-8-SIG CSV로 저장한다."""
+def save_outputs(
+    confirmed: pd.DataFrame,
+    qa: pd.DataFrame,
+    excluded: pd.DataFrame,
+    output_dir: Path,
+) -> dict[str, Path]:
+    """확정 라벨 통합본·QA·제외행 감사 목록을 UTF-8-SIG CSV로 저장한다."""
     output_dir.mkdir(parents=True, exist_ok=True)
     paths = {
         "확정라벨": output_dir / "2021_2024_확정라벨_통합.csv",
         "QA": output_dir / "2021_2024_확정라벨_QA.csv",
+        "제외행": output_dir / "2021_2024_텍스트손상_제외행.csv",
     }
     confirmed.to_csv(paths["확정라벨"], index=False, encoding="utf-8-sig")
     qa.to_csv(paths["QA"], index=False, encoding="utf-8-sig")
+    excluded.to_csv(paths["제외행"], index=False, encoding="utf-8-sig")
     return paths
 
 
@@ -158,11 +197,13 @@ def main() -> None:
     args = parse_args()
     review = pd.read_excel(args.review_workbook, sheet_name=args.sheet_name, engine="openpyxl")
     confirmed = load_confirmed_labels(review)
-    qa = build_qa(review, confirmed)
-    paths = save_outputs(confirmed, qa, args.output_dir)
+    excluded = find_misaligned_rows(review)
+    qa = build_qa(review, confirmed, excluded)
+    paths = save_outputs(confirmed, qa, excluded, args.output_dir)
 
     print(f"확정·수정 라벨: {len(confirmed):,}행")
     print(f"연도별: {confirmed.groupby('연도').size().to_dict()}")
+    print(f"텍스트 손상 제외: {len(excluded):,}행")
     for label, path in paths.items():
         print(f"{label}: {path}")
 
