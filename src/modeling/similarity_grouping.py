@@ -21,6 +21,9 @@ CONTENT_GROUP_COLUMN = "주요내용유사서브그룹"
 CONTENT_GROUP_SCORE_COLUMN = "주요내용유사서브그룹_평균유사도"
 
 
+_PARALLEL_MIN_UNIQUE_TEXTS = 200
+
+
 def _cluster_texts(texts: list[str], threshold: float) -> tuple[list[int], list[float]]:
     """빈도순 대표 문장과 유사한 텍스트를 같은 그룹으로 묶는다.
 
@@ -29,6 +32,14 @@ def _cluster_texts(texts: list[str], threshold: float) -> tuple[list[int], list[
     이어져 무관한 사업 대부분이 하나의 거대 그룹이 되는 것을 방지한다.
 
     반환값은 (원래 순서에 대응하는 그룹 번호, 대표와의 평균 유사도)이다.
+
+    실제 21~24년 데이터(고유 세부사업명 26,250개)로 측정한 결과, 유사도
+    계산 자체(희소 코사인 행렬 연산)는 26,250개를 한 번에 처리해도 2~3초면
+    끝난다. 병목은 `assign_similarity_groups`가 이 함수를 사업명 그룹마다
+    (실측 6,146회) 반복 호출할 때 매번 `n_jobs=-1`로 병렬 백엔드를 새로
+    띄우는 오버헤드였다(작은 호출 1,000회 기준 15초 → `n_jobs=1`이면
+    0.25초). 그래서 텍스트 수가 적을 때는 병렬화를 끄고, 실제로 클 때만
+    켠다.
     """
     if len(texts) == 1:
         return [0], [UNGROUPED_SIMILARITY_SCORE]
@@ -46,7 +57,8 @@ def _cluster_texts(texts: list[str], threshold: float) -> tuple[list[int], list[
     unique_texts = list(positions_by_text)
     vectorizer = TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 5), min_df=1)
     matrix = vectorizer.fit_transform(unique_texts)
-    neighbors = NearestNeighbors(metric="cosine", algorithm="brute", n_jobs=-1).fit(matrix)
+    n_jobs = -1 if len(unique_texts) >= _PARALLEL_MIN_UNIQUE_TEXTS else 1
+    neighbors = NearestNeighbors(metric="cosine", algorithm="brute", n_jobs=n_jobs).fit(matrix)
     distances, indices = neighbors.radius_neighbors(
         matrix,
         radius=1 - threshold,
