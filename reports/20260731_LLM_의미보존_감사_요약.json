@@ -1,0 +1,104 @@
+[
+  {
+    "year": 2016,
+    "rows": 4494,
+    "candidate_rows": 0,
+    "candidate_rate": 0.0,
+    "missing_regions": [],
+    "reason_counts": {},
+    "output_path": "reports/yearly/2016/2016_LLM_의미보존_감사.csv"
+  },
+  {
+    "year": 2017,
+    "rows": 4551,
+    "candidate_rows": 3,
+    "candidate_rate": 0.000659,
+    "missing_regions": [],
+    "reason_counts": {
+      "금액·퍼센트·범위 불일치": 2,
+      "고유명사 불일치": 1
+    },
+    "output_path": "reports/yearly/2017/2017_LLM_의미보존_감사.csv"
+  },
+  {
+    "year": 2018,
+    "rows": 5472,
+    "candidate_rows": 22,
+    "candidate_rate": 0.00402,
+    "missing_regions": [],
+    "reason_counts": {
+      "고유명사 불일치": 16,
+      "금액·퍼센트·범위 불일치": 6
+    },
+    "output_path": "reports/yearly/2018/2018_LLM_의미보존_감사.csv"
+  },
+  {
+    "year": 2019,
+    "rows": 6484,
+    "candidate_rows": 11,
+    "candidate_rate": 0.001696,
+    "missing_regions": [],
+    "reason_counts": {
+      "고유명사 불일치": 7,
+      "금액·퍼센트·범위 불일치": 4
+    },
+    "output_path": "reports/yearly/2019/2019_LLM_의미보존_감사.csv"
+  },
+  {
+    "year": 2020,
+    "rows": 6858,
+    "candidate_rows": 0,
+    "candidate_rate": 0.0,
+    "missing_regions": [],
+    "reason_counts": {},
+    "output_path": "reports/yearly/2020/2020_LLM_의미보존_감사.csv"
+  },
+  {
+    "year": 2021,
+    "rows": 7301,
+    "candidate_rows": 2,
+    "candidate_rate": 0.000274,
+    "missing_regions": [],
+    "reason_counts": {
+      "고유명사 불일치": 1,
+      "금액·퍼센트·범위 불일치": 1
+    },
+    "output_path": "reports/yearly/2021/2021_LLM_의미보존_감사.csv"
+  },
+  {
+    "year": 2022,
+    "rows": 8122,
+    "candidate_rows": 5,
+    "candidate_rate": 0.000616,
+    "missing_regions": [],
+    "reason_counts": {
+      "금액·퍼센트·범위 불일치": 3,
+      "고유명사 불일치": 2
+    },
+    "output_path": "reports/yearly/2022/2022_LLM_의미보존_감사.csv"
+  },
+  {
+    "year": 2023,
+    "rows": 7543,
+    "candidate_rows": 7,
+    "candidate_rate": 0.000928,
+    "missing_regions": [],
+    "reason_counts": {
+      "고유명사 불일치": 4,
+      "금액·퍼센트·범위 불일치": 3
+    },
+    "output_path": "reports/yearly/2023/2023_LLM_의미보존_감사.csv"
+  },
+  {
+    "year": 2024,
+    "rows": 7154,
+    "candidate_rows": 28,
+    "candidate_rate": 0.003914,
+    "missing_regions": [],
+    "reason_counts": {
+      "고유명사 불일치": 19,
+      "금액·퍼센트·범위 불일치": 9
+    },
+    "output_path": "reports/yearly/2024/2024_LLM_의미보존_감사.csv"
+  }
+]

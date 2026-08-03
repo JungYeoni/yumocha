@@ -11,6 +11,7 @@ from scripts.consolidate_2021_area_labels import (
     consolidate_labels,
     normalize_text,
     read_label_file,
+    refresh_from_sources,
     region_from_filename,
     validate_source_keys,
 )
@@ -132,3 +133,46 @@ def test_validate_source_keys_rejects_missing_key(tmp_path):
 
     with pytest.raises(ValueError, match="지역·원본행 결측"):
         validate_source_keys(combined, tmp_path)
+
+
+def test_refresh_from_sources_keeps_labels_and_uses_latest_cleaned_text(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        "scripts.consolidate_2021_area_labels.REGION_ORDER",
+        ["서울"],
+    )
+    source_dir = tmp_path / "source"
+    source_path = source_dir / "서울" / "2021_서울_세부사업_정제.csv"
+    source_path.parent.mkdir(parents=True)
+    source_row = {column: None for column in BASE_COLUMNS if column not in {"대영역", "세부영역"}}
+    source_row.update(
+        {
+            "연도": 2021,
+            "지역": "서울",
+            "원본행": 1,
+            "세부사업명": "최신 사업명",
+            "주요내용_정제": "최신 정제문",
+        }
+    )
+    pd.DataFrame([source_row]).to_csv(source_path, index=False)
+    label_row = {column: None for column in BASE_COLUMNS}
+    label_row.update(
+        {
+            "대영역": "2. 가족·생활",
+            "세부영역": "2-1. 돌봄 여건",
+            "연도": 2021,
+            "지역": "서울",
+            "원본행": 1,
+            "세부사업명": "옛 사업명",
+            "주요내용_정제": "옛 정제문",
+            "라벨원본파일": "서울.xlsx",
+        }
+    )
+
+    result = refresh_from_sources(pd.DataFrame([label_row]), source_dir)
+
+    assert result.loc[0, "대영역"] == "2. 가족·생활"
+    assert result.loc[0, "세부영역"] == "2-1. 돌봄 여건"
+    assert result.loc[0, "주요내용_정제"] == "최신 정제문"
