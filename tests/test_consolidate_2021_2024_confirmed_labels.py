@@ -36,6 +36,23 @@ def test_keeps_only_confirmed_and_revised_rows():
     assert list(result.columns) == TRAIN_COLUMNS
 
 
+def test_excludes_confirmed_rows_outside_training_years():
+    # 검토 워크북 작업 중 2016-2020년에도 스필오버로 확정되는 행이 있는데,
+    # 이 행이 예측 대상(2016-2020) 취합본에도 포함될 수 있어 학습에서는
+    # 제외해야 학습·예측 대상이 겹치지 않는다.
+    frame = _review_frame(
+        검토상태=["확정", "수정", "확정", "확정"],
+        검토_대영역=["1. 경제·고용·주거", "2. 가족·생활", "1. 경제·고용·주거", "2. 가족·생활"],
+        검토_세부영역=["1-1. 고용여건", "2-1. 돌봄 여건", "1-1. 고용여건", "2-1. 돌봄 여건"],
+    )  # 마지막 행은 2016년, 확정 상태
+
+    result = load_confirmed_labels(frame)
+
+    assert len(result) == 3
+    assert "미검토 사업" not in result["세부사업명"].tolist()
+    assert set(result["연도"]) == {2021, 2022}
+
+
 def test_renames_review_columns_to_training_schema():
     result = load_confirmed_labels(_review_frame())
 

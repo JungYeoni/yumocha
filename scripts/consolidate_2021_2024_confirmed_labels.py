@@ -22,6 +22,7 @@ from scripts.consolidate_2021_area_labels import (
 
 REVIEW_SHEET_NAME = "작업용_유사사업순"
 CONFIRMED_STATUSES = ("확정", "수정")
+TRAINING_YEARS = {2021, 2022, 2023, 2024}
 REQUIRED_COLUMNS = [
     "연도",
     "지역",
@@ -60,7 +61,9 @@ def load_confirmed_labels(review: pd.DataFrame) -> pd.DataFrame:
     if unknown_regions:
         raise ValueError(f"REGION_ORDER에 없는 지역이 있습니다: {unknown_regions}")
 
-    confirmed = frame.loc[frame["검토상태"].isin(CONFIRMED_STATUSES)].drop(columns="검토상태")
+    confirmed = frame.loc[
+        frame["연도"].isin(TRAINING_YEARS) & frame["검토상태"].isin(CONFIRMED_STATUSES)
+    ].drop(columns="검토상태")
     if confirmed.empty:
         raise ValueError("확정·수정 상태인 행이 없습니다.")
 

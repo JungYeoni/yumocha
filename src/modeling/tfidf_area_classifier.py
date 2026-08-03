@@ -77,6 +77,8 @@ def validate_training_data(frame: pd.DataFrame) -> None:
         raise ValueError("학습 데이터가 비어 있습니다.")
     if frame[["지역", "원본행", "대영역", "세부영역"]].isna().any().any():
         raise ValueError("학습 키 또는 라벨에 결측이 있습니다.")
+    if "연도" in frame.columns and frame["연도"].isna().any():
+        raise ValueError("학습 키 또는 라벨에 결측이 있습니다.")
     key_columns = ["연도", "지역", "원본행"] if "연도" in frame.columns else ["지역", "원본행"]
     if frame.duplicated(key_columns).any():
         raise ValueError(f"학습 데이터의 {'·'.join(key_columns)} 키가 중복되었습니다.")

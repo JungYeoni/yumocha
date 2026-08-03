@@ -74,6 +74,14 @@ def test_validate_training_data_allows_same_region_row_across_different_years():
     validate_training_data(frame)
 
 
+def test_validate_training_data_rejects_missing_year_when_year_column_present():
+    frame = _training_frame()
+    frame.insert(0, "연도", [2021, 2021, None, 2022])
+
+    with pytest.raises(ValueError, match="결측"):
+        validate_training_data(frame)
+
+
 def test_validate_training_data_rejects_duplicate_key_with_year():
     frame = _training_frame()
     frame.insert(0, "연도", [2021, 2021, 2021, 2021])
