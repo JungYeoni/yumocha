@@ -52,6 +52,8 @@
 
 ### 문서
 
+- TF-IDF 취약 클래스 분석 보강 (#65) ([25d47a9](https://github.com/JungYeoni/da-template/commit/25d47a92ba91b5993852ae91fa6e4167f557a89c))
+- CHANGELOG 자동 업데이트 [skip ci] ([fb64442](https://github.com/JungYeoni/da-template/commit/fb644425a23a2c977f23febe500c4f6fb65f89cc))
 - CHANGELOG 자동 업데이트 [skip ci] ([4ec848c](https://github.com/JungYeoni/da-template/commit/4ec848cdb6fe3b5b2b0ffa4cf54cc43cfd9dae4a))
 - CHANGELOG 자동 업데이트 [skip ci] ([94e91a1](https://github.com/JungYeoni/da-template/commit/94e91a1eb50b27a0a11ad0ffd3d4e1937b0214a2))
 - PR 리뷰 재현성 정보 보완 (#67) ([8c8d5b5](https://github.com/JungYeoni/da-template/commit/8c8d5b52287ce0ecc61ef77c90ac3e32b1d565fd))
@@ -140,6 +142,12 @@
 
 ### 버그 수정
 
+- 테스트에 하드코딩된 옛 유사도 임계값 제거 (#65) ([c2d8faf](https://github.com/JungYeoni/da-template/commit/c2d8fafd07238e3cc911d4a57dbcca5d65d6dc8e))
+- 사업명 유사도 임계값을 실제 데이터 기준 0.35로 조정 (#65) ([fec0d5b](https://github.com/JungYeoni/da-template/commit/fec0d5bef29e357c707c716680b402650a4405f2))
+- 유사도 그룹핑 소그룹 반복 호출 병렬화 오버헤드 제거 (#65) ([cb3b461](https://github.com/JungYeoni/da-template/commit/cb3b461aa4cacc92e9122983b4c3914c92f91a8c))
+- CodeRabbit 리뷰 3건 반영 (#65) ([f1f5d16](https://github.com/JungYeoni/da-template/commit/f1f5d16049611df53c46e49567586dec0665bb49))
+- TF-IDF 검토 진행내역 이관 지원 (#65) ([9bdfb17](https://github.com/JungYeoni/da-template/commit/9bdfb172c3c4e6acd8d77a8a57eba7b9eb8f0f3c))
+- TF-IDF 모델 검증과 재사용 안정성 강화 (#65) ([584d16a](https://github.com/JungYeoni/da-template/commit/584d16a52ccea3b606ba8b740861b35d016b7e86))
 - #59 고용 연평균 검증과 한계 보강 ([902a2a0](https://github.com/JungYeoni/da-template/commit/902a2a0b861316789047871a0a6fa75c3d4833d2))
 - #59 매니페스트와 검증 결과 최신화 ([1a1ba55](https://github.com/JungYeoni/da-template/commit/1a1ba55b6f67c9a7d0c5f330e191fbe683ee07d2))
 - #49 주거지표 재산출 ([87bf5c1](https://github.com/JungYeoni/da-template/commit/87bf5c130858d9aa666e526b15193819d75e1ac0))
@@ -193,6 +201,7 @@
 
 ### 새 기능
 
+- TF-IDF 영역분류 모델링 및 검토 자동화 (#65) ([a1b9a9c](https://github.com/JungYeoni/da-template/commit/a1b9a9c94e91586ab965c2bc32355cbe73c3e5b8))
 - 청년층 정규직 근로자 비율 반기→연도 집계를 연평균으로 확정 (#59) ([52b29d6](https://github.com/JungYeoni/da-template/commit/52b29d605613bfe25bc6facdfb6d64d0b8e06a52))
 - 구조환경지표 검증 매니페스트에 신규 7개 지표 등록 (#59) ([555a0e6](https://github.com/JungYeoni/da-template/commit/555a0e6368374225fb023c1cb93547b70cd4967e))
 - TF-IDF 예측 대상 데이터 통합 (#60) ([dcbfe19](https://github.com/JungYeoni/da-template/commit/dcbfe196dda3005203907c0cca4d81eb3a7ad4cd))
