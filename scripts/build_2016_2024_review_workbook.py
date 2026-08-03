@@ -51,12 +51,34 @@ DISPLAY_COLUMNS = [
 
 
 def load_2016_2020_rows(prediction_path: Path, budget_path: Path) -> pd.DataFrame:
-    """신규 예측에 예산을 붙이고, 아직 검토 전이므로 검토_* 열은 비워 둔다."""
+    """신규 예측에 예산을 붙이고, 아직 검토 전이므로 검토_* 열은 비워 둔다.
+
+    이 파일의 당해예산·전년도예산과 2021-2024 확정본의
+    `당해예산(백만원)`·`전년도예산(백만원)`은 같은 단위(백만원)다. 원본
+    시행계획 표 헤더가 전 연도 공통으로 "(단위 : 백만원)"이고
+    (`src/features/pipeline_common.py`), 계획예산 원자료·저장 CSV가
+    2016-2024 전 기간 백만원 단위로 유지된다고 별도로 확인된 바 있다
+    (`reports/20260727_검증원자료_지역연도_추세_시각화_결과.md`).
+    """
     predicted = pd.read_csv(prediction_path)
     budget = pd.read_csv(budget_path, usecols=["연도", "지역", "원본행", "당해예산", "전년도예산"])
     merged = predicted.merge(
-        budget, on=["연도", "지역", "원본행"], how="left", validate="one_to_one"
+        budget,
+        on=["연도", "지역", "원본행"],
+        how="left",
+        validate="one_to_one",
+        indicator=True,
     )
+    # 예산 값 자체의 결측(예: "(신규)"·"(추가)" 사업은 전년도예산이 원래
+    # 없음)은 정상이다. 여기서 확인하는 건 "예산 파일에 이 키가 아예
+    # 없어서 병합 자체가 안 된" 경우만이다.
+    unmatched = merged["_merge"].eq("left_only")
+    if unmatched.any():
+        missing = merged.loc[unmatched, ["연도", "지역", "원본행"]]
+        raise ValueError(
+            f"예산 파일에서 키를 찾지 못한 행이 있습니다: {missing.to_dict('records')[:5]}"
+        )
+    merged = merged.drop(columns="_merge")
 
     output = merged.copy()
     for column in ("검토_대영역", "검토_세부영역", "검토상태", "검토메모", DISPLAY_NOTE_COLUMN):

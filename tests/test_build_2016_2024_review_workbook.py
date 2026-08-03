@@ -82,6 +82,29 @@ def test_load_2016_2020_rows_merges_budget_and_blanks_review_state(tmp_path):
     assert (result[SOURCE_LABEL_COLUMN] == NEW_PREDICTION_LABEL).all()
 
 
+def test_load_2016_2020_rows_allows_legitimate_missing_budget_value(tmp_path):
+    # "(신규)"·"(추가)" 사업처럼 전년도예산이 원래 없는 행은 매칭은
+    # 됐지만 값이 NaN인 정상 케이스라 에러가 나면 안 된다.
+    prediction_path, budget_path = _write_prediction_and_budget(tmp_path)
+    budget = pd.read_csv(budget_path)
+    budget.loc[0, "전년도예산"] = pd.NA
+    budget.to_csv(budget_path, index=False)
+
+    result = load_2016_2020_rows(prediction_path, budget_path)
+
+    assert result["전년도예산"].isna().sum() == 1
+
+
+def test_load_2016_2020_rows_rejects_unmatched_budget(tmp_path):
+    prediction_path, budget_path = _write_prediction_and_budget(tmp_path)
+    budget = pd.read_csv(budget_path)
+    budget.loc[0, "연도"] = 2099  # 예측 대상과 매칭되지 않게 만듦
+    budget.to_csv(budget_path, index=False)
+
+    with pytest.raises(ValueError, match="키를 찾지 못한"):
+        load_2016_2020_rows(prediction_path, budget_path)
+
+
 def test_load_2021_2024_confirmed_rows_filters_status_and_year():
     result = load_2021_2024_confirmed_rows(_review_frame())
 
