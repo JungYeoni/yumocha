@@ -58,6 +58,31 @@ def test_build_text_rejects_blank_project_name():
         build_text(frame, "사업명")
 
 
+def test_validate_training_data_rejects_duplicate_key_without_year():
+    frame = _training_frame()
+    frame.loc[1, ["지역", "원본행"]] = ["서울", 1]
+
+    with pytest.raises(ValueError, match="지역·원본행 키가 중복"):
+        validate_training_data(frame)
+
+
+def test_validate_training_data_allows_same_region_row_across_different_years():
+    frame = _training_frame()
+    frame.insert(0, "연도", [2021, 2021, 2022, 2022])
+    frame.loc[2, ["지역", "원본행"]] = ["서울", 1]
+
+    validate_training_data(frame)
+
+
+def test_validate_training_data_rejects_duplicate_key_with_year():
+    frame = _training_frame()
+    frame.insert(0, "연도", [2021, 2021, 2021, 2021])
+    frame.loc[1, ["지역", "원본행"]] = ["서울", 1]
+
+    with pytest.raises(ValueError, match="연도·지역·원본행 키가 중복"):
+        validate_training_data(frame)
+
+
 def test_choose_best_result_rejects_empty_results():
     with pytest.raises(ValueError, match="비교할 평가 결과"):
         choose_best_result([])
