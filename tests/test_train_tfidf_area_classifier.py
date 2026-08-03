@@ -12,6 +12,10 @@ from scripts.train_tfidf_area_classifier import (
     load_reusable_summary,
     validate_prediction_targets,
 )
+from src.modeling.similarity_grouping import (
+    DEFAULT_CONTENT_SIMILARITY_THRESHOLD,
+    DEFAULT_NAME_SIMILARITY_THRESHOLD,
+)
 from src.modeling.tfidf_area_classifier import model_checksum_path
 
 
@@ -33,8 +37,8 @@ def test_load_reusable_summary_reuses_only_matching_complete_outputs(tmp_path):
         "prediction_sha256": file_sha256(prediction),
         "low_confidence_threshold": 0.5,
         "n_splits": 5,
-        "name_similarity_threshold": 0.45,
-        "content_similarity_threshold": 0.3,
+        "name_similarity_threshold": DEFAULT_NAME_SIMILARITY_THRESHOLD,
+        "content_similarity_threshold": DEFAULT_CONTENT_SIMILARITY_THRESHOLD,
         "reused_existing": False,
     }
     summary_path.write_text(json.dumps(summary), encoding="utf-8")
@@ -67,8 +71,8 @@ def test_load_reusable_summary_rejects_missing_additional_output(tmp_path):
                 "prediction_sha256": "b",
                 "low_confidence_threshold": 0.5,
                 "n_splits": 5,
-                "name_similarity_threshold": 0.45,
-                "content_similarity_threshold": 0.3,
+                "name_similarity_threshold": DEFAULT_NAME_SIMILARITY_THRESHOLD,
+                "content_similarity_threshold": DEFAULT_CONTENT_SIMILARITY_THRESHOLD,
             }
         ),
         encoding="utf-8",
@@ -102,8 +106,8 @@ def test_load_reusable_summary_rejects_changed_setting(tmp_path):
                 "prediction_sha256": "b",
                 "low_confidence_threshold": 0.5,
                 "n_splits": 5,
-                "name_similarity_threshold": 0.45,
-                "content_similarity_threshold": 0.3,
+                "name_similarity_threshold": DEFAULT_NAME_SIMILARITY_THRESHOLD,
+                "content_similarity_threshold": DEFAULT_CONTENT_SIMILARITY_THRESHOLD,
             }
         ),
         encoding="utf-8",
@@ -136,8 +140,8 @@ def test_load_reusable_summary_rejects_changed_input(tmp_path):
                 "prediction_sha256": "same",
                 "low_confidence_threshold": 0.5,
                 "n_splits": 5,
-                "name_similarity_threshold": 0.45,
-                "content_similarity_threshold": 0.3,
+                "name_similarity_threshold": DEFAULT_NAME_SIMILARITY_THRESHOLD,
+                "content_similarity_threshold": DEFAULT_CONTENT_SIMILARITY_THRESHOLD,
             }
         ),
         encoding="utf-8",
