@@ -149,6 +149,17 @@ def _replace_hold_sheet(workbook, source_sheet, header_by_name: dict[object, int
     workbook.calculation.forceFullCalc = True
 
 
+def _copy_conditional_formatting(source, target) -> None:
+    """원본 조건부 서식의 규칙과 적용 범위를 그대로 복사한다."""
+    target.conditional_formatting = ConditionalFormattingList()
+    for conditional_formatting in source.conditional_formatting:
+        for rule in conditional_formatting.rules:
+            target.conditional_formatting.add(
+                str(conditional_formatting.sqref),
+                deepcopy(rule),
+            )
+
+
 def build_grouped_workbook(source_path: Path, lookup_path: Path, output_path: Path) -> None:
     lookup = _read_lookup(lookup_path)
     lookup_by_key = {
@@ -168,11 +179,7 @@ def build_grouped_workbook(source_path: Path, lookup_path: Path, output_path: Pa
     target.freeze_panes = source.freeze_panes
     target.sheet_view.showGridLines = source.sheet_view.showGridLines
     target.data_validations = deepcopy(source.data_validations)
-    target.conditional_formatting = ConditionalFormattingList()
-    # 그룹·예산 컬럼까지 행 강조가 이어지도록 원본 규칙만 공개 API로 복사한다.
-    for conditional_formatting in source.conditional_formatting:
-        for rule in source.conditional_formatting[conditional_formatting]:
-            target.conditional_formatting.add(f"A2:AA{source.max_row}", deepcopy(rule))
+    _copy_conditional_formatting(source, target)
 
     header_by_name = {
         source.cell(1, column).value: column for column in range(1, source.max_column + 1)
