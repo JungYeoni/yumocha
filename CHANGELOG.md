@@ -54,6 +54,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([e0939f3](https://github.com/JungYeoni/da-template/commit/e0939f3c3492aae68e79553b4ba864ce595e5364))
 - 예산 행 오연결 전수 감사 마무리 (#73) ([81e689a](https://github.com/JungYeoni/da-template/commit/81e689a87c935cbcefa72fff0720237ecb56c9d9))
 - 예산 계보 차이 진단 추가 (#73) ([8bf1186](https://github.com/JungYeoni/da-template/commit/8bf1186e6e5b8346d36778cb6c0c1ceb0fc355d5))
 - 예산 데이터 계보와 입력 완전성 점검 (#73) ([f408b7b](https://github.com/JungYeoni/da-template/commit/f408b7b4581d2e4ee581384da2fba8a77a668474))
@@ -163,6 +164,9 @@
 
 ### 버그 수정
 
+- Validate approved input hashes before parsing (#80) ([f862ff6](https://github.com/JungYeoni/da-template/commit/f862ff6f2cd50bb6492f01b99714ae375f7d2fd1))
+- #80 CodeRabbit 추가 리뷰 반영 ([dd6bec6](https://github.com/JungYeoni/da-template/commit/dd6bec639c118aa26cb4b129d13a69ed9ef9bdb0))
+- #80 통합패널 QA 검증 보완 ([e0031b5](https://github.com/JungYeoni/da-template/commit/e0031b5205e63daa114ff1f4963436f3a40d56b4))
 - 검토 워크북 조건부 서식 범위 보존 (#72) ([b111372](https://github.com/JungYeoni/da-template/commit/b11137229f62ef2ce043944d1e8a269a9bb817b8))
 - 2021-2024 미해결 검토행이 통합 워크북에서 빠지던 문제 수정 (#77) ([c9f0c2a](https://github.com/JungYeoni/da-template/commit/c9f0c2a12f8d61ffd4a91e79aa91efcf6e239daa))
 - M열에 메모가 있는 확정 라벨은 학습에서 전부 제외 (#77) ([9f31baa](https://github.com/JungYeoni/da-template/commit/9f31baa73a047689b756bea56d1d1d11449b242a))
@@ -236,6 +240,7 @@
 
 ### 새 기능
 
+- 구조환경지표 28개 보간 전 통합패널 구축 (#80) ([492e092](https://github.com/JungYeoni/da-template/commit/492e09269b9f6de1fdd1bafc4a48e258e5354f21))
 - 검토 워크북에 실시간 진행현황 시트 추가 (#77) ([abd3009](https://github.com/JungYeoni/da-template/commit/abd30095b7af377aea4fd0cf2acd5373db87f8d7))
 - 2016-2020 예측과 2021-2024 확정 라벨을 예산·메모까지 합친 통합 검토 워크북 (#77) ([a032db9](https://github.com/JungYeoni/da-template/commit/a032db9b468029bf40c816b05cb4eb8f40ff8a9c))
 - 2016-2020 전용 TF-IDF 예측 대상 취합 스크립트 추가 (#77) ([d70fb6f](https://github.com/JungYeoni/da-template/commit/d70fb6f00dd5a88409cbd0979f139454c8c27410))
