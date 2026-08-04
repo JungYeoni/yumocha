@@ -54,6 +54,8 @@
 
 ### 문서
 
+- #70 사전 구현 범위 설명 정정 ([2a984ee](https://github.com/JungYeoni/da-template/commit/2a984ee65528046e849b23e8ed843eb1a0b78965))
+- CHANGELOG 자동 업데이트 [skip ci] ([2106806](https://github.com/JungYeoni/da-template/commit/21068064acdc90e42c23435d19337cea3c15eefd))
 - CHANGELOG 자동 업데이트 [skip ci] ([e0939f3](https://github.com/JungYeoni/da-template/commit/e0939f3c3492aae68e79553b4ba864ce595e5364))
 - 예산 행 오연결 전수 감사 마무리 (#73) ([81e689a](https://github.com/JungYeoni/da-template/commit/81e689a87c935cbcefa72fff0720237ecb56c9d9))
 - 예산 계보 차이 진단 추가 (#73) ([8bf1186](https://github.com/JungYeoni/da-template/commit/8bf1186e6e5b8346d36778cb6c0c1ceb0fc355d5))
@@ -164,6 +166,8 @@
 
 ### 버그 수정
 
+- Address CodeRabbit findings in missing-value handling ([3e29203](https://github.com/JungYeoni/da-template/commit/3e292038f252685b960c51ccef7b4c73850b3692))
+- Resolve PR #86 CI failures ([62dd30e](https://github.com/JungYeoni/da-template/commit/62dd30e033cbc26e81eb2e490b30919ee2272f32))
 - Validate approved input hashes before parsing (#80) ([f862ff6](https://github.com/JungYeoni/da-template/commit/f862ff6f2cd50bb6492f01b99714ae375f7d2fd1))
 - #80 CodeRabbit 추가 리뷰 반영 ([dd6bec6](https://github.com/JungYeoni/da-template/commit/dd6bec639c118aa26cb4b129d13a69ed9ef9bdb0))
 - #80 통합패널 QA 검증 보완 ([e0031b5](https://github.com/JungYeoni/da-template/commit/e0031b5205e63daa114ff1f4963436f3a40d56b4))
@@ -240,6 +244,7 @@
 
 ### 새 기능
 
+- #70 구조환경지표 결측 처리 모듈 사전 구현 ([e89b7c0](https://github.com/JungYeoni/da-template/commit/e89b7c01b6eed041a23bac33fa75ebd181adfa04))
 - 구조환경지표 28개 보간 전 통합패널 구축 (#80) ([492e092](https://github.com/JungYeoni/da-template/commit/492e09269b9f6de1fdd1bafc4a48e258e5354f21))
 - 검토 워크북에 실시간 진행현황 시트 추가 (#77) ([abd3009](https://github.com/JungYeoni/da-template/commit/abd30095b7af377aea4fd0cf2acd5373db87f8d7))
 - 2016-2020 예측과 2021-2024 확정 라벨을 예산·메모까지 합친 통합 검토 워크북 (#77) ([a032db9](https://github.com/JungYeoni/da-template/commit/a032db9b468029bf40c816b05cb4eb8f40ff8a9c))
