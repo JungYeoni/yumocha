@@ -6,6 +6,10 @@
 
 - Issue 생성 시 브랜치/커밋 메시지 자동 제안 워크플로 추가 ([b338ec0](https://github.com/JungYeoni/da-template/commit/b338ec04980f9de800211ead9d25476b1b5c6699))
 
+### analysis
+
+- 총세출 분모 민감도 비교 (#69) ([20c5c3d](https://github.com/JungYeoni/da-template/commit/20c5c3d295267363b64e5df4adaba33f0778458a))
+
 ### chroe
 
 - 프로젝트 초기설정 ([2acb075](https://github.com/JungYeoni/da-template/commit/2acb07535d6954b94339bffe9e3db1b127de8576))
@@ -54,6 +58,21 @@
 
 ### 문서
 
+- 총세출 분모 패널 최종보고서 작성 (#69) ([101d902](https://github.com/JungYeoni/da-template/commit/101d9024bc35c6f595659d5abfbf8682fff9d8ad))
+- 총세출 분모 패널 데이터 사전 작성 (#69) ([74bbffd](https://github.com/JungYeoni/da-template/commit/74bbffdffc7dd9b366c52907faa3863bc0891fb8))
+- 지방재정365 세출예산 원자료 구조 점검 (#69) ([0b2367b](https://github.com/JungYeoni/da-template/commit/0b2367b26711c383eaa4b79b4db8f9593eb5709a))
+- CHANGELOG 자동 업데이트 [skip ci] ([e30bcf8](https://github.com/JungYeoni/da-template/commit/e30bcf8f47a7ccc3a5d6d017afea7d2a1e78fb2a))
+- #70 사전 구현 범위 설명 정정 ([2a984ee](https://github.com/JungYeoni/da-template/commit/2a984ee65528046e849b23e8ed843eb1a0b78965))
+- CHANGELOG 자동 업데이트 [skip ci] ([2106806](https://github.com/JungYeoni/da-template/commit/21068064acdc90e42c23435d19337cea3c15eefd))
+- CHANGELOG 자동 업데이트 [skip ci] ([e0939f3](https://github.com/JungYeoni/da-template/commit/e0939f3c3492aae68e79553b4ba864ce595e5364))
+- 예산 행 오연결 전수 감사 마무리 (#73) ([81e689a](https://github.com/JungYeoni/da-template/commit/81e689a87c935cbcefa72fff0720237ecb56c9d9))
+- 예산 계보 차이 진단 추가 (#73) ([8bf1186](https://github.com/JungYeoni/da-template/commit/8bf1186e6e5b8346d36778cb6c0c1ceb0fc355d5))
+- 예산 데이터 계보와 입력 완전성 점검 (#73) ([f408b7b](https://github.com/JungYeoni/da-template/commit/f408b7b4581d2e4ee581384da2fba8a77a668474))
+- CHANGELOG 자동 업데이트 [skip ci] ([81e68e8](https://github.com/JungYeoni/da-template/commit/81e68e8c1355269cc4be9ff9078cc90b1dba17c3))
+- README를 프로젝트 소개 중심으로 재구성 ([e240d1d](https://github.com/JungYeoni/da-template/commit/e240d1d6e43fef44fd1ef5db4af306df1e7c0415))
+- CodeRabbit 리뷰 반영 — README 서술 정확도 보완 ([3171664](https://github.com/JungYeoni/da-template/commit/31716646f2721a16fc427b1c68cb7ea7016020e8))
+- README를 yumocha 프로젝트 기준으로 재작성 ([9a19e5d](https://github.com/JungYeoni/da-template/commit/9a19e5da0b02e2234fa4e6e13754e99e5121697a))
+- CHANGELOG 자동 업데이트 [skip ci] ([7958bfb](https://github.com/JungYeoni/da-template/commit/7958bfbf0c667027b51b027ca1949397ebae6612))
 - CHANGELOG 자동 업데이트 [skip ci] ([61d7c97](https://github.com/JungYeoni/da-template/commit/61d7c97fd7ae468c39a272c9e883813784409584))
 - 검토상태 운영 방침과 후속 작업 정리 (#77) ([db81e68](https://github.com/JungYeoni/da-template/commit/db81e688fac6ba2543c60c097ba1371eb4b4f4f1))
 - M열 제외 성능 해석 표현 보완 (#77) ([6c1e315](https://github.com/JungYeoni/da-template/commit/6c1e315d2c8999e6030a9ddfee7231ae6b3fc6fe))
@@ -155,6 +174,12 @@
 
 ### 버그 수정
 
+- CodeRabbit 리뷰 피드백 반영 (#69) ([5a9d728](https://github.com/JungYeoni/da-template/commit/5a9d7282060c47e8912cdd0842d8065167deebd5))
+- Address CodeRabbit findings in missing-value handling ([3e29203](https://github.com/JungYeoni/da-template/commit/3e292038f252685b960c51ccef7b4c73850b3692))
+- Resolve PR #86 CI failures ([62dd30e](https://github.com/JungYeoni/da-template/commit/62dd30e033cbc26e81eb2e490b30919ee2272f32))
+- Validate approved input hashes before parsing (#80) ([f862ff6](https://github.com/JungYeoni/da-template/commit/f862ff6f2cd50bb6492f01b99714ae375f7d2fd1))
+- #80 CodeRabbit 추가 리뷰 반영 ([dd6bec6](https://github.com/JungYeoni/da-template/commit/dd6bec639c118aa26cb4b129d13a69ed9ef9bdb0))
+- #80 통합패널 QA 검증 보완 ([e0031b5](https://github.com/JungYeoni/da-template/commit/e0031b5205e63daa114ff1f4963436f3a40d56b4))
 - 검토 워크북 조건부 서식 범위 보존 (#72) ([b111372](https://github.com/JungYeoni/da-template/commit/b11137229f62ef2ce043944d1e8a269a9bb817b8))
 - 2021-2024 미해결 검토행이 통합 워크북에서 빠지던 문제 수정 (#77) ([c9f0c2a](https://github.com/JungYeoni/da-template/commit/c9f0c2a12f8d61ffd4a91e79aa91efcf6e239daa))
 - M열에 메모가 있는 확정 라벨은 학습에서 전부 제외 (#77) ([9f31baa](https://github.com/JungYeoni/da-template/commit/9f31baa73a047689b756bea56d1d1d11449b242a))
@@ -228,6 +253,12 @@
 
 ### 새 기능
 
+- 총세출 대비 계획예산 비율 패널 구축 (#69) ([5daee3d](https://github.com/JungYeoni/da-template/commit/5daee3de531f8bcc23edc121bc73b45cf0af5480))
+- 기금 포함 총세출 분모 대안 추가 (#69) ([f9cc700](https://github.com/JungYeoni/da-template/commit/f9cc7008f1c1c1c50510b62cacd753be5fcd4043))
+- 총세출 분모 민감도 대안 구축 (#69) ([721e694](https://github.com/JungYeoni/da-template/commit/721e694227dac19584dde4d3f6003f70d3d1a1b7))
+- 시도별 총세출 분모 패널 생성 (#69) ([bed29ee](https://github.com/JungYeoni/da-template/commit/bed29ee640215b4321b0c8a8e6826dd17ab00082))
+- #70 구조환경지표 결측 처리 모듈 사전 구현 ([e89b7c0](https://github.com/JungYeoni/da-template/commit/e89b7c01b6eed041a23bac33fa75ebd181adfa04))
+- 구조환경지표 28개 보간 전 통합패널 구축 (#80) ([492e092](https://github.com/JungYeoni/da-template/commit/492e09269b9f6de1fdd1bafc4a48e258e5354f21))
 - 검토 워크북에 실시간 진행현황 시트 추가 (#77) ([abd3009](https://github.com/JungYeoni/da-template/commit/abd30095b7af377aea4fd0cf2acd5373db87f8d7))
 - 2016-2020 예측과 2021-2024 확정 라벨을 예산·메모까지 합친 통합 검토 워크북 (#77) ([a032db9](https://github.com/JungYeoni/da-template/commit/a032db9b468029bf40c816b05cb4eb8f40ff8a9c))
 - 2016-2020 전용 TF-IDF 예측 대상 취합 스크립트 추가 (#77) ([d70fb6f](https://github.com/JungYeoni/da-template/commit/d70fb6f00dd5a88409cbd0979f139454c8c27410))
