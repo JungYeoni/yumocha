@@ -54,6 +54,10 @@
 
 ### 문서
 
+- README를 프로젝트 소개 중심으로 재구성 ([e240d1d](https://github.com/JungYeoni/da-template/commit/e240d1d6e43fef44fd1ef5db4af306df1e7c0415))
+- CodeRabbit 리뷰 반영 — README 서술 정확도 보완 ([3171664](https://github.com/JungYeoni/da-template/commit/31716646f2721a16fc427b1c68cb7ea7016020e8))
+- README를 yumocha 프로젝트 기준으로 재작성 ([9a19e5d](https://github.com/JungYeoni/da-template/commit/9a19e5da0b02e2234fa4e6e13754e99e5121697a))
+- CHANGELOG 자동 업데이트 [skip ci] ([7958bfb](https://github.com/JungYeoni/da-template/commit/7958bfbf0c667027b51b027ca1949397ebae6612))
 - CHANGELOG 자동 업데이트 [skip ci] ([61d7c97](https://github.com/JungYeoni/da-template/commit/61d7c97fd7ae468c39a272c9e883813784409584))
 - 검토상태 운영 방침과 후속 작업 정리 (#77) ([db81e68](https://github.com/JungYeoni/da-template/commit/db81e688fac6ba2543c60c097ba1371eb4b4f4f1))
 - M열 제외 성능 해석 표현 보완 (#77) ([6c1e315](https://github.com/JungYeoni/da-template/commit/6c1e315d2c8999e6030a9ddfee7231ae6b3fc6fe))
