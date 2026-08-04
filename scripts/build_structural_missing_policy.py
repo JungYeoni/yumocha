@@ -297,7 +297,11 @@ def validate_policy_mapping(
             check(f"{mapping_field}={value}", expected, actual_counts.get(value, 0))
 
     unresolved = mapping["cause_status"].eq("unresolved")
-    check("미확정 결측 수", 99, int(unresolved.sum()))
+    check(
+        "미확정 결측 수",
+        expected_counts["cause_status"]["unresolved"],
+        int(unresolved.sum()),
+    )
     check(
         "미확정 결측의 비-pending 정책",
         0,
@@ -318,7 +322,11 @@ def validate_policy_mapping(
     youth_regular_national = mapping["지표_id"].eq("youth_regular_employment_rate") & mapping[
         "지역"
     ].eq("전국")
-    check("가족친화 인증기업 비율 pending_review", 90, int((family_friendly & unresolved).sum()))
+    check(
+        "가족친화 인증기업 비율 pending_review",
+        expected_counts["missing_cause"]["원인 미확정"],
+        int((family_friendly & unresolved).sum()),
+    )
     check("정규직 비율 전국 pending_review", 9, int((youth_regular_national & unresolved).sum()))
 
     nonlinear_housework = mapping["지표_id"].eq("housework_gender_equality")
@@ -550,7 +558,7 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
         "## 범위",
         "",
         "- 입력: `data/processed/구조환경지표_28개_보간전_기준패널.csv`",
-        "- 정책 대상: 측정값 결측 1,270건",
+        f"- 정책 대상: 측정값 결측 {len(mapping):,}건",
         "- 제외 범위: `structural_missing.py` 실행, 처리값 생성, 원본 측정값 변경",
         "- 정책 규칙: `configs/structural_missing_policy.yaml`",
         "- 전수 매핑: `reports/20260804_구조환경지표_결측정책_전수매핑.csv`",
@@ -561,7 +569,7 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
         "- 조사 비실시 연도는 자동 차단하지 않고 관측값 사이면 선형보간 후보로 둔다.",
         "- 경계 결측은 본계열 `boundary_carry` 후보로 두되 이번 단계에서는 값을 만들지 않는다.",
         "- `analysis_included_after_imputation`은 현재 포함 상태가 아니라 대체·QA 완료 후 포함 예정 상태다.",
-        "- 원인 미확정 99건과 비선형 가사분담 지표는 `pending_review`로 차단한다.",
+        f"- 원인 미확정 {int(mapping['cause_status'].eq('unresolved').sum()):,}건과 비선형 가사분담 지표는 `pending_review`로 차단한다.",
         "- 완전격자 생성 여부는 `original_row_exists`로 보존하며 더 구체적인 결측 원인을 덮지 않는다.",
         "",
         "## 정책별 건수",
@@ -635,9 +643,9 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
             "",
             "| 지표 | 차단 결측 | 후속 조건 |",
             "|---|---:|---|",
-            "| 가족친화 인증기업 비율 | 85 | 공식 연도별 자료 확보 전 pending_review 유지 |",
+            "| 가족친화 인증기업 비율 | 51 | 2016·2017·2019 공식 연도별 자료 확보 전 pending_review 유지 |",
             "| 가사분담 성평등 인식 | 68 | 최종 지표 직접 보간 금지, 원산식·구성 응답값 우선 검토 |",
-            "| 합계 | 153 | 전국 행을 제외한 17개 시도 기준 |",
+            "| 합계 | 119 | 전국 행을 제외한 17개 시도 기준 |",
         ]
     )
 
@@ -649,7 +657,7 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
             "",
             "| 지표·범위 | 건수 | 상태 | 정책 |",
             "|---|---:|---|---|",
-            "| 가족친화 인증기업 비율, 전체 18개 지역 2016·2017·2019·2020·2021 | "
+            "| 가족친화 인증기업 비율, 17개 시도 2016·2017·2019 및 전국 2016·2017·2019·2020·2021 | "
             f"{int(unresolved['지표_id'].eq('family_friendly_certification_rate').sum()):,} | "
             "unresolved | pending_review |",
             "| 청년층 정규직 근로자 비율, 전국 2016–2024 | "
@@ -663,12 +671,12 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
             "## QA",
             "",
             f"- QA 항목: {len(qa):,}개, PASS {int(qa['판정'].eq('PASS').sum()):,}개",
-            "- 1,270개 결측 키는 중복·누락 없이 정확히 한 번 매핑됨",
-            "- 99개 원인 미확정 행은 모두 pending_review·대체 차단·본계열 분석 제외",
-            "- 3,266개 실측값과 전체 4,536개 키 변경 없음",
+            f"- {len(mapping):,}개 결측 키는 중복·누락 없이 정확히 한 번 매핑됨",
+            f"- {len(unresolved):,}개 원인 미확정 행은 모두 pending_review·대체 차단·본계열 분석 제외",
+            f"- {config['panel']['expected_observed']:,}개 실측값과 전체 {config['panel']['expected_rows']:,}개 키 변경 없음",
             "- 조사 비실시 원인 안에 block_imputation=True/False가 모두 있어 두 개념이 독립됨",
             "- auxiliary_boundary_interpolation 72건은 별도 시나리오 열에만 존재해 본계열 정책과 중복되지 않음",
-            "- #82의 17개 시도 차단 결측은 가족친화 85건+가사분담 68건=153건",
+            "- #82의 17개 시도 차단 결측은 가족친화 51건+가사분담 68건=119건",
         ]
     )
     return "\n".join(lines) + "\n"

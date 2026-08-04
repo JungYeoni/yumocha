@@ -76,14 +76,14 @@ def test_committed_policy_mapping_is_complete_and_conservative():
     config = load_policy_config(CONFIG_PATH)
     mapping = pd.read_csv(MAPPING_PATH)
 
-    assert len(mapping) == config["panel"]["expected_missing"] == 1270
+    assert len(mapping) == config["panel"]["expected_missing"] == 1236
     assert not mapping.duplicated(KEY_COLUMNS).any()
     assert set(mapping["missing_cause"]) <= set(config["allowed_values"]["missing_cause"])
     assert set(mapping["cause_status"]) <= set(config["allowed_values"]["cause_status"])
     assert set(mapping["imputation_policy"]) <= set(config["allowed_values"]["imputation_policy"])
 
     unresolved = mapping["cause_status"].eq("unresolved")
-    assert unresolved.sum() == 99
+    assert unresolved.sum() == 65
     assert mapping.loc[unresolved, "imputation_policy"].eq("pending_review").all()
     assert mapping.loc[unresolved, "block_imputation"].all()
     assert (~mapping.loc[unresolved, "analysis_included_after_imputation"]).all()
@@ -92,7 +92,7 @@ def test_committed_policy_mapping_is_complete_and_conservative():
     youth_regular_national = mapping["지표_id"].eq("youth_regular_employment_rate") & mapping[
         "지역"
     ].eq("전국")
-    assert (family_friendly & unresolved).sum() == 90
+    assert (family_friendly & unresolved).sum() == 56
     assert (youth_regular_national & unresolved).sum() == 9
 
 
@@ -143,7 +143,7 @@ def test_boundary_carry_records_distance_direction_and_long_range_risk():
     assert mapping["policy_risk_level"].eq("high").all()
 
 
-def test_issue_82_provincial_blockers_total_153():
+def test_issue_82_provincial_blockers_total_119():
     mapping = pd.read_csv(MAPPING_PATH)
     provincial_blockers = mapping["지역"].ne("전국") & mapping["block_imputation"]
     family_friendly = provincial_blockers & mapping["지표_id"].eq(
@@ -151,9 +151,9 @@ def test_issue_82_provincial_blockers_total_153():
     )
     nonlinear_housework = provincial_blockers & mapping["지표_id"].eq("housework_gender_equality")
 
-    assert family_friendly.sum() == 85
+    assert family_friendly.sum() == 51
     assert nonlinear_housework.sum() == 68
-    assert provincial_blockers.sum() == 153
+    assert provincial_blockers.sum() == 119
 
 
 def test_boundary_carry_artifact_risk_counts():

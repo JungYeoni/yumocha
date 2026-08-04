@@ -5,8 +5,8 @@ panel:
   key_columns: [지역, 지표_id, 연도]
   value_column: 측정값
   expected_rows: 4536
-  expected_observed: 3266
-  expected_missing: 1270
+  expected_observed: 3300
+  expected_missing: 1236
 
 allowed_values:
   missing_cause:
@@ -37,26 +37,26 @@ expected_counts:
     원자료 부재: 298
     완전격자 생성행: 0
     미산출: 9
-    원인 미확정: 90
+    원인 미확정: 56
   cause_status:
     confirmed: 1171
     inferred: 0
-    unresolved: 99
+    unresolved: 65
   imputation_policy:
     linear_interpolation: 414
     boundary_carry: 676
     auxiliary_boundary_interpolation: 0
     keep_missing: 9
-    pending_review: 171
+    pending_review: 137
   block_imputation:
     false: 1090
-    true: 180
+    true: 146
   analysis_included:
-    false: 180
+    false: 146
     true: 1090
   missing_position:
     leading_missing: 622
-    intermediate_missing: 540
+    intermediate_missing: 506
     trailing_missing: 90
     all_period_unobserved: 18
   auxiliary_scenario_rows: 72
@@ -80,9 +80,9 @@ expected_counts:
       medium: 132
       high: 544
   issue_82_blockers:
-    family_friendly_certification_rate: 85
+    family_friendly_certification_rate: 51
     housework_gender_equality: 68
-    total: 153
+    total: 119
 
 rules:
   - rule_id: youth_employment_2016_source_absent
@@ -197,9 +197,21 @@ rules:
     evidence: configs/structural_indicators_verification.yaml:460
     note: 2016·2018·2020·2022·2024 관측값 사이의 비조사연도이다.
 
-  - rule_id: family_friendly_unresolved
+  - rule_id: family_friendly_provincial_unresolved
     indicator_ids: [family_friendly_certification_rate]
-    regions: all
+    regions: [서울, 부산, 대구, 인천, 광주, 대전, 울산, 세종, 경기, 강원, 충북, 충남, 전북, 전남, 경북, 경남, 제주]
+    years: [2016, 2017, 2019]
+    missing_cause: 원인 미확정
+    cause_status: unresolved
+    imputation_policy: pending_review
+    block_imputation: true
+    analysis_included: false
+    evidence: configs/structural_indicators_verification.yaml:518
+    note: 공식 명단을 확보하지 못한 17개 시도의 2016·2017·2019년 51건은 임의 대체하지 않는다.
+
+  - rule_id: family_friendly_national_unresolved
+    indicator_ids: [family_friendly_certification_rate]
+    regions: [전국]
     years: [2016, 2017, 2019, 2020, 2021]
     missing_cause: 원인 미확정
     cause_status: unresolved
@@ -207,7 +219,7 @@ rules:
     block_imputation: true
     analysis_included: false
     evidence: configs/structural_indicators_verification.yaml:518
-    note: 2018년 관측 뒤 2019~2021년이 비어 최근 신설 통계라는 기존 설명만으로 확정할 수 없다.
+    note: 이번 직접 복원 범위는 17개 시도 34건이며 전국 5건은 별도 근거 검토 전까지 차단한다.
 
   - rule_id: childbirth_leading_non_survey
     indicator_ids: [childbirth_perception]

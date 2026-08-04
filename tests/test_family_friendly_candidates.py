@@ -9,6 +9,7 @@ from scripts.build_family_friendly_candidates import (
     REGION_ORDER,
     TARGET_YEARS,
     UNRESOLVED_YEARS,
+    apply_confirmed_observations,
     build_candidate_table,
     normalize_region,
 )
@@ -17,6 +18,10 @@ ROOT = Path(__file__).resolve().parents[1]
 CANDIDATE_PATH = ROOT / "reports" / "20260804_가족친화_2020_2021_직접복원_후보.csv"
 METADATA_PATH = ROOT / "reports" / "20260804_가족친화_공식원본_메타데이터.csv"
 QA_PATH = ROOT / "reports" / "20260804_가족친화_2020_2021_직접복원_QA.csv"
+CONFIRMED_PATH = ROOT / "reports" / "20260804_가족친화_공식관측_반영값.csv"
+FALSE_MATCH_PATH = ROOT / "reports" / "20260804_가족친화_2024_부분일치_중복행_QA.csv"
+REGION_COUNTS_2024_PATH = ROOT / "reports" / "20260804_가족친화_2024_공식시도별_집계_QA.csv"
+APPLICATION_QA_PATH = ROOT / "reports" / "20260804_가족친화_공식관측_패널반영_QA.csv"
 MAPPING_PATH = ROOT / "reports" / "20260804_구조환경지표_결측정책_전수매핑.csv"
 
 
@@ -30,6 +35,8 @@ MAPPING_PATH = ROOT / "reports" / "20260804_구조환경지표_결측정책_전�
         ("전북특별자치도 전주시", "전북"),
         ("제주특별자치도 제주시", "제주"),
         (" 세종특별자치시 ", "세종"),
+        ("부산광역시 해운대구", "부산"),
+        ("경기도 광주시", "경기"),
         (None, None),
         ("", None),
         ("확인불가", None),
@@ -77,15 +84,89 @@ def test_committed_candidate_artifacts_are_complete():
     formula = candidates["공식_분자"] / candidates["사업체수_분모"] * 100
     assert np.allclose(candidates["계산_비율"], formula, rtol=0, atol=1e-14)
 
-    assert len(metadata) == 2
-    assert metadata["연도"].tolist() == [2020, 2021]
-    assert metadata["파일크기_bytes"].tolist() == [211_042, 242_583]
+    assert len(metadata) == 3
+    assert metadata["연도"].tolist() == [2020, 2021, 2024]
+    assert metadata["파일크기_bytes"].tolist() == [211_042, 242_583, 242_330]
     assert metadata["SHA-256"].tolist() == [
         "e3bd6762f24a5b66588c242f3e4598f69a328950d8985e11a39e257438d43f64",
         "af79a43769a4b7db59fa2446f832f181cff0f93e8c7978517a350c21dff14b1f",
+        "6026921d157c499156d6ddbce820833c6f96a6709b3814e940dae5a47f3d4696",
     ]
     assert metadata["원본_검증상태"].eq("PASS").all()
     assert qa["판정"].eq("PASS").all()
+
+
+def test_confirmed_observations_and_false_match_evidence_are_exact():
+    confirmed = pd.read_csv(CONFIRMED_PATH)
+    false_matches = pd.read_csv(FALSE_MATCH_PATH)
+    region_counts_2024 = pd.read_csv(REGION_COUNTS_2024_PATH)
+    application_qa = pd.read_csv(APPLICATION_QA_PATH)
+
+    assert len(confirmed) == 37
+    assert not confirmed.duplicated(["지역", "지표_id", "연도"]).any()
+    assert confirmed["반영유형"].value_counts().to_dict() == {
+        "공식 원자료 직접 복원": 34,
+        "공식 집계 오류 정정": 3,
+    }
+    assert confirmed["관측상태"].eq("관측").all()
+    formula = confirmed["공식_분자"] / confirmed["사업체수_분모"] * 100
+    assert np.allclose(confirmed["측정값"], formula, rtol=0, atol=1e-15)
+    corrected = confirmed.loc[confirmed["연도"].eq(2024)].set_index("지역")
+    assert corrected["공식_분자"].to_dict() == {"전국": 6_502, "대구": 218, "광주": 140}
+
+    assert len(false_matches) == 79
+    assert false_matches.groupby(["공식_지역", "부분일치_오배정_지역"]).size().to_dict() == {
+        ("부산", "대구"): 59,
+        ("경기", "광주"): 20,
+    }
+    assert false_matches["정상화_검증"].eq(false_matches["공식_지역"]).all()
+
+    assert len(region_counts_2024) == 17
+    assert set(region_counts_2024["지역"]) == set(REGION_ORDER)
+    assert region_counts_2024["공식_분자"].sum() == 6_502
+    assert region_counts_2024["패널_값_변경"].sum() == 2
+    formula_2024 = region_counts_2024["공식_분자"] / region_counts_2024["사업체수_분모"] * 100
+    assert np.allclose(region_counts_2024["계산_비율"], formula_2024, rtol=0, atol=1e-15)
+
+    assert len(application_qa) == 37
+    assert application_qa["QA_상태"].eq("PASS").all()
+    direct = application_qa["반영유형"].eq("공식 원자료 직접 복원")
+    correction = application_qa["반영유형"].eq("공식 집계 오류 정정")
+    assert direct.sum() == 34
+    assert application_qa.loc[direct, "반영전값"].isna().all()
+    assert correction.sum() == 3
+    assert application_qa.loc[correction, "지역"].tolist() == ["전국", "대구", "광주"]
+    applied = application_qa.merge(
+        confirmed[["지역", "지표_id", "연도", "측정값"]],
+        on=["지역", "지표_id", "연도"],
+        validate="one_to_one",
+    )
+    assert np.allclose(applied["반영후값"], applied["측정값"], rtol=0, atol=1e-15)
+
+
+def test_apply_confirmed_observations_changes_only_reviewed_keys():
+    confirmed = pd.read_csv(CONFIRMED_PATH)
+    regions = ["전국", *REGION_ORDER]
+    frame = pd.DataFrame(
+        {
+            "지역": regions,
+            "세부지표": ["가족친화인증기업 비율"] * len(regions),
+            **{year: [float(year)] * len(regions) for year in range(2016, 2025)},
+        }
+    )
+    for year in TARGET_YEARS:
+        frame.loc[frame["지역"].isin(REGION_ORDER), year] = np.nan
+    before = frame.copy()
+
+    applied, audit = apply_confirmed_observations(frame, confirmed)
+
+    assert len(audit) == 37
+    assert audit["QA_상태"].eq("PASS").all()
+    for row in confirmed.to_dict("records"):
+        actual = applied.loc[applied["지역"].eq(row["지역"]), row["연도"]].iloc[0]
+        assert np.isclose(actual, row["측정값"], rtol=0, atol=1e-15)
+    unchanged_years = [2016, 2017, 2018, 2019, 2022, 2023]
+    assert applied[unchanged_years].equals(before[unchanged_years])
 
 
 def test_unresolved_51_keys_remain_blocked_and_have_no_candidates():
