@@ -12,6 +12,7 @@ from scripts.build_family_friendly_candidates import (
     apply_confirmed_observations,
     build_candidate_table,
     normalize_region,
+    render_report,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -167,6 +168,33 @@ def test_apply_confirmed_observations_changes_only_reviewed_keys():
         assert np.isclose(actual, row["측정값"], rtol=0, atol=1e-15)
     unchanged_years = [2016, 2017, 2018, 2019, 2022, 2023]
     assert applied[unchanged_years].equals(before[unchanged_years])
+
+
+def test_render_report_handles_missing_panel_cross_checks():
+    """render_report must not crash when main() ran in bootstrap mode (no panel yet).
+
+    Regression test for the #70 circular-dependency fix: on a clean checkout the panel and
+    mapping files do not exist yet, so main() now passes an empty ``reference_matches`` dict
+    instead of skipping the report. render_report used to index it directly
+    (``reference_matches[2018]``), which raised KeyError in that mode.
+    """
+    candidates = pd.read_csv(CANDIDATE_PATH)
+    confirmed = pd.read_csv(CONFIRMED_PATH)
+    metadata = pd.read_csv(METADATA_PATH)
+    qa = pd.read_csv(QA_PATH)
+    false_matches = pd.read_csv(FALSE_MATCH_PATH)
+    region_counts_2024 = pd.read_csv(REGION_COUNTS_2024_PATH)
+
+    numerator_counts = {
+        year: candidates.loc[candidates["연도"].eq(year)].set_index("지역")["공식_분자"]
+        for year in TARGET_YEARS
+    }
+    numerator_counts[2024] = region_counts_2024.set_index("지역")["공식_분자"]
+
+    report = render_report(metadata, numerator_counts, candidates, confirmed, false_matches, {}, qa)
+
+    assert "N/A(패널 없음)" in report
+    assert "패널·정책 매핑 파일이 없어" in report
 
 
 def test_unresolved_51_keys_remain_blocked_and_have_no_candidates():

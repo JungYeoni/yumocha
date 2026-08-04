@@ -1011,15 +1011,26 @@ def render_report(
             "",
             "| 검증 | 결과 |",
             "|---|---:|",
-            f"| 2018 공식 명단 재집계와 기존 패널 | {reference_matches[2018]}/17 |",
-            f"| 2022 공식 명단 재집계와 기존 패널 | {reference_matches[2022]}/17 |",
-            f"| 2023 공식 명단 재집계와 기존 패널 | {reference_matches[2023]}/17 |",
+            f"| 2018 공식 명단 재집계와 기존 패널 | {reference_matches.get(2018, 'N/A(패널 없음)')}/17 |",
+            f"| 2022 공식 명단 재집계와 기존 패널 | {reference_matches.get(2022, 'N/A(패널 없음)')}/17 |",
+            f"| 2023 공식 명단 재집계와 기존 패널 | {reference_matches.get(2023, 'N/A(패널 없음)')}/17 |",
             f"| 2020 공식 전국 합계 | {int(numerator_counts[2020].sum()):,}/4,340 |",
             f"| 2021 공식 전국 합계 | {int(numerator_counts[2021].sum()):,}/4,918 |",
             f"| 2024 공식 전국 합계 | {int(numerator_counts[2024].sum()):,}/6,502 |",
             "| 2020·2021 직접 관측 키 | 34 |",
             "| 2024 정정 키 | 전국·대구·광주 3 |",
             "",
+        ]
+        + (
+            [
+                "패널·정책 매핑 파일이 없어 이번 실행에서는 패널 대조 검증(패널 키 대응, "
+                "2024 패널 반영, 교차검증 재집계 비교)을 생략했다. 생성 단계 산출물만 저장했다.",
+                "",
+            ]
+            if not reference_matches
+            else []
+        )
+        + [
             "## 미확보 51개",
             "",
             "2016·2017·2019년 17개 시도, 총 51개는 후보를 생성하지 않았다. 기존 매핑의 "
@@ -1064,13 +1075,17 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Generate the family-friendly observation artifacts, then cross-check against the
+    integrated panel and missing-policy mapping only when those downstream files already exist.
+
+    The panel and mapping are themselves built *from* this script's ``confirmed`` output
+    (via the panel notebook and ``build_structural_missing_policy.py``), so this script must
+    be able to produce that output before either file exists. Reading them unconditionally at
+    the top of ``main`` would make a clean checkout unable to bootstrap the pipeline at all.
+    """
     args = parse_args()
-    panel_hash_before = file_sha256(args.panel.read_bytes())
-    mapping_hash_before = file_sha256(args.mapping.read_bytes())
     qa_records: list[dict[str, object]] = []
 
-    panel = pd.read_csv(args.panel)
-    mapping = pd.read_csv(args.mapping)
     numerator_counts: dict[int, pd.Series] = {}
     official_frames = {}
     for year in OFFICIAL_YEARS:
@@ -1081,34 +1096,53 @@ def main() -> None:
     candidates = build_candidate_table(numerator_counts, denominators)
     confirmed = build_confirmed_table(candidates, numerator_counts, denominators)
     region_counts_2024 = build_2024_region_counts(numerator_counts, denominators)
-    validate_candidates(candidates, panel, mapping, qa_records)
     validate_confirmed_table(confirmed, numerator_counts, denominators, qa_records)
-    validate_2024_panel(panel, region_counts_2024, qa_records)
     false_matches = build_2024_false_match_qa(official_frames[2024], qa_records)
-    reference_matches = validate_reference_years(args.raw_dir, panel, denominators, qa_records)
     metadata = build_source_metadata(args.raw_dir)
+
+    panel_ready = args.panel.exists() and args.mapping.exists()
+    mode_note = (
+        "패널·매핑 존재 — 대조 검증 포함"
+        if panel_ready
+        else "패널·매핑 없음(최초 부트스트랩) — 생성 단계만 실행"
+    )
+    add_qa(qa_records, "실행 모드", "패널 대조 검증", mode_note, mode_note)
+
+    reference_matches: dict[int, int] = {}
+    panel_hash_before: str | None = None
+    mapping_hash_before: str | None = None
+    if panel_ready:
+        panel_hash_before = file_sha256(args.panel.read_bytes())
+        mapping_hash_before = file_sha256(args.mapping.read_bytes())
+        panel = pd.read_csv(args.panel)
+        mapping = pd.read_csv(args.mapping)
+        validate_candidates(candidates, panel, mapping, qa_records)
+        validate_2024_panel(panel, region_counts_2024, qa_records)
+        reference_matches = validate_reference_years(args.raw_dir, panel, denominators, qa_records)
+
     qa = pd.DataFrame(qa_records)
     if not qa["판정"].eq("PASS").all():
         failed = qa.loc[qa["판정"].eq("FAIL")]
         raise ValueError(f"QA 실패:\n{failed.to_string(index=False)}")
 
-    add_qa(
-        qa_records,
-        "입력 불변",
-        "기준 패널 SHA-256 유지",
-        panel_hash_before,
-        file_sha256(args.panel.read_bytes()),
-    )
-    add_qa(
-        qa_records,
-        "입력 불변",
-        "정책 매핑 SHA-256 유지",
-        mapping_hash_before,
-        file_sha256(args.mapping.read_bytes()),
-    )
-    qa = pd.DataFrame(qa_records)
-    if not qa["판정"].eq("PASS").all():
-        raise ValueError("입력 불변 QA 실패")
+    if panel_ready:
+        add_qa(
+            qa_records,
+            "입력 불변",
+            "기준 패널 SHA-256 유지",
+            panel_hash_before,
+            file_sha256(args.panel.read_bytes()),
+        )
+        add_qa(
+            qa_records,
+            "입력 불변",
+            "정책 매핑 SHA-256 유지",
+            mapping_hash_before,
+            file_sha256(args.mapping.read_bytes()),
+        )
+        qa = pd.DataFrame(qa_records)
+        if not qa["판정"].eq("PASS").all():
+            raise ValueError("입력 불변 QA 실패")
 
     for output in (
         args.candidate_output,
@@ -1154,6 +1188,7 @@ def main() -> None:
         f"2024 공식 시도별 집계 QA: {args.region_counts_2024_output} ({len(region_counts_2024)}행)"
     )
     print(f"보고서 저장: {args.report_output}")
+    print(f"실행 모드: {mode_note}")
 
 
 if __name__ == "__main__":
