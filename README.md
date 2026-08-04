@@ -294,9 +294,11 @@ PR 제목은 형식을 강제하지 않지만 작업 성격이 드러나게 씁�
 
 `CLAUDE.md`와 `.claude/`는 Claude Code가 프로젝트 맥락과 작업 규칙을 자동으로 읽도록 만든 설정입니다. 분석 원칙, 역할별 서브에이전트, `/timeseries`·`/tabular`·`/gis`·`/regression`·`/ml`·`/visualization` 슬래시 커맨드가 포함되어 있습니다.
 
-`scripts/sync_template.sh`는 **스크립트가 있는 저장소를 원본으로 삼아** `.claude/`의 `rules`·`agents`·`commands`·`skills`와 `.github/workflows/`를 `scripts/projects.txt`에 절대 경로로 등록된 프로젝트로 복사합니다. 현재 `projects.txt`에 이 저장소는 포함되어 있지 않습니다.
+이 저장소는 템플릿 저장소 `da-template`의 동기화 **대상**입니다. `da-template`에서 `scripts/sync_template.sh`를 실행하면 `.claude/`의 `rules`·`agents`·`commands`·`skills`와 `.github/workflows/`가 템플릿 내용으로 덮어써집니다. `rsync --delete`를 쓰므로 **이 저장소에만 있던 규칙·커맨드·워크플로우는 삭제됩니다.** 해당 경로를 여기서 직접 고치면 다음 동기화 때 사라지니, 템플릿 쪽에서 수정하세요.
 
-`rsync --delete`를 사용하므로 **위 대상 디렉터리 안에서 원본에 없는 파일은 삭제됩니다.** 대상 프로젝트에만 있던 규칙·커맨드·워크플로우가 사라질 수 있으니, 실행 전 `projects.txt`의 경로 목록을 확인하세요.
+`README.md`·`CLAUDE.md`·`src/`·`scripts/`·`reports/`는 동기화 대상이 아니므로 자유롭게 수정해도 됩니다.
+
+> 이 저장소 안에도 `scripts/sync_template.sh`와 `projects.txt`가 있지만 템플릿에서 복사돼 온 **사본**입니다. 이 스크립트는 자신이 위치한 저장소를 원본으로 삼기 때문에, 여기서 실행하면 이 저장소의 설정으로 다른 프로젝트를 덮어씁니다. 동기화는 항상 `da-template`에서만 실행하세요.
 
 Claude Code를 쓰지 않아도 프로젝트 실행에는 문제가 없습니다.
 
