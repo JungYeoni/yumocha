@@ -518,6 +518,82 @@ def add_fiscal_index_features(
     return result
 
 
+def add_total_expenditure_ratio(
+    panel: pd.DataFrame,
+    denominator: pd.DataFrame,
+    *,
+    budget_col: str = "당해계획예산_백만원",
+    denominator_col: str = "세출예산순계액_백만원",
+) -> pd.DataFrame:
+    """재정대응 패널에 총세출 분모와 계획예산 비율을 결합한다.
+
+    주 분모는 지역통합(광역본청+산하 시군구), 3개 회계
+    (일반회계+기타특별회계+공기업특별회계)의 당초예산 순계다. 분자와
+    분모는 모두 백만원 단위여야 하며 두 입력의 지역×연도 키가 정확히
+    일치해야 한다.
+    """
+
+    denominator_columns = {
+        *PANEL_KEY,
+        "예산단계",
+        "포함회계",
+        "자치단체수",
+        "세출예산순계액_원",
+        denominator_col,
+        "출처",
+    }
+    _require_columns(panel, {*PANEL_KEY, budget_col}, label="재정대응지수 패널")
+    _require_columns(denominator, denominator_columns, label="총세출 분모 패널")
+
+    for frame, label in ((panel, "재정대응지수 패널"), (denominator, "총세출 분모 패널")):
+        duplicated = frame.duplicated(PANEL_KEY, keep=False)
+        if duplicated.any():
+            samples = frame.loc[duplicated, PANEL_KEY].drop_duplicates().head(10)
+            raise ValueError(f"{label} 지역×연도 중복: {samples.to_dict(orient='records')}")
+
+    _require_finite_numeric(panel, [budget_col], label="재정대응지수 패널")
+    _require_finite_numeric(denominator, [denominator_col], label="총세출 분모 패널")
+
+    budget = pd.to_numeric(panel[budget_col])
+    if budget.lt(0).any():
+        samples = panel.loc[budget.lt(0), PANEL_KEY + [budget_col]].head(10)
+        raise ValueError(f"계획예산은 0 이상이어야 합니다: {samples.to_dict(orient='records')}")
+
+    expenditure = pd.to_numeric(denominator[denominator_col])
+    if expenditure.le(0).any():
+        samples = denominator.loc[expenditure.le(0), PANEL_KEY + [denominator_col]].head(10)
+        raise ValueError(f"총세출 분모는 0보다 커야 합니다: {samples.to_dict(orient='records')}")
+
+    metadata_columns = sorted(denominator_columns - set(PANEL_KEY) - {denominator_col})
+    missing_metadata = denominator[metadata_columns].isna().any(axis=1)
+    if missing_metadata.any():
+        samples = denominator.loc[missing_metadata, PANEL_KEY].head(10)
+        raise ValueError(
+            f"총세출 분모 메타데이터가 누락되었습니다: {samples.to_dict(orient='records')}"
+        )
+
+    denominator_subset = denominator[PANEL_KEY + sorted(denominator_columns - set(PANEL_KEY))]
+    result = panel.merge(
+        denominator_subset,
+        on=PANEL_KEY,
+        how="outer",
+        validate="one_to_one",
+        indicator=True,
+    )
+    unmatched = result["_merge"].ne("both")
+    if unmatched.any():
+        samples = result.loc[unmatched, PANEL_KEY + ["_merge"]].head(10)
+        raise ValueError(f"재정대응·총세출 키 불일치: {samples.to_dict(orient='records')}")
+
+    result = result.drop(columns="_merge").sort_values(PANEL_KEY).reset_index(drop=True)
+    result["계획예산_총세출비율_pct"] = (
+        pd.to_numeric(result[budget_col]) / pd.to_numeric(result[denominator_col]) * 100
+    )
+    result["분모대안"] = "지역통합_3개회계_순계"
+    result["분자분모_단위"] = "백만원"
+    return result
+
+
 def add_fiscal_response_features(
     panel: pd.DataFrame,
     *,

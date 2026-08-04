@@ -8,6 +8,7 @@ import pytest
 from src.features.analysis_panel import (
     add_fiscal_index_features,
     add_fiscal_response_features,
+    add_total_expenditure_ratio,
     build_budget_fertility_panel,
     load_budget_qa_panel,
     load_current_budget_panel,
@@ -368,6 +369,72 @@ def test_add_fiscal_index_features_calculates_real_per_capita_and_scores():
     assert result["재정대응점수_0_100"].min() == pytest.approx(0.0)
     assert result["재정대응점수_0_100"].max() == pytest.approx(100.0)
     assert result.groupby("지역")["실질예산_전년증감액_백만원"].first().notna().all()
+
+
+def test_add_total_expenditure_ratio_requires_complete_one_to_one_match():
+    panel = pd.DataFrame(
+        {
+            "지역": ["서울", "서울"],
+            "연도": [2020, 2021],
+            "당해계획예산_백만원": [100.0, 120.0],
+        }
+    )
+    denominator = pd.DataFrame(
+        {
+            "지역": ["서울", "서울"],
+            "연도": [2020, 2021],
+            "예산단계": ["당초예산", "당초예산"],
+            "포함회계": ["일반회계+기타특별회계+공기업특별회계"] * 2,
+            "자치단체수": [26, 26],
+            "세출예산순계액_원": [1_000_000_000, 2_000_000_000],
+            "세출예산순계액_백만원": [1_000.0, 2_000.0],
+            "출처": ["지방재정365"] * 2,
+        }
+    )
+
+    result = add_total_expenditure_ratio(panel, denominator)
+
+    assert result["계획예산_총세출비율_pct"].tolist() == pytest.approx([10.0, 6.0])
+    assert result["분모대안"].eq("지역통합_3개회계_순계").all()
+    assert result["분자분모_단위"].eq("백만원").all()
+
+
+def test_add_total_expenditure_ratio_rejects_unmatched_keys():
+    panel = pd.DataFrame({"지역": ["서울"], "연도": [2020], "당해계획예산_백만원": [100.0]})
+    denominator = pd.DataFrame(
+        {
+            "지역": ["서울"],
+            "연도": [2021],
+            "예산단계": ["당초예산"],
+            "포함회계": ["일반회계+기타특별회계+공기업특별회계"],
+            "자치단체수": [26],
+            "세출예산순계액_원": [1_000_000_000],
+            "세출예산순계액_백만원": [1_000.0],
+            "출처": ["지방재정365"],
+        }
+    )
+
+    with pytest.raises(ValueError, match="키 불일치"):
+        add_total_expenditure_ratio(panel, denominator)
+
+
+def test_add_total_expenditure_ratio_rejects_nonpositive_denominator():
+    panel = pd.DataFrame({"지역": ["서울"], "연도": [2020], "당해계획예산_백만원": [100.0]})
+    denominator = pd.DataFrame(
+        {
+            "지역": ["서울"],
+            "연도": [2020],
+            "예산단계": ["당초예산"],
+            "포함회계": ["일반회계+기타특별회계+공기업특별회계"],
+            "자치단체수": [26],
+            "세출예산순계액_원": [0],
+            "세출예산순계액_백만원": [0.0],
+            "출처": ["지방재정365"],
+        }
+    )
+
+    with pytest.raises(ValueError, match="총세출 분모는 0보다"):
+        add_total_expenditure_ratio(panel, denominator)
 
 
 @pytest.mark.parametrize(
