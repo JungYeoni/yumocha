@@ -6,6 +6,10 @@
 
 - Issue 생성 시 브랜치/커밋 메시지 자동 제안 워크플로 추가 ([b338ec0](https://github.com/JungYeoni/da-template/commit/b338ec04980f9de800211ead9d25476b1b5c6699))
 
+### analysis
+
+- 총세출 분모 민감도 비교 (#69) ([20c5c3d](https://github.com/JungYeoni/da-template/commit/20c5c3d295267363b64e5df4adaba33f0778458a))
+
 ### chroe
 
 - 프로젝트 초기설정 ([2acb075](https://github.com/JungYeoni/da-template/commit/2acb07535d6954b94339bffe9e3db1b127de8576))
@@ -54,6 +58,10 @@
 
 ### 문서
 
+- 총세출 분모 패널 최종보고서 작성 (#69) ([101d902](https://github.com/JungYeoni/da-template/commit/101d9024bc35c6f595659d5abfbf8682fff9d8ad))
+- 총세출 분모 패널 데이터 사전 작성 (#69) ([74bbffd](https://github.com/JungYeoni/da-template/commit/74bbffdffc7dd9b366c52907faa3863bc0891fb8))
+- 지방재정365 세출예산 원자료 구조 점검 (#69) ([0b2367b](https://github.com/JungYeoni/da-template/commit/0b2367b26711c383eaa4b79b4db8f9593eb5709a))
+- CHANGELOG 자동 업데이트 [skip ci] ([e30bcf8](https://github.com/JungYeoni/da-template/commit/e30bcf8f47a7ccc3a5d6d017afea7d2a1e78fb2a))
 - #70 사전 구현 범위 설명 정정 ([2a984ee](https://github.com/JungYeoni/da-template/commit/2a984ee65528046e849b23e8ed843eb1a0b78965))
 - CHANGELOG 자동 업데이트 [skip ci] ([2106806](https://github.com/JungYeoni/da-template/commit/21068064acdc90e42c23435d19337cea3c15eefd))
 - CHANGELOG 자동 업데이트 [skip ci] ([e0939f3](https://github.com/JungYeoni/da-template/commit/e0939f3c3492aae68e79553b4ba864ce595e5364))
@@ -166,6 +174,7 @@
 
 ### 버그 수정
 
+- CodeRabbit 리뷰 피드백 반영 (#69) ([5a9d728](https://github.com/JungYeoni/da-template/commit/5a9d7282060c47e8912cdd0842d8065167deebd5))
 - Address CodeRabbit findings in missing-value handling ([3e29203](https://github.com/JungYeoni/da-template/commit/3e292038f252685b960c51ccef7b4c73850b3692))
 - Resolve PR #86 CI failures ([62dd30e](https://github.com/JungYeoni/da-template/commit/62dd30e033cbc26e81eb2e490b30919ee2272f32))
 - Validate approved input hashes before parsing (#80) ([f862ff6](https://github.com/JungYeoni/da-template/commit/f862ff6f2cd50bb6492f01b99714ae375f7d2fd1))
@@ -244,6 +253,10 @@
 
 ### 새 기능
 
+- 총세출 대비 계획예산 비율 패널 구축 (#69) ([5daee3d](https://github.com/JungYeoni/da-template/commit/5daee3de531f8bcc23edc121bc73b45cf0af5480))
+- 기금 포함 총세출 분모 대안 추가 (#69) ([f9cc700](https://github.com/JungYeoni/da-template/commit/f9cc7008f1c1c1c50510b62cacd753be5fcd4043))
+- 총세출 분모 민감도 대안 구축 (#69) ([721e694](https://github.com/JungYeoni/da-template/commit/721e694227dac19584dde4d3f6003f70d3d1a1b7))
+- 시도별 총세출 분모 패널 생성 (#69) ([bed29ee](https://github.com/JungYeoni/da-template/commit/bed29ee640215b4321b0c8a8e6826dd17ab00082))
 - #70 구조환경지표 결측 처리 모듈 사전 구현 ([e89b7c0](https://github.com/JungYeoni/da-template/commit/e89b7c01b6eed041a23bac33fa75ebd181adfa04))
 - 구조환경지표 28개 보간 전 통합패널 구축 (#80) ([492e092](https://github.com/JungYeoni/da-template/commit/492e09269b9f6de1fdd1bafc4a48e258e5354f21))
 - 검토 워크북에 실시간 진행현황 시트 추가 (#77) ([abd3009](https://github.com/JungYeoni/da-template/commit/abd30095b7af377aea4fd0cf2acd5373db87f8d7))
