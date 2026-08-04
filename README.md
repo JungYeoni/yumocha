@@ -1,182 +1,224 @@
-# da-template
+# 저출생 대응 예산 × 출생환경지표 분석
 
-[![Use this template](https://img.shields.io/badge/Use%20this%20template-2ea44f?style=for-the-badge&logo=github)](https://github.com/JungYeoni/da-template/generate)
+> **유모차(yumocha) 팀** 프로젝트입니다. 저장소 이름 `yumocha`는 프로젝트명이 아니라 팀 이름입니다.
 
-데이터 분석과 머신러닝 프로젝트를 빠르게 시작하기 위한 Python 프로젝트 템플릿입니다.
+전국 17개 시도가 저출생 대응에 **어떤 영역으로 얼마를 쓰고 있는지**를 비교 가능한 형태로 정리하고, 각 지역의 **출생환경 여건**과 나란히 놓고 살펴보는 분석 프로젝트입니다.
 
-반복적으로 필요한 디렉터리 구조, 설정 파일, 테스트, GitHub Actions, 이슈/PR 템플릿, Claude Code용 분석 지침을 미리 갖추고 있습니다. 의존성 관리는 기본적으로 `uv`와 `pyproject.toml`/`uv.lock`을 사용합니다. 새 프로젝트를 만들 때 위 **Use this template** 버튼을 누르면 같은 구조로 저장소를 시작할 수 있습니다.
+## 왜 하는가
+
+지자체 저출생 대응 예산은 매년 시행계획 문서로 공개되지만, 그 자료로 지역을 비교하기는 어렵습니다.
+
+- 연도·시도마다 표 구조가 다르고, 17개 시도가 하나의 시트에 이어 붙어 있습니다.
+- 세부사업이 **어떤 영역**(주거·고용·양육·의료 등)에 해당하는지 표시가 없습니다. 사업명과 주요내용 텍스트만 있습니다.
+- 그래서 "이 지역은 주거에 얼마를 쓰는가" 같은 기본적인 질문조차 집계로 답하기 어렵습니다.
+
+한편 지역의 출생환경 여건(청년 고용, 주거 안정성, 보육 인프라 등)은 별도의 지표 연구로 산출되어 있지만, 예산 자료와 같은 축에 놓인 적이 없습니다.
+
+**이 프로젝트는 그 두 자료를 같은 지역 × 연도 축 위에 올려놓는 것을 목표로 합니다.**
+
+## 무엇을 보려는가
+
+- 지역별 저출생 대응 예산이 **어떤 영역에 편중**되어 있는가
+- 그 편중이 지역의 **구조적 여건**(고용·주거·양육 환경)과 어떻게 나란히 놓이는가 — 여건이 나쁜 영역에 예산이 가 있는가, 아닌가
+- 이 구도가 **연도에 따라 어떻게 변해왔는가** (2016~2024)
+
+## 접근 방식
+
+지역을 두 축으로 나누어 봅니다. 지수 설계와 변수 설계를 같은 논리로 맞추기 위한 구분입니다.
+
+| 축 | 의미 | 자료 |
+|----|------|------|
+| **구조환경** | 지역이 원래 가진 여건 | 청년 고용률·정규직 비율, 주거 안정성, 보육·의료 인프라 등 구조환경지표 |
+| **재정대응** | 지역이 정책으로 대응한 정도 | 시행계획 세부사업 예산을 영역별로 분류한 결과 |
+
+두 축을 지역 × 연도 패널로 결합하고, 합계출산율(TFR)과 함께 비교합니다.
+
+구조환경지표의 분류 체계와 산식은 제주여성가족연구원의 「출산환경지수 개발연구」를 기준으로 삼되, 각 지표값을 원자료로 다시 계산해 재현되는지 검증한 뒤 사용합니다.
+
+## 산출물의 성격 — 예측 모델이 아닙니다
+
+관측 단위가 **17개 시도**뿐이고, 같은 시도의 인접 연도 값은 서로 강하게 닮아 있습니다(자기상관). 연도를 늘려 행 수가 늘어도 실질 정보량은 여전히 "지역 17개"에 가깝습니다.
+
+따라서 이 프로젝트는 성능을 겨루는 예측 모델을 만들지 않습니다. 산출물은 **검증된 지표·예산 DB와 그 정합성 진단**이며, 결과는 인과가 아니라 관찰·비교의 언어로 기술합니다("효과·영향"이 아니라 "동행·관찰"). 판단 근거는 `reports/methodology/20260715_멘토링_피드백_분석방법론_원칙.md`에 정리되어 있습니다.
+
+TF-IDF 분류기가 등장하지만, 이는 사업명 텍스트를 정해진 영역 카테고리로 **라벨링**하는 도구이지 출산율을 예측하는 모델이 아닙니다. 지역·연도를 피처로 쓰지 않습니다.
+
+## 현재 진행 상황
+
+| 작업 | 범위 | 상태 |
+|------|------|------|
+| 시도별 예산 분리·정제 | 2016~2024년 × 17개 시도 | 9개 연도 완료, QA 불일치는 원인 규명까지 문서화 |
+| 세부사업 영역분류 | 2016~2024년 | 2021~2024년 확정 라벨로 학습, 2016~2020년 예측 완료 |
+| 구조환경지표 검증 | 28종 × 지역 × 연도 | 기존 21종 전수 대조 완료, 신규 7종 구축·매니페스트 등록 완료 |
+| 기초패널 생성 | 2016~2024년 계획예산 + 합계출산율 | 생성 완료 |
+| 지표 설계·분석 | — | 진행 중 |
+
+세부 결과와 판단 근거는 모두 `reports/`에 문서로 남기는 것을 원칙으로 합니다.
 
 ---
 
-## 언제 사용하나요?
+# 작업 상세
 
-- 정형 데이터 EDA, 전처리, 피처 엔지니어링
-- 분류/회귀 모델링과 모델 평가
-- 시계열 분석과 예측
-- 회귀분석, 인과추론, 패널 데이터 분석
-- GIS 데이터 결합 분석
-- 보고서용 시각화와 간단한 대시보드 제작
+아래부터는 팀 내부 작업 문서입니다. 데이터 위치, 파이프라인 실행 순서, 저장소 운영 규칙을 다룹니다.
 
-개인 프로젝트뿐 아니라 소규모 팀에서 분석 흐름과 산출물 위치를 맞추고 싶을 때도 사용할 수 있습니다.
+## 데이터 출처와 범위
+
+| 데이터 | 범위 | 위치 | 비고 |
+|--------|------|------|------|
+| 시행계획 세부사업 예산현황 | 2016~2024년 9개년 × 17개 시도 | `data/raw/칼럼정렬/{연도}_칼럼정렬.xlsx` | 데이터수집팀이 컬럼을 정렬한 `정리본_자동` 시트를 표준 입력으로 사용 |
+| 원본 시행계획 (교차검증용) | 동일 | `data/raw/` | 시트가 `Table 1` 하나뿐이며 17개 시도가 이어 붙은 롱 테이블 |
+| 재정팀 영역분류 라벨·검토본 | 2021~2024년 | `data/interim/영역분류_라벨링/` | 사람이 검토·확정한 라벨. 모델 학습 데이터의 근거 |
+| 구조환경지표 28종 | 지역 × 연도 | `data/interim/` | 재정팀 산출값을 원자료로 재현해 전수 검증. 매니페스트는 `configs/structural_indicators_verification.yaml` |
+| 지표 산출용 조사 원자료 | 연도별 | `data/raw/` | 지역별고용조사, 가족실태조사, 주거실태조사 등 |
+| 보조 매핑 테이블 | — | `data/lookup/` | 시도-지역코드 매핑, 시도·연도별 시군구 수, 소비자물가지수 (git 추적 대상) |
+
+**데이터 취급 규칙**
+
+- `data/raw/`, `data/interim/`, `data/processed/`는 `.gitignore`에서 제외되어 **git으로 추적하지 않습니다.** 디렉터리 유지용 `.gitkeep`만 예외입니다. 원본과 중간 산출물은 Google Drive로 공유합니다.
+- `data/lookup/`의 소형 참조 CSV만 저장소에 포함됩니다.
+- 원본 파일은 수정하지 않고, 처리 결과만 `data/interim/` 또는 `data/processed/`에 씁니다.
+
+**범위상 주의할 점**
+
+- **2016~2019년**은 세부사업 한 건이 `계 / 국비 / 지방비` 3행으로 나뉘어 있어 `계` 행만 예산으로 사용합니다.
+- **2022년**은 `data/raw/` 최상위에 표준과 다른 별도 가공 시트가 섞여 있어 입력 경로를 반드시 확인해야 합니다.
+- **2025년**은 원본 미수집 상태로 아직 범위 밖입니다.
 
 ---
 
-## 빠른 시작
+## 분석 파이프라인
 
-### 1. 템플릿으로 저장소 만들기
+작업은 재정팀 로드맵의 **Level 1(시도별 분리·정제)** → **Level 2(세부사업 영역분류)** 순서로 진행되며, Level 2는 Level 1 산출물을 입력으로 받습니다.
 
-GitHub 상단의 **Use this template** 버튼을 눌러 새 저장소를 만듭니다.
+### 1단계 — 시도별 분리·정제 (Level 1)
 
-또는 이 저장소를 직접 클론해 실험할 수 있습니다.
+단일 롱 테이블을 시도별로 분리하고, 대분류/중분류/세부사업(leaf) 계층을 판별한 뒤, leaf 예산 합계와 소계값을 대조하는 QA를 수행합니다.
+
+- 연도별 노트북: `notebooks/{날짜}_EDA_{연도}_전국_시도분리정제.ipynb` (2016~2024)
+- 공통 유틸: `src/features/pipeline_common.py` (`classify_row`, `flatten_header` 등)
+- 노트북 템플릿: `notebooks/templates/시행계획_시도분리정제_공통유틸_템플릿.ipynb`
+- 계획 문서: `reports/planning/20260712_시도별_예산현황_분리정제_작업계획.md`
+
+### 2단계 — 텍스트 정규화와 LLM 보존형 정제
+
+세부사업명·주요내용의 불릿과 줄바꿈을 정규화하고, LLM 교정 결과가 **원문 의미를 훼손하지 않았는지** 별도 감사(audit) 절차로 검증합니다.
+
+- 모듈: `src/features/bullet_normalization.py`, `src/features/llm_refine.py`, `src/features/text_patterns.py`
+- 스크립트: `scripts/apply_{연도}_semantic_corrections.py`, `scripts/audit_llm_semantic_preservation.py`, `scripts/reapply_bullet_normalization.py`
+
+### 3단계 — 검토 워크북 생성과 사람 검토
+
+전국 세부사업을 명칭·내용 유사도로 묶어 재정팀이 라벨링하기 좋은 Excel 워크북으로 내보냅니다.
+
+- 모듈: `src/modeling/similarity_grouping.py`, `src/modeling/tfidf_review_workbook.py`, `src/features/text_match.py`, `src/features/review_keys.py`
+- 스크립트: `scripts/build_finance_review_master.py`, `scripts/build_grouped_finance_review_workbook.py`, `scripts/export_finance_review_workbook.py`
+
+### 4단계 — 세부사업 영역분류 (Level 2)
+
+확정 라벨을 학습 데이터로 모아 TF-IDF 분류기를 학습하고, 라벨이 없는 연도를 예측합니다.
 
 ```bash
-git clone https://github.com/JungYeoni/da-template.git my-project
-cd my-project
+uv run python scripts/consolidate_2021_2024_confirmed_labels.py   # 확정 라벨 취합
+uv run python scripts/consolidate_2016_2020_prediction_targets.py # 예측 대상 취합
+uv run python scripts/train_tfidf_area_classifier.py              # 학습·평가
+uv run python scripts/predict_tfidf_area_classifier.py            # 추론
 ```
 
-### 2. 개발 환경 준비
+- 모듈: `src/modeling/tfidf_area_classifier.py`
+- 계획 문서: `reports/planning/20260715_세부사업_영역분류_작업계획.md`
+- 최신 결과: `reports/20260803_2021_2024_통합_라벨_TFIDF_재학습_결과.md`
 
-이 프로젝트는 Python 3.11 이상과 `uv` 기반 의존성 관리를 기본으로 합니다.
+계획 범위와 실제 처리 범위가 다릅니다.
 
-권장 방식:
+- **계획 범위**: 제4차 기본계획 기간인 2021~2025년
+- **실제 처리 범위**: 2016~2024년 — 2021~2024년 확정 라벨로 학습하고 2016~2020년을 예측했습니다.
+- **2025년은 제외**되어 있습니다. 원본 자료가 아직 수집되지 않아 정제·분류 어느 단계에도 들어가지 않았습니다.
+
+### 5단계 — 구조환경지표 검증
+
+재정팀이 산출한 지표값을 원자료로 재현해 지역 × 연도 단위로 전수 대조합니다. 결측·중복이 조용히 넘어가지 않도록 검증 유틸을 별도로 두었습니다. 기존 21종 검증 이후 신규 7종(청년층 정규직 근로자 비율, 주거지표 3종, 가사수행 격차 2종, 사회경제적 지위 인식)을 추가해 현재 매니페스트에는 28종이 등록되어 있습니다.
+
+- 매니페스트: `configs/structural_indicators_verification.yaml`
+- 모듈: `src/evaluation/structural_validation.py`
+- 노트북: `notebooks/20260724_EDA_구조환경지표_21개_원자료기반_전수검증.ipynb` 외
+- 결과: `reports/20260724_구조환경지표_21개_검증_진행상황.md`, `reports/20260730_구조환경지표_검증_매니페스트_최신화_결과.md`, `reports/20260727_구조환경지표별_17개시도_상세결과.md`
+
+### 6단계 — 기초패널 생성과 추세 EDA
+
+지역 × 연도 계획예산과 합계출산율을 결합한 기초패널을 만들고 추세를 확인합니다. 예산 결측은 0으로 추정하지 않고 합계에서 제외하되, 결측 건수를 품질정보로 함께 보존합니다.
+
+- 모듈: `src/features/analysis_panel.py`, `src/features/trend_eda.py`, `src/visualization/trends.py`
+- 노트북: `notebooks/20260726_EDA_2016_2024_계획예산_합계출산율_기초패널_생성.ipynb`
+
+---
+
+## 저장소 구조
+
+```text
+yumocha/
+├── configs/                      # 공통·환경별 설정 (경로, seed, 분할 기준)
+│
+├── data/
+│   ├── raw/                      # 원본 데이터, git 추적 제외
+│   ├── interim/                  # 중간 처리 데이터, git 추적 제외
+│   ├── processed/                # 분석 입력용 최종 데이터, git 추적 제외
+│   └── lookup/                   # 소형 참조 테이블 (git 추적)
+│
+├── notebooks/                    # 연도별 EDA·모델링 노트북
+│   ├── templates/                # 연도 확장용 노트북 템플릿
+│   └── archive/                  # 대체된 과거 노트북
+│
+├── reports/                      # 작업 결과·계획·방법론 문서 (reports/README.md 참고)
+│   ├── yearly/{연도}/            # 연도별 EDA 보고서와 QA·LLM 검토 CSV
+│   ├── methodology/              # 연도에 매이지 않는 공통 방법론
+│   ├── planning/                 # 착수 전 작업계획
+│   └── archive/                  # 보존용 과거 자료
+│
+├── scripts/                      # 실행 단위 파이프라인 스크립트
+│
+├── src/
+│   ├── features/                 # 정제·텍스트 처리·패널 생성 유틸
+│   ├── modeling/                 # 영역분류 모델과 검토 워크북 생성
+│   ├── evaluation/               # 지표 검증과 평가
+│   └── visualization/            # 시각화
+│
+├── tests/                        # 단위 테스트
+├── .github/                      # 이슈·PR 템플릿, CI 워크플로우
+└── .claude/                      # Claude Code 규칙·에이전트·커맨드 설정
+```
+
+---
+
+## 개발 환경
+
+Python 3.11 이상과 `uv` 기반 의존성 관리를 사용합니다.
 
 ```bash
 uv sync --extra dev
 uv run pytest tests/ -v
 ```
 
-`pip`만 사용할 수 있는 환경에서는 아래 방식도 가능합니다.
+`pip`만 사용할 수 있는 환경:
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate          # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 pytest tests/ -v
 ```
 
-Windows PowerShell에서는 가상환경 활성화 명령이 다릅니다.
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-### 3. 프로젝트 이름과 설정 바꾸기
-
-새 프로젝트로 복사한 뒤에는 아래 항목을 먼저 바꾸는 것을 권장합니다.
-
-- `pyproject.toml`의 `name`, `description`, 의존성
-- `README.md`의 프로젝트 설명
-- `configs/base.yaml`의 경로, seed, train/validation/test 분할 기준
-- `.github/CODEOWNERS`와 GitHub 이슈/PR 템플릿
-- `cliff.toml`의 GitHub 저장소 URL
-
----
-
-## 의존성 관리
-
-이 템플릿은 `uv`를 기본 패키지 매니저로 사용합니다.
-
-- 런타임/개발 의존성은 `pyproject.toml`에 정의합니다.
-- 잠금 파일은 `uv.lock`으로 관리합니다.
-- 새 환경을 만들 때는 `uv sync --extra dev`를 사용합니다.
-- 명령 실행은 `uv run <command>` 형식을 권장합니다.
-- `requirements.txt`는 호환성이나 외부 배포가 필요한 경우를 위한 보조 파일입니다.
-
-자주 쓰는 명령:
+의존성은 `pyproject.toml`에 정의하고 `uv.lock`으로 잠급니다. `requirements.txt`는 외부 배포·호환용 보조 파일입니다.
 
 ```bash
-uv sync --extra dev
-uv run pytest tests/ -v
-uv run ruff check src/ tests/
-uv run ruff format src/ tests/
+uv add pandas          # 런타임 의존성 추가
+uv add --dev pytest    # 개발 의존성 추가
 ```
-
-의존성을 추가할 때:
-
-```bash
-uv add pandas
-uv add --dev pytest
-```
-
----
-
-## 디렉터리 구조
-
-```text
-da-template/
-├── README.md                     # 프로젝트 설명과 사용 방법
-├── CHANGELOG.md                  # 변경 이력
-├── CLAUDE.md                     # Claude Code용 프로젝트 지침
-├── pyproject.toml                # 패키지 메타데이터와 도구 설정
-├── uv.lock                       # uv 잠금 파일
-├── requirements.txt              # 핵심 의존성 목록
-├── cliff.toml                    # git-cliff 변경 이력 설정
-│
-├── configs/
-│   ├── base.yaml                 # 공통 설정
-│   ├── dev.yaml                  # 개발 환경 설정
-│   └── prod.yaml                 # 제출/운영 환경 설정
-│
-├── data/
-│   ├── raw/                      # 원본 데이터, git 추적 제외
-│   ├── interim/                  # 중간 처리 데이터
-│   └── processed/                # 모델 입력용 최종 데이터
-│
-├── notebooks/                    # 탐색 분석과 실험 노트북
-├── reports/                      # 보고서, 그림, 표, 대시보드 산출물 (구조는 reports/README.md 참고)
-│
-├── src/
-│   ├── features/                 # 피처 생성 코드
-│   ├── modeling/                 # 모델 학습 코드
-│   ├── evaluation/               # 평가 지표와 검증 코드
-│   └── visualization/            # 시각화 코드
-│
-├── tests/                        # 단위 테스트
-│
-├── .github/
-│   ├── ISSUE_TEMPLATE/           # 이슈 템플릿
-│   ├── pull_request_template.md  # PR 체크리스트
-│   └── workflows/                # CI, 노트북 검사, changelog 자동화
-│
-└── .claude/                      # Claude Code 명령, 규칙, 에이전트 설정
-```
-
----
-
-## 기본 작업 흐름
-
-### 새 분석을 시작할 때
-
-1. GitHub Issue를 만들고 목표, 데이터, 성공 기준을 적습니다.
-2. 브랜치를 만듭니다.
-
-```bash
-git checkout -b experiment/short-description
-```
-
-3. 원본 데이터는 `data/raw/`에 둡니다.
-4. 탐색 분석은 `notebooks/`에서 진행합니다.
-5. 재사용할 코드는 `src/` 아래로 옮깁니다.
-6. 중요한 로직에는 `tests/`에 테스트를 추가합니다.
-7. PR을 열고 체크리스트를 확인합니다.
-
-### 노트북과 소스 코드의 역할
-
-노트북은 탐색과 의사결정을 기록하는 공간입니다. 반복해서 쓰는 전처리, 피처 생성, 평가, 시각화 코드는 `src/`로 옮겨 테스트 가능한 함수로 관리하는 것을 권장합니다.
-
-예를 들어:
-
-- `notebooks/01_eda.ipynb`: 데이터 확인, 결측치/분포/이상치 탐색
-- `src/features/build_features.py`: 실험에 반복 사용되는 피처 함수
-- `src/modeling/train.py`: 모델 학습 함수
-- `src/evaluation/evaluate.py`: 평가 지표 계산
-- `tests/test_features.py`: 피처 함수 검증
 
 ---
 
 ## 품질 확인
 
-커밋하거나 PR을 열기 전에 아래 명령을 실행하세요.
+커밋하거나 PR을 열기 전에 실행합니다.
 
 ```bash
 uv run --extra dev ruff check src/ tests/
@@ -184,56 +226,49 @@ uv run --extra dev ruff format --check src/ tests/
 uv run --extra dev pytest tests/ -v
 ```
 
-`pip` 환경에서는 가상환경을 활성화한 뒤 아래처럼 실행하면 됩니다.
-
-```bash
-ruff check src/ tests/
-ruff format --check src/ tests/
-pytest tests/ -v
-```
-
 ---
 
-## 분석 원칙
+## 작업 원칙
 
 ### 재현성
 
-- random seed를 명시합니다.
-- 데이터 분할 기준을 코드나 문서에 남깁니다.
-- 원본 데이터는 수정하지 않고, 처리 결과는 `data/interim/` 또는 `data/processed/`에 둡니다.
+- 모든 분석에 random seed를 고정하고, 데이터 분할 기준을 코드나 문서에 남깁니다.
+- 결과 문서에는 입력 파일 경로와 행 수, 가능하면 해시를 함께 기록합니다.
+- 스크립트로 재현 가능한 작업은 노트북이 아니라 `scripts/`에 둡니다.
 
 ### 데이터 누수 방지
 
 - train/validation/test 분리 후 전처리 기준을 학습 데이터에서만 계산합니다.
-- 시계열 rolling/lag 피처는 미래 값을 참조하지 않도록 `shift(1)` 이후 계산합니다.
-- 인코더, 스케일러, imputing 파라미터는 학습 데이터에만 fit합니다.
+- 인코더·스케일러·imputing 파라미터는 학습 데이터에만 fit합니다.
+- 시계열 rolling/lag 피처는 `shift(1)` 이후 계산합니다.
+
+### 재발명 금지
+
+- 새 정제·분류 로직을 만들기 전에 `src/`와 기존 노트북, `reports/`의 계획 문서에 같은 목적의 함수가 있는지 먼저 확인합니다.
+- 특히 세부사업명 정제(`classify_row`, `flatten_header` 등)는 여러 작업에서 공통으로 재사용하는 대상입니다.
+- 기존 로직을 그대로 쓸 수 없다면 그 이유를 주석이나 문서에 남깁니다.
 
 ### 설명 가능한 결과
 
-- 모델 성능뿐 아니라 데이터 가정, 한계, 실패 사례를 함께 기록합니다.
-- 복잡한 모델을 쓰기 전에 단순한 baseline을 먼저 만듭니다.
-- 중요한 판단은 노트북, 이슈, PR 설명 중 한 곳에 남깁니다.
+- 성능 수치뿐 아니라 데이터 가정, 한계, 실패 사례를 함께 기록합니다.
+- 복잡한 모델보다 단순한 baseline을 먼저 만듭니다.
+- QA 불일치는 숨기지 않고 원인을 규명해 문서에 남깁니다.
 
 ---
 
-## GitHub 자동화
+## 작업 흐름
 
-| 워크플로우 | 트리거 | 내용 |
-|-----------|--------|------|
-| `ci.yml` | push/PR to `main` | ruff lint, ruff format check, pytest |
-| `changelog.yml` | `main` push | `CHANGELOG.md` 자동 생성 |
+1. GitHub Issue에 목표, 대상 데이터, 성공 기준을 적습니다.
+2. 브랜치를 만듭니다. (`git checkout -b feat/{날짜}_#{이슈번호}_{요약}`)
+3. 탐색·검증은 `notebooks/`, 반복 실행할 코드는 `scripts/`와 `src/`로 옮깁니다.
+4. 중요한 로직에는 `tests/`에 테스트를 추가합니다.
+5. 결과와 판단 근거를 `reports/`에 문서로 남깁니다.
+6. PR을 열고 체크리스트를 확인합니다.
 
-변경 이력은 README에 직접 삽입하지 않고, 별도 [`CHANGELOG.md`](CHANGELOG.md) 파일로 관리합니다.
-
----
-
-## PR 제목 예시
-
-PR 제목 형식은 강제하지 않지만, 아래처럼 작업 성격이 드러나게 쓰는 것을 권장합니다.
+PR 제목은 형식을 강제하지 않지만 작업 성격이 드러나게 씁니다.
 
 | 예시 | 사용 시점 |
 |------|----------|
-| `experiment: baseline 모델 비교` | 새 분석 실험 |
 | `feat: 시계열 lag 피처 추가` | 기능 또는 분석 함수 추가 |
 | `fix: PSI 계산의 0 나눗셈 처리` | 버그 수정 |
 | `docs: 데이터 수집 절차 정리` | 문서 변경 |
@@ -242,24 +277,28 @@ PR 제목 형식은 강제하지 않지만, 아래처럼 작업 성격이 드러
 
 ---
 
-## Claude Code 연동
+## GitHub 자동화
 
-`CLAUDE.md`와 `.claude/` 폴더는 Claude Code에서 프로젝트 맥락을 자동으로 읽을 수 있도록 만든 설정입니다.
+| 워크플로우 | 트리거 | 내용 |
+|-----------|--------|------|
+| `ci.yml` | `main` push / PR | ruff lint, ruff format check, pytest |
+| `changelog.yml` | `main` push | `CHANGELOG.md` 자동 생성 |
+| `issue-helper-private-repo.yml` | 이슈 생성 시, 또는 이슈 **제목**이 수정될 때 | 브랜치명·커밋 메시지 제안 코멘트 작성 (본문만 수정한 경우에는 동작하지 않음) |
+| `sync-labels.yml` | `.github/labels.yml`이 변경된 `main` push / 수동 실행 | `labels.yml` 기준으로 라벨 동기화. `skip-delete: false`이므로 **정의에 없는 기존 라벨은 삭제**됨 |
 
-포함된 내용:
-
-- 데이터 분석 프로젝트의 기본 원칙
-- 역할별 서브에이전트 설정
-- `/timeseries`, `/tabular`, `/gis`, `/regression`, `/ml`, `/visualization` 같은 분석용 슬래시 커맨드
-- 민감 파일 접근 제한과 작업 규칙
-
-Claude Code를 사용하지 않아도 프로젝트 실행에는 문제가 없습니다. 다른 에디터나 코딩 에이전트를 쓰는 경우에도 `CLAUDE.md`를 분석 가이드 문서로 참고할 수 있습니다.
+변경 이력은 README에 넣지 않고 [`CHANGELOG.md`](CHANGELOG.md)로 관리합니다.
 
 ---
 
-## 변경 이력
+## Claude Code 연동
 
-변경 이력은 [`CHANGELOG.md`](CHANGELOG.md)에서 확인할 수 있습니다.
+`CLAUDE.md`와 `.claude/`는 Claude Code가 프로젝트 맥락과 작업 규칙을 자동으로 읽도록 만든 설정입니다. 분석 원칙, 역할별 서브에이전트, `/timeseries`·`/tabular`·`/gis`·`/regression`·`/ml`·`/visualization` 슬래시 커맨드가 포함되어 있습니다.
+
+`scripts/sync_template.sh`는 **스크립트가 있는 저장소를 원본으로 삼아** `.claude/`의 `rules`·`agents`·`commands`·`skills`와 `.github/workflows/`를 `scripts/projects.txt`에 절대 경로로 등록된 프로젝트로 복사합니다. 현재 `projects.txt`에 이 저장소는 포함되어 있지 않습니다.
+
+`rsync --delete`를 사용하므로 **위 대상 디렉터리 안에서 원본에 없는 파일은 삭제됩니다.** 대상 프로젝트에만 있던 규칙·커맨드·워크플로우가 사라질 수 있으니, 실행 전 `projects.txt`의 경로 목록을 확인하세요.
+
+Claude Code를 쓰지 않아도 프로젝트 실행에는 문제가 없습니다.
 
 ---
 
