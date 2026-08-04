@@ -52,6 +52,22 @@ def test_intermediate_missing_linear_interpolation():
     ).all()
 
 
+def test_intermediate_missing_uses_year_distance_without_creating_rows():
+    df = pd.DataFrame(
+        {
+            "지역": ["부산"] * 3,
+            "세부지표": ["지표"] * 3,
+            "연도": [2018, 2019, 2022],
+            "측정값": [10.0, None, 18.0],
+        }
+    )
+
+    result = process_structural_indicator_panel(df)
+
+    assert result["연도"].tolist() == [2018, 2019, 2022]
+    assert result.loc[result["연도"].eq(2019), "processed_value"].iloc[0] == pytest.approx(12.0)
+
+
 def test_leading_missing_holds_first_observed():
     df = pd.DataFrame(
         {
@@ -192,6 +208,64 @@ def test_structural_missing_preserved_with_flag():
     assert not bool(result.loc[result["연도"].eq(2019), "include_in_analysis"].iloc[0])
 
 
+def test_structural_missing_boundary_preserves_each_interpolation_segment():
+    df = pd.DataFrame(
+        {
+            "지역": ["강원"] * 7,
+            "세부지표": ["지표"] * 7,
+            "연도": list(range(2017, 2024)),
+            "측정값": [1.0, None, 3.0, None, 5.0, None, 7.0],
+            "원자료_자체결측": [False, False, False, True, False, False, False],
+        }
+    )
+
+    result = process_structural_indicator_panel(
+        df,
+        structural_missing_col="원자료_자체결측",
+    )
+    interpolated = result.loc[result["연도"].isin([2018, 2022])]
+    structural = result.loc[result["연도"].eq(2020)].iloc[0]
+
+    assert interpolated["processed_value"].tolist() == [2.0, 6.0]
+    assert interpolated["missing_type"].eq(MissingType.INTERMEDIATE.value).all()
+    assert (
+        interpolated["processing_strategy"].eq(ProcessingStrategy.LINEAR_INTERPOLATION.value).all()
+    )
+    assert interpolated["is_imputed"].all()
+    assert interpolated["include_in_analysis"].all()
+    assert pd.isna(structural["processed_value"])
+    assert structural["missing_type"] == MissingType.STRUCTURAL.value
+    assert structural["processing_strategy"] == ProcessingStrategy.STRUCTURAL_MISSING.value
+    assert not bool(structural["is_imputed"])
+    assert not bool(structural["include_in_analysis"])
+
+
+def test_unfillable_missing_next_to_structural_boundary_is_excluded():
+    df = pd.DataFrame(
+        {
+            "지역": ["강원"] * 5,
+            "세부지표": ["지표"] * 5,
+            "연도": list(range(2017, 2022)),
+            "측정값": [1.0, None, None, None, 5.0],
+            "원자료_자체결측": [False, False, True, False, False],
+        }
+    )
+
+    result = process_structural_indicator_panel(
+        df,
+        structural_missing_col="원자료_자체결측",
+    )
+    unfillable = result.loc[result["연도"].isin([2018, 2020])]
+
+    assert unfillable["processed_value"].isna().all()
+    assert unfillable["missing_type"].eq(MissingType.INTERMEDIATE.value).all()
+    assert (
+        unfillable["processing_strategy"].eq(ProcessingStrategy.EXCLUDE_ANALYSIS_PERIOD.value).all()
+    )
+    assert (~unfillable["is_imputed"]).all()
+    assert (~unfillable["include_in_analysis"]).all()
+
+
 def test_processing_isolated_across_regions_and_indicators():
     df = pd.DataFrame(
         {
@@ -206,11 +280,14 @@ def test_processing_isolated_across_regions_and_indicators():
 
     seoul_2020 = result.query("지역 == '서울' and 세부지표 == '지표A' and 연도 == 2020").iloc[0]
     busan_2019 = result.query("지역 == '부산' and 세부지표 == '지표A' and 연도 == 2019").iloc[0]
+    busan_2020 = result.query("지역 == '부산' and 세부지표 == '지표B' and 연도 == 2020").iloc[0]
 
     assert pd.isna(seoul_2020["processed_value"])
     assert not bool(seoul_2020["include_in_analysis"])
     assert pd.isna(busan_2019["processed_value"])
     assert not bool(busan_2019["include_in_analysis"])
+    assert busan_2020["processed_value"] == 2.0
+    assert not bool(busan_2020["include_in_analysis"])
 
 
 def test_unsorted_input_is_sorted_by_year():
@@ -235,6 +312,20 @@ def test_duplicate_region_indicator_year_raises():
             "지역": ["대전", "대전"],
             "세부지표": ["지표", "지표"],
             "연도": [2020, 2020],
+            "측정값": [1.0, 2.0],
+        }
+    )
+
+    with pytest.raises(ValueError, match="중복된 지역·지표·연도 입력"):
+        process_structural_indicator_panel(df)
+
+
+def test_duplicate_region_indicator_normalized_year_raises():
+    df = pd.DataFrame(
+        {
+            "지역": ["대전", "대전"],
+            "세부지표": ["지표", "지표"],
+            "연도": ["2020", 2020],
             "측정값": [1.0, 2.0],
         }
     )
@@ -316,27 +407,3 @@ def test_trend_extrapolation_callback_contract():
             leading_strategy=ExtrapolationStrategy.TREND,
             trend_extrapolation_func=callback_with_na,
         )
-
-
-def test_isolated_region_indicator_paneling():
-    df = pd.DataFrame(
-        {
-            "지역": ["서울", "서울", "부산", "부산"],
-            "세부지표": ["지표A", "지표A", "지표A", "지표B"],
-            "연도": [2019, 2020, 2019, 2020],
-            "측정값": [1.0, None, None, 2.0],
-        }
-    )
-
-    result = process_structural_indicator_panel(df)
-
-    seoul_2020 = result.query("지역 == '서울' and 세부지표 == '지표A' and 연도 == 2020").iloc[0]
-    busan_2019 = result.query("지역 == '부산' and 세부지표 == '지표A' and 연도 == 2019").iloc[0]
-    busan_2020 = result.query("지역 == '부산' and 세부지표 == '지표B' and 연도 == 2020").iloc[0]
-
-    assert pd.isna(seoul_2020["processed_value"])
-    assert not bool(seoul_2020["include_in_analysis"])
-    assert pd.isna(busan_2019["processed_value"])
-    assert not bool(busan_2019["include_in_analysis"])
-    assert busan_2020["processed_value"] == 2.0
-    assert not bool(busan_2020["include_in_analysis"])

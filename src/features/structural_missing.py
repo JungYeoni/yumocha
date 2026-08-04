@@ -75,8 +75,14 @@ def _materialize_output_names(output_column_map: dict[str, str] | None) -> dict[
 
 def _interpolate_segment(
     series: pd.Series,
+    years: pd.Series,
 ) -> pd.Series:
-    return series.interpolate(method="linear", limit_area="inside")
+    original_index = series.index
+    by_year = series.copy()
+    by_year.index = pd.Index(years.to_numpy())
+    interpolated = by_year.interpolate(method="index", limit_area="inside")
+    interpolated.index = original_index
+    return interpolated
 
 
 def _validate_trend_extrapolation_series(
@@ -175,7 +181,6 @@ def process_structural_indicator_panel(
     if structural_missing_col:
         required_columns.append(structural_missing_col)
     _require_columns(df, required_columns, source_name="process_structural_indicator_panel")
-    _validate_panel_uniqueness(df, region_col, indicator_col, year_col)
 
     expected_years_set = None
     if expected_years is not None:
@@ -185,6 +190,7 @@ def process_structural_indicator_panel(
 
     result = df.copy()
     result[year_col] = pd.to_numeric(result[year_col], errors="raise").astype(int)
+    _validate_panel_uniqueness(result, region_col, indicator_col, year_col)
 
     values = pd.to_numeric(result[value_col], errors="raise")
     result[value_col] = values
@@ -326,15 +332,17 @@ def process_structural_indicator_panel(
         group_result.loc[structural_mask, output_names["include_in_analysis"]] = False
 
         processed = group_result[value_col].copy()
-        boundary = structural_missing | structural_missing.shift(-1, fill_value=False)
-        segment_id = boundary.cumsum()
+        segment_id = structural_missing.cumsum()
         for _, segment in group_result.groupby(segment_id, sort=False):
             if segment[output_names["is_structural_missing"]].all():
                 continue
             segment_target = segment[value_col].where(
                 ~segment[output_names["is_structural_missing"]]
             )
-            processed.loc[segment_target.index] = _interpolate_segment(segment_target)
+            processed.loc[segment_target.index] = _interpolate_segment(
+                segment_target,
+                segment[year_col],
+            )
 
         if leading_strategy == ExtrapolationStrategy.HOLD:
             first_value = group_result.loc[
@@ -373,6 +381,12 @@ def process_structural_indicator_panel(
                 target_years,
                 "trailing",
             ).to_numpy()
+
+        unprocessed_missing = nonstructural_missing & processed.isna()
+        group_result.loc[unprocessed_missing, output_names["processing_strategy"]] = (
+            ProcessingStrategy.EXCLUDE_ANALYSIS_PERIOD.value
+        )
+        group_result.loc[unprocessed_missing, output_names["include_in_analysis"]] = False
 
         group_result[output_names["processed_value"]] = processed
         imputed_mask = group_result[output_names["processed_value"]].notna() & ~observed
