@@ -54,6 +54,10 @@
 
 ### 문서
 
+- 예산 행 오연결 전수 감사 마무리 (#73) ([81e689a](https://github.com/JungYeoni/da-template/commit/81e689a87c935cbcefa72fff0720237ecb56c9d9))
+- 예산 계보 차이 진단 추가 (#73) ([8bf1186](https://github.com/JungYeoni/da-template/commit/8bf1186e6e5b8346d36778cb6c0c1ceb0fc355d5))
+- 예산 데이터 계보와 입력 완전성 점검 (#73) ([f408b7b](https://github.com/JungYeoni/da-template/commit/f408b7b4581d2e4ee581384da2fba8a77a668474))
+- CHANGELOG 자동 업데이트 [skip ci] ([81e68e8](https://github.com/JungYeoni/da-template/commit/81e68e8c1355269cc4be9ff9078cc90b1dba17c3))
 - README를 프로젝트 소개 중심으로 재구성 ([e240d1d](https://github.com/JungYeoni/da-template/commit/e240d1d6e43fef44fd1ef5db4af306df1e7c0415))
 - CodeRabbit 리뷰 반영 — README 서술 정확도 보완 ([3171664](https://github.com/JungYeoni/da-template/commit/31716646f2721a16fc427b1c68cb7ea7016020e8))
 - README를 yumocha 프로젝트 기준으로 재작성 ([9a19e5d](https://github.com/JungYeoni/da-template/commit/9a19e5da0b02e2234fa4e6e13754e99e5121697a))
