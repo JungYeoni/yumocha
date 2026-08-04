@@ -1,0 +1,113 @@
+weights:
+  youth_employment_rate:
+    code: YER
+    name: 청년 고용률
+    weight: 0.032064128256513016
+  youth_regular_employment_rate:
+    code: YFRR
+    name: 청년층 정규직 근로자 비율
+    weight: 0.04308617234468936
+  work_hours:
+    code: AWH
+    name: 근로시간
+    weight: 0.027054108216432858
+  housing_price:
+    code: APH
+    name: 주택가격
+    weight: 0.02905811623246492
+  household_own_occupancy_rate:
+    code: OOR
+    name: 자가점유비율
+    weight: 0.01703406813627254
+  renter_household_annual_housing_cost_hcc:
+    code: HCC
+    name: 주거비
+    weight: 0.03807615230460921
+  income_satisfaction:
+    code: ISS
+    name: 소득 만족도
+    weight: 0.054108216432865716
+  income_level:
+    code: PINC
+    name: 소득 수준
+    weight: 0.08016032064128253
+  childcare_capacity_rate:
+    code: CFR
+    name: 보육시설 보급률
+    weight: 0.07314629258517032
+  after_school_care_supply:
+    code: ACSR
+    name: 방과후 돌봄시설 보급도
+    weight: 0.05811623246492984
+  private_education_cost:
+    code: PES
+    name: 사교육비 지출액
+    weight: 0.03807615230460921
+  cultural_facilities_supply:
+    code: CIPR
+    name: 문화기반시설 보급도
+    weight: 0.011022044088176348
+  urban_park_supply:
+    code: UPSR
+    name: 도시공원 보급도
+    weight: 0.0060120240480961915
+  leisure_satisfaction:
+    code: LLS
+    name: 여가생활 만족도
+    weight: 0.010020040080160317
+  household_chore_equal_participation:
+    code: HPR
+    name: 가사노동 공동 참여도
+    weight: 0.024048096192384762
+  childcare_equal_participation:
+    code: CPR
+    name: 돌봄노동 공동 참여도
+    weight: 0.031062124248496983
+  delivery_bed_supply:
+    code: DOCR
+    name: 분만실 병상수 보급도
+    weight: 0.03803971579522681
+  pediatric_specialist_supply:
+    code: PCCR
+    name: 소아청소년과 전문인력 보급도
+    weight: 0.03410457278192748
+  postpartum_center_supply:
+    code: PPCS
+    name: 산후조리원 보급도
+    weight: 0.014028056112224444
+  postpartum_center_fee:
+    code: PPCF
+    name: 산후조리원 이용 요금
+    weight: 0.02304609218436873
+  child_traffic_accident_rate:
+    code: TRA
+    name: 어린이 교통사고 발생률
+    weight: 0.017234468937875745
+  social_safety_perception:
+    code: PSS
+    name: 사회 안전에 대한 인식
+    weight: 0.025851703406813614
+  parental_leave_usage:
+    code: PLR
+    name: 육아휴직 사용률
+    weight: 0.09986639946559783
+  family_friendly_certification_rate:
+    code: FCR
+    name: 가족친화인증기업 비율
+    weight: 0.0434201736806947
+  marriage_perception:
+    code: POM
+    name: 결혼에 대한 인식
+    weight: 0.03006012024048095
+  childbirth_perception:
+    code: POC
+    name: 출산에 대한 인식
+    weight: 0.05210420841683365
+  housework_gender_equality:
+    code: GPEH
+    name: 가사분담에 대한 성평등 인식
+    weight: 0.032064128256513016
+  socioeconomic_status_perception:
+    code: SESP
+    name: 사회경제적 지위에 대한 인식
+    weight: 0.01803607214428857
