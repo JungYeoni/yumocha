@@ -17,8 +17,12 @@ This script fills those 5 national rows from two independently verifiable offici
   (`DENOMINATOR_SOURCE`), plus a 2016-only workbook that was not previously wired into this
   pipeline.
 
-It never touches the panel or the 37-row confirmed/candidate tables produced by
-`build_family_friendly_candidates.py`; it only emits a new, separately-scoped artifact.
+It never touches the 37-row confirmed/candidate tables produced by
+`build_family_friendly_candidates.py`. Merging these 5 values into the integrated panel and the
+missing-policy mapping is optional and only runs when `--panel`/`--mapping` are passed and exist
+(as of 2026-08-05 neither file exists on every machine — the panel is a local, gitignored,
+notebook-generated artifact) — see `apply_national_observations_to_panel` and
+`remove_resolved_rows_from_mapping`.
 """
 
 from __future__ import annotations
@@ -134,6 +138,95 @@ def build_national_candidates(
     return candidates
 
 
+def apply_national_observations_to_panel(
+    panel: pd.DataFrame, candidates: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Apply the 5 verified national observations to the 28-indicator long panel.
+
+    `panel` must be the long-format `[지역, 지표_id, 연도, 측정값, ...]` table consumed by
+    `build_structural_missing_policy.py` (`REQUIRED_PANEL_COLUMNS`), not the 21-indicator wide
+    table `apply_confirmed_observations` in `build_family_friendly_candidates.py` operates on.
+    Only currently-missing cells may be filled; an existing non-missing value that disagrees
+    with the candidate raises, mirroring the discipline of that province-level function.
+    """
+    required = {"지역", "지표_id", "연도", "측정값"}
+    missing_columns = required - set(panel.columns)
+    if missing_columns:
+        raise ValueError(f"패널 필수 열 누락: {sorted(missing_columns, key=str)}")
+    keys = ["지역", "지표_id", "연도"]
+    if len(candidates) != 5 or candidates.duplicated(keys).any():
+        raise ValueError("전국 후보표는 중복 없는 5개 키여야 합니다.")
+    if not candidates["지역"].eq("전국").all():
+        raise ValueError("전국 후보표에 전국 이외 지역이 포함됐습니다.")
+    if not candidates["QA_상태"].eq("PASS").all():
+        raise ValueError("QA를 통과하지 않은 후보값은 반영할 수 없습니다.")
+
+    result = panel.copy()
+    audit_rows = []
+    for row in candidates.to_dict("records"):
+        mask = (
+            result["지역"].eq(row["지역"])
+            & result["지표_id"].eq(row["지표_id"])
+            & result["연도"].eq(row["연도"])
+        )
+        matched = int(mask.sum())
+        if matched != 1:
+            raise ValueError(
+                f"전국 후보 반영 키가 1개가 아닙니다({matched}개): {row['지역']}, {row['연도']}"
+            )
+        before = result.loc[mask, "측정값"].iloc[0]
+        acceptable = pd.isna(before) or np.isclose(
+            float(before), float(row["측정값"]), rtol=0, atol=1e-15
+        )
+        if not acceptable:
+            raise ValueError(f"전국 직접 복원 대상의 기존 패널값이 예상과 다릅니다: {row['연도']}")
+        result.loc[mask, "측정값"] = float(row["측정값"])
+        if "원본행존재" in result.columns:
+            result.loc[mask, "원본행존재"] = True
+        audit_rows.append(
+            {
+                "지역": row["지역"],
+                "지표_id": row["지표_id"],
+                "연도": row["연도"],
+                "반영전값": before,
+                "반영후값": float(row["측정값"]),
+                "반영유형": row["반영유형"],
+                "관측상태": row["관측상태"],
+                "QA_상태": "PASS",
+            }
+        )
+    return result, pd.DataFrame(audit_rows)
+
+
+def remove_resolved_rows_from_mapping(
+    mapping: pd.DataFrame, candidates: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Drop the 5 now-observed national keys from the missing-policy mapping.
+
+    Observed cells are not represented in the mapping at all (the 34 already-restored
+    province-level 2020/2021 rows follow the same pattern), so once the panel has real values
+    for these 5 keys, the mapping's matching rows must disappear rather than keep a stale
+    `pending_review` policy. Raises if the mapping doesn't have exactly the 5 expected rows
+    already blocked, so this cannot silently drop something unexpected.
+    """
+    keys = ["지역", "지표_id", "연도"]
+    candidate_keys = candidates[keys]
+    mask = (
+        mapping["지역"].eq("전국")
+        & mapping["지표_id"].eq(INDICATOR_ID)
+        & mapping["연도"].isin(candidates["연도"])
+    )
+    matched = mapping.loc[mask]
+    if len(matched) != 5:
+        raise ValueError(f"매핑에서 제거 대상 전국 5건과 일치하지 않습니다: {len(matched)}건")
+    if not matched.merge(candidate_keys, on=keys, how="inner").shape[0] == 5:
+        raise ValueError("매핑의 전국 행 키가 후보표 키와 정확히 대응하지 않습니다.")
+    if not (matched["block_imputation"] & matched["imputation_policy"].eq("pending_review")).all():
+        raise ValueError("제거 대상 행이 예상한 pending_review/block_imputation 상태가 아닙니다.")
+
+    return mapping.loc[~mask].reset_index(drop=True), matched.reset_index(drop=True)
+
+
 def render_report(candidates: pd.DataFrame, qa: pd.DataFrame) -> str:
     lines = [
         "# 가족친화 인증기업 비율 전국 직접 복원 QA",
@@ -184,11 +277,18 @@ def render_report(candidates: pd.DataFrame, qa: pd.DataFrame) -> str:
             "",
             "- 17개 시도 × 2016·2017·2019 = 51건은 이 스크립트로 풀리지 않는다. "
             "이 표는 전국 합계 1개 값이라 지역별 분해가 없다.",
-            "- 이 후보 CSV는 결측정책 매핑이나 통합 패널에 아직 병합되지 않았다. "
-            "병합은 별도 검토 후 진행한다.",
+            "- `--panel`/`--mapping`을 실제 파일 경로로 넘기면 "
+            "`apply_national_observations_to_panel`/`remove_resolved_rows_from_mapping`으로 "
+            "이 5건을 실제 패널·매핑에 반영한다. 인자를 생략하면 후보 CSV만 생성하고 "
+            "패널·매핑은 건드리지 않는다(2026-08-05 기준 패널 파일은 이 저장소의 모든 "
+            "환경에 있지 않은 gitignored 로컬 산출물이다).",
         ]
     )
     return "\n".join(lines) + "\n"
+
+
+PANEL_AUDIT_PATH = REPO_ROOT / "reports" / "20260805_가족친화_전국_패널반영_QA.csv"
+MAPPING_REMOVED_PATH = REPO_ROOT / "reports" / "20260805_가족친화_전국_매핑제거_QA.csv"
 
 
 def parse_args() -> argparse.Namespace:
@@ -197,6 +297,32 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--candidate-output", type=Path, default=CANDIDATE_PATH)
     parser.add_argument("--qa-output", type=Path, default=QA_PATH)
     parser.add_argument("--report-output", type=Path, default=REPORT_PATH)
+    parser.add_argument(
+        "--panel",
+        type=Path,
+        default=None,
+        help="28개 지표 통합 패널 CSV. 존재할 때만 전국 5건을 반영한다(기본: 반영 안 함).",
+    )
+    parser.add_argument(
+        "--panel-output",
+        type=Path,
+        default=None,
+        help="갱신된 패널 저장 경로. 생략하면 --panel 경로를 덮어쓴다.",
+    )
+    parser.add_argument("--panel-audit-output", type=Path, default=PANEL_AUDIT_PATH)
+    parser.add_argument(
+        "--mapping",
+        type=Path,
+        default=None,
+        help="결측정책 전수매핑 CSV. 존재할 때만 해소된 전국 5행을 제거한다(기본: 반영 안 함).",
+    )
+    parser.add_argument(
+        "--mapping-output",
+        type=Path,
+        default=None,
+        help="갱신된 매핑 저장 경로. 생략하면 --mapping 경로를 덮어쓴다.",
+    )
+    parser.add_argument("--mapping-removed-output", type=Path, default=MAPPING_REMOVED_PATH)
     return parser.parse_args()
 
 
@@ -223,6 +349,30 @@ def main() -> None:
     print(f"전국 후보 저장: {args.candidate_output} ({len(candidates)}행)")
     print(f"QA 저장: {args.qa_output} ({len(qa)}개 PASS)")
     print(f"보고서 저장: {args.report_output}")
+
+    if args.panel is not None and args.panel.exists():
+        panel = pd.read_csv(args.panel)
+        updated_panel, panel_audit = apply_national_observations_to_panel(panel, candidates)
+        panel_output = args.panel_output or args.panel
+        args.panel_audit_output.parent.mkdir(parents=True, exist_ok=True)
+        updated_panel.to_csv(panel_output, index=False, encoding="utf-8-sig")
+        panel_audit.to_csv(args.panel_audit_output, index=False, encoding="utf-8-sig")
+        print(f"패널 반영 완료: {panel_output} ({len(panel_audit)}행 갱신)")
+        print(f"패널 반영 감사표: {args.panel_audit_output}")
+    else:
+        print("패널 인자 없음/미존재 — 패널 반영 생략")
+
+    if args.mapping is not None and args.mapping.exists():
+        mapping = pd.read_csv(args.mapping)
+        updated_mapping, removed = remove_resolved_rows_from_mapping(mapping, candidates)
+        mapping_output = args.mapping_output or args.mapping
+        args.mapping_removed_output.parent.mkdir(parents=True, exist_ok=True)
+        updated_mapping.to_csv(mapping_output, index=False, encoding="utf-8-sig")
+        removed.to_csv(args.mapping_removed_output, index=False, encoding="utf-8-sig")
+        print(f"매핑 갱신 완료: {mapping_output} ({len(removed)}행 제거)")
+        print(f"매핑 제거 감사표: {args.mapping_removed_output}")
+    else:
+        print("매핑 인자 없음/미존재 — 매핑 갱신 생략")
 
 
 if __name__ == "__main__":
