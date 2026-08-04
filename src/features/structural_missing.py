@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass
 from enum import Enum
 
 import pandas as pd
@@ -48,9 +47,7 @@ DEFAULT_OUTPUT_COLUMNS = {
 def _require_columns(df: pd.DataFrame, required: Iterable[str], source_name: str) -> None:
     missing = [col for col in required if col not in df.columns]
     if missing:
-        raise KeyError(
-            f"{source_name}: 필수 컬럼 누락 {missing} (실제 컬럼: {list(df.columns)})"
-        )
+        raise KeyError(f"{source_name}: 필수 컬럼 누락 {missing} (실제 컬럼: {list(df.columns)})")
 
 
 def _validate_panel_uniqueness(
@@ -66,9 +63,7 @@ def _validate_panel_uniqueness(
             .drop_duplicates()
             .to_dict(orient="records")
         )
-        raise ValueError(
-            f"중복된 지역·지표·연도 입력이 있습니다: {duplicate_keys}"
-        )
+        raise ValueError(f"중복된 지역·지표·연도 입력이 있습니다: {duplicate_keys}")
 
 
 def _materialize_output_names(output_column_map: dict[str, str] | None) -> dict[str, str]:
@@ -244,7 +239,9 @@ def process_structural_indicator_panel(
 
         if observed_count == 1:
             group_result.loc[observed, output_names["missing_type"]] = MissingType.SINGLE_YEAR.value
-            group_result.loc[observed, output_names["processing_strategy"]] = ProcessingStrategy.EXCLUDE_SINGLE_YEAR_SERIES.value
+            group_result.loc[observed, output_names["processing_strategy"]] = (
+                ProcessingStrategy.EXCLUDE_SINGLE_YEAR_SERIES.value
+            )
             group_result.loc[observed, output_names["include_in_analysis"]] = False
 
             first_observed_year = int(group_result.loc[observed, year_col].iloc[0])
@@ -253,14 +250,28 @@ def process_structural_indicator_panel(
             interior_mask = nonstructural_missing & ~(leading_mask | trailing_mask)
 
             group_result.loc[leading_mask, output_names["missing_type"]] = MissingType.LEADING.value
-            group_result.loc[trailing_mask, output_names["missing_type"]] = MissingType.TRAILING.value
-            group_result.loc[interior_mask, output_names["missing_type"]] = MissingType.INTERMEDIATE.value
-            group_result.loc[structural_mask, output_names["missing_type"]] = MissingType.STRUCTURAL.value
+            group_result.loc[trailing_mask, output_names["missing_type"]] = (
+                MissingType.TRAILING.value
+            )
+            group_result.loc[interior_mask, output_names["missing_type"]] = (
+                MissingType.INTERMEDIATE.value
+            )
+            group_result.loc[structural_mask, output_names["missing_type"]] = (
+                MissingType.STRUCTURAL.value
+            )
 
-            group_result.loc[leading_mask, output_names["processing_strategy"]] = ProcessingStrategy.EXCLUDE_ANALYSIS_PERIOD.value
-            group_result.loc[trailing_mask, output_names["processing_strategy"]] = ProcessingStrategy.EXCLUDE_ANALYSIS_PERIOD.value
-            group_result.loc[interior_mask, output_names["processing_strategy"]] = ProcessingStrategy.EXCLUDE_ANALYSIS_PERIOD.value
-            group_result.loc[structural_mask, output_names["processing_strategy"]] = ProcessingStrategy.STRUCTURAL_MISSING.value
+            group_result.loc[leading_mask, output_names["processing_strategy"]] = (
+                ProcessingStrategy.EXCLUDE_ANALYSIS_PERIOD.value
+            )
+            group_result.loc[trailing_mask, output_names["processing_strategy"]] = (
+                ProcessingStrategy.EXCLUDE_ANALYSIS_PERIOD.value
+            )
+            group_result.loc[interior_mask, output_names["processing_strategy"]] = (
+                ProcessingStrategy.EXCLUDE_ANALYSIS_PERIOD.value
+            )
+            group_result.loc[structural_mask, output_names["processing_strategy"]] = (
+                ProcessingStrategy.STRUCTURAL_MISSING.value
+            )
 
             group_result.loc[leading_mask, output_names["include_in_analysis"]] = False
             group_result.loc[trailing_mask, output_names["include_in_analysis"]] = False
@@ -274,7 +285,9 @@ def process_structural_indicator_panel(
         last_observed_year = int(group_result.loc[observed, year_col].max())
 
         group_result.loc[observed, output_names["missing_type"]] = MissingType.OBSERVED.value
-        group_result.loc[observed, output_names["processing_strategy"]] = ProcessingStrategy.NONE.value
+        group_result.loc[observed, output_names["processing_strategy"]] = (
+            ProcessingStrategy.NONE.value
+        )
         group_result.loc[observed, output_names["include_in_analysis"]] = True
 
         leading_mask = nonstructural_missing & group_result[year_col].lt(first_observed_year)
@@ -283,17 +296,25 @@ def process_structural_indicator_panel(
 
         group_result.loc[leading_mask, output_names["missing_type"]] = MissingType.LEADING.value
         group_result.loc[trailing_mask, output_names["missing_type"]] = MissingType.TRAILING.value
-        group_result.loc[interior_mask, output_names["missing_type"]] = MissingType.INTERMEDIATE.value
-        group_result.loc[structural_mask, output_names["missing_type"]] = MissingType.STRUCTURAL.value
+        group_result.loc[interior_mask, output_names["missing_type"]] = (
+            MissingType.INTERMEDIATE.value
+        )
+        group_result.loc[structural_mask, output_names["missing_type"]] = (
+            MissingType.STRUCTURAL.value
+        )
 
-        group_result.loc[leading_mask, output_names["processing_strategy"]] = _build_processing_strategy_label(
-            leading_strategy, "leading"
+        group_result.loc[leading_mask, output_names["processing_strategy"]] = (
+            _build_processing_strategy_label(leading_strategy, "leading")
         )
-        group_result.loc[trailing_mask, output_names["processing_strategy"]] = _build_processing_strategy_label(
-            trailing_strategy, "trailing"
+        group_result.loc[trailing_mask, output_names["processing_strategy"]] = (
+            _build_processing_strategy_label(trailing_strategy, "trailing")
         )
-        group_result.loc[interior_mask, output_names["processing_strategy"]] = ProcessingStrategy.LINEAR_INTERPOLATION.value
-        group_result.loc[structural_mask, output_names["processing_strategy"]] = ProcessingStrategy.STRUCTURAL_MISSING.value
+        group_result.loc[interior_mask, output_names["processing_strategy"]] = (
+            ProcessingStrategy.LINEAR_INTERPOLATION.value
+        )
+        group_result.loc[structural_mask, output_names["processing_strategy"]] = (
+            ProcessingStrategy.STRUCTURAL_MISSING.value
+        )
 
         group_result.loc[interior_mask, output_names["include_in_analysis"]] = True
         group_result.loc[leading_mask, output_names["include_in_analysis"]] = (
@@ -310,11 +331,15 @@ def process_structural_indicator_panel(
         for _, segment in group_result.groupby(segment_id, sort=False):
             if segment[output_names["is_structural_missing"]].all():
                 continue
-            segment_target = segment[value_col].where(~segment[output_names["is_structural_missing"]])
+            segment_target = segment[value_col].where(
+                ~segment[output_names["is_structural_missing"]]
+            )
             processed.loc[segment_target.index] = _interpolate_segment(segment_target)
 
         if leading_strategy == ExtrapolationStrategy.HOLD:
-            first_value = group_result.loc[group_result[year_col] == first_observed_year, value_col].iloc[0]
+            first_value = group_result.loc[
+                group_result[year_col] == first_observed_year, value_col
+            ].iloc[0]
             processed.loc[leading_mask] = first_value
         elif leading_strategy == ExtrapolationStrategy.TREND:
             if trend_extrapolation_func is None:
@@ -331,7 +356,9 @@ def process_structural_indicator_panel(
             ).to_numpy()
 
         if trailing_strategy == ExtrapolationStrategy.HOLD:
-            last_value = group_result.loc[group_result[year_col] == last_observed_year, value_col].iloc[0]
+            last_value = group_result.loc[
+                group_result[year_col] == last_observed_year, value_col
+            ].iloc[0]
             processed.loc[trailing_mask] = last_value
         elif trailing_strategy == ExtrapolationStrategy.TREND:
             if trend_extrapolation_func is None:

@@ -24,8 +24,8 @@ def test_observed_values_are_preserved():
     assert result.loc[result["연도"].eq(2020), "processed_value"].iloc[0] == 1.0
     assert result.loc[result["연도"].eq(2021), "processed_value"].iloc[0] == 2.0
     assert (result["missing_type"] == MissingType.OBSERVED.value).all()
-    assert (result["is_imputed"] == False).all()
-    assert (result["include_in_analysis"] == True).all()
+    assert (~result["is_imputed"]).all()
+    assert result["include_in_analysis"].all()
 
 
 def test_intermediate_missing_linear_interpolation():
@@ -42,8 +42,14 @@ def test_intermediate_missing_linear_interpolation():
     interpolated = result.loc[result["연도"].isin([2020, 2021]), "processed_value"].tolist()
 
     assert interpolated == [2.0, 3.0]
-    assert (result.loc[result["연도"].isin([2020, 2021]), "missing_type"] == MissingType.INTERMEDIATE.value).all()
-    assert (result.loc[result["연도"].isin([2020, 2021]), "processing_strategy"] == ProcessingStrategy.LINEAR_INTERPOLATION.value).all()
+    assert (
+        result.loc[result["연도"].isin([2020, 2021]), "missing_type"]
+        == MissingType.INTERMEDIATE.value
+    ).all()
+    assert (
+        result.loc[result["연도"].isin([2020, 2021]), "processing_strategy"]
+        == ProcessingStrategy.LINEAR_INTERPOLATION.value
+    ).all()
 
 
 def test_leading_missing_holds_first_observed():
@@ -61,7 +67,10 @@ def test_leading_missing_holds_first_observed():
     assert result.loc[result["연도"].eq(2017), "processed_value"].iloc[0] == 5.0
     assert result.loc[result["연도"].eq(2020), "processed_value"].iloc[0] == 6.0
     assert result.loc[result["연도"].eq(2017), "missing_type"].iloc[0] == MissingType.LEADING.value
-    assert result.loc[result["연도"].eq(2017), "processing_strategy"].iloc[0] == ProcessingStrategy.HOLD_FIRST_OBSERVED.value
+    assert (
+        result.loc[result["연도"].eq(2017), "processing_strategy"].iloc[0]
+        == ProcessingStrategy.HOLD_FIRST_OBSERVED.value
+    )
 
 
 def test_leading_missing_trend_extrapolation_requires_function():
@@ -95,8 +104,13 @@ def test_trailing_missing_holds_last_observed():
 
     assert result.loc[result["연도"].eq(2019), "processed_value"].iloc[0] == 3.0
     assert result.loc[result["연도"].eq(2020), "processed_value"].iloc[0] == 3.0
-    assert (result.loc[result["연도"].isin([2019, 2020]), "missing_type"] == MissingType.TRAILING.value).all()
-    assert (result.loc[result["연도"].isin([2019, 2020]), "processing_strategy"] == ProcessingStrategy.HOLD_LAST_OBSERVED.value).all()
+    assert (
+        result.loc[result["연도"].isin([2019, 2020]), "missing_type"] == MissingType.TRAILING.value
+    ).all()
+    assert (
+        result.loc[result["연도"].isin([2019, 2020]), "processing_strategy"]
+        == ProcessingStrategy.HOLD_LAST_OBSERVED.value
+    ).all()
 
 
 def test_trailing_missing_exclude_analysis_period():
@@ -114,8 +128,11 @@ def test_trailing_missing_exclude_analysis_period():
         trailing_strategy=ExtrapolationStrategy.EXCLUDE,
     )
 
-    assert (result.loc[result["연도"].isin([2019, 2020]), "include_in_analysis"] == False).all()
-    assert (result.loc[result["연도"].isin([2019, 2020]), "processing_strategy"] == ProcessingStrategy.EXCLUDE_ANALYSIS_PERIOD.value).all()
+    assert (~result.loc[result["연도"].isin([2019, 2020]), "include_in_analysis"]).all()
+    assert (
+        result.loc[result["연도"].isin([2019, 2020]), "processing_strategy"]
+        == ProcessingStrategy.EXCLUDE_ANALYSIS_PERIOD.value
+    ).all()
 
 
 def test_single_year_series_excluded():
@@ -131,7 +148,7 @@ def test_single_year_series_excluded():
     result = process_structural_indicator_panel(df)
 
     assert result["missing_type"].iloc[0] == MissingType.SINGLE_YEAR.value
-    assert result["include_in_analysis"].iloc[0] == False
+    assert not bool(result["include_in_analysis"].iloc[0])
     assert result["processed_value"].iloc[0] == 3.5
 
 
@@ -168,9 +185,11 @@ def test_structural_missing_preserved_with_flag():
         structural_missing_col="원자료_자체결측",
     )
 
-    assert result.loc[result["연도"].eq(2019), "missing_type"].iloc[0] == MissingType.STRUCTURAL.value
+    assert (
+        result.loc[result["연도"].eq(2019), "missing_type"].iloc[0] == MissingType.STRUCTURAL.value
+    )
     assert pd.isna(result.loc[result["연도"].eq(2019), "processed_value"]).iloc[0]
-    assert result.loc[result["연도"].eq(2019), "include_in_analysis"].iloc[0] == False
+    assert not bool(result.loc[result["연도"].eq(2019), "include_in_analysis"].iloc[0])
 
 
 def test_processing_isolated_across_regions_and_indicators():
@@ -189,9 +208,9 @@ def test_processing_isolated_across_regions_and_indicators():
     busan_2019 = result.query("지역 == '부산' and 세부지표 == '지표A' and 연도 == 2019").iloc[0]
 
     assert pd.isna(seoul_2020["processed_value"])
-    assert seoul_2020["include_in_analysis"] == False
+    assert not bool(seoul_2020["include_in_analysis"])
     assert pd.isna(busan_2019["processed_value"])
-    assert busan_2019["include_in_analysis"] == False
+    assert not bool(busan_2019["include_in_analysis"])
 
 
 def test_unsorted_input_is_sorted_by_year():
@@ -254,8 +273,10 @@ def test_structural_missing_flag_coercion_and_invalid_value():
         structural_missing_col="원자료_자체결측",
     )
 
-    assert result.loc[result["연도"].eq(2019), "missing_type"].iloc[0] == MissingType.STRUCTURAL.value
-    assert result.loc[result["연도"].eq(2019), "include_in_analysis"].iloc[0] == False
+    assert (
+        result.loc[result["연도"].eq(2019), "missing_type"].iloc[0] == MissingType.STRUCTURAL.value
+    )
+    assert not bool(result.loc[result["연도"].eq(2019), "include_in_analysis"].iloc[0])
 
     df_invalid = df.copy()
     df_invalid.loc[0, "원자료_자체결측"] = "unknown"
@@ -314,8 +335,8 @@ def test_isolated_region_indicator_paneling():
     busan_2020 = result.query("지역 == '부산' and 세부지표 == '지표B' and 연도 == 2020").iloc[0]
 
     assert pd.isna(seoul_2020["processed_value"])
-    assert seoul_2020["include_in_analysis"] == False
+    assert not bool(seoul_2020["include_in_analysis"])
     assert pd.isna(busan_2019["processed_value"])
-    assert busan_2019["include_in_analysis"] == False
+    assert not bool(busan_2019["include_in_analysis"])
     assert busan_2020["processed_value"] == 2.0
-    assert busan_2020["include_in_analysis"] == False
+    assert not bool(busan_2020["include_in_analysis"])
