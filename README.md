@@ -24,7 +24,7 @@
 
 **데이터 취급 규칙**
 
-- `data/raw/`, `data/interim/`, `data/processed/`는 **git으로 추적하지 않습니다.** 원본과 중간 산출물은 Google Drive로 공유합니다.
+- `data/raw/`, `data/interim/`, `data/processed/`는 `.gitignore`에서 제외되어 **git으로 추적하지 않습니다.** 디렉터리 유지용 `.gitkeep`만 예외입니다. 원본과 중간 산출물은 Google Drive로 공유합니다.
 - `data/lookup/`의 소형 참조 CSV만 저장소에 포함됩니다.
 - 원본 파일은 수정하지 않고, 처리 결과만 `data/interim/` 또는 `data/processed/`에 씁니다.
 
@@ -51,7 +51,7 @@
 
 ### 2단계 — 텍스트 정규화와 LLM 보존형 정제
 
-세부사업명·주요내용의 불릿과 줄바꿈을 정규화하고, LLM 교정 결과가 **원문 의미를 훼손하지 않았는지** 별도로 감사합니다.
+세부사업명·주요내용의 불릿과 줄바꿈을 정규화하고, LLM 교정 결과가 **원문 의미를 훼손하지 않았는지** 별도 감사(audit) 절차로 검증합니다.
 
 - 모듈: `src/features/bullet_normalization.py`, `src/features/llm_refine.py`, `src/features/text_patterns.py`
 - 스크립트: `scripts/apply_{연도}_semantic_corrections.py`, `scripts/audit_llm_semantic_preservation.py`, `scripts/reapply_bullet_normalization.py`
@@ -78,7 +78,11 @@ uv run python scripts/predict_tfidf_area_classifier.py            # 추론
 - 계획 문서: `reports/planning/20260715_세부사업_영역분류_작업계획.md`
 - 최신 결과: `reports/20260803_2021_2024_통합_라벨_TFIDF_재학습_결과.md`
 
-원 계획의 대상 연도는 제4차 기본계획 기간인 **2021~2025년**이며, 이후 2021~2024년 확정 라벨로 학습해 **2016~2020년까지 예측을 확장**했습니다.
+계획 범위와 실제 처리 범위가 다릅니다.
+
+- **계획 범위**: 제4차 기본계획 기간인 2021~2025년
+- **실제 처리 범위**: 2016~2024년 — 2021~2024년 확정 라벨로 학습하고 2016~2020년을 예측했습니다.
+- **2025년은 제외**되어 있습니다. 원본 자료가 아직 수집되지 않아 정제·분류 어느 단계에도 들어가지 않았습니다.
 
 ### 5단계 — 구조환경지표 검증
 
@@ -228,8 +232,8 @@ PR 제목은 형식을 강제하지 않지만 작업 성격이 드러나게 씁�
 |-----------|--------|------|
 | `ci.yml` | `main` push / PR | ruff lint, ruff format check, pytest |
 | `changelog.yml` | `main` push | `CHANGELOG.md` 자동 생성 |
-| `issue-helper-private-repo.yml` | 이슈 생성·수정 | 이슈 정리 보조 |
-| `sync-labels.yml` | `main` push / 수동 실행 | 라벨 동기화 |
+| `issue-helper-private-repo.yml` | 이슈 생성 시, 또는 이슈 **제목**이 수정될 때 | 브랜치명·커밋 메시지 제안 코멘트 작성 (본문만 수정한 경우에는 동작하지 않음) |
+| `sync-labels.yml` | `.github/labels.yml`이 변경된 `main` push / 수동 실행 | `labels.yml` 기준으로 라벨 동기화. `skip-delete: false`이므로 **정의에 없는 기존 라벨은 삭제**됨 |
 
 변경 이력은 README에 넣지 않고 [`CHANGELOG.md`](CHANGELOG.md)로 관리합니다.
 
@@ -239,7 +243,9 @@ PR 제목은 형식을 강제하지 않지만 작업 성격이 드러나게 씁�
 
 `CLAUDE.md`와 `.claude/`는 Claude Code가 프로젝트 맥락과 작업 규칙을 자동으로 읽도록 만든 설정입니다. 분석 원칙, 역할별 서브에이전트, `/timeseries`·`/tabular`·`/gis`·`/regression`·`/ml`·`/visualization` 슬래시 커맨드가 포함되어 있습니다.
 
-`scripts/sync_template.sh`는 **스크립트가 있는 저장소를 원본으로 삼아** `.claude/`의 `rules`·`agents`·`commands`·`skills`와 `.github/workflows/`를 `scripts/projects.txt`에 등록된 프로젝트로 복사합니다(`rsync --delete`). 현재 `projects.txt`에 이 저장소는 포함되어 있지 않습니다.
+`scripts/sync_template.sh`는 **스크립트가 있는 저장소를 원본으로 삼아** `.claude/`의 `rules`·`agents`·`commands`·`skills`와 `.github/workflows/`를 `scripts/projects.txt`에 절대 경로로 등록된 프로젝트로 복사합니다. 현재 `projects.txt`에 이 저장소는 포함되어 있지 않습니다.
+
+`rsync --delete`를 사용하므로 **위 대상 디렉터리 안에서 원본에 없는 파일은 삭제됩니다.** 대상 프로젝트에만 있던 규칙·커맨드·워크플로우가 사라질 수 있으니, 실행 전 `projects.txt`의 경로 목록을 확인하세요.
 
 Claude Code를 쓰지 않아도 프로젝트 실행에는 문제가 없습니다.
 
