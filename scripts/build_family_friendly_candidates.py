@@ -102,6 +102,32 @@ REGION_ALIASES = {
 ADDRESS_PREFIXES = sorted(REGION_ALIASES.items(), key=lambda item: len(item[0]), reverse=True)
 
 OFFICIAL_ROSTERS: dict[int, dict[str, Any]] = {
+    2016: {
+        "provider": "여성가족부",
+        "post_url": "",
+        "download_url": "",
+        "downloaded_at": "",
+        "reference_date": "2016-12-31",
+        "file_name": (
+            "가족친화인증기업_기관 명단-1_828개-2016년 말 기준-지역(시도_시군구) 포함.xlsx"
+        ),
+        "file_size": 466_460,
+        "sha256": "5e2e1792d4ecfce310e52cb1ea09d0af9394cf7c0b7d0e28e5673315654033d2",
+        "sheet_name": "2016년말 기준 인증기업기관명단",
+        "header": 3,
+        "columns": {
+            "serial": "No",
+            "first_year": "신규\n인증연도",
+            "name": "기업명",
+            "category": "분류",
+            "region": "시도",
+            "address": "시군구",
+        },
+        "total": 1_828,
+        "category_totals": {"대기업": 285, "중소기업": 983, "공공기관": 560},
+        "address_unclassified": 1,
+        "address_region_mismatches": 2,
+    },
     2020: {
         "provider": "여성가족부·한국건강가정진흥원 가족친화지원사업",
         "post_url": ("https://www.ffsb.kr/ffsbbod/bs/boardView.do?boardSeq=1&conSeq=1630"),
@@ -344,12 +370,28 @@ def load_official_roster(
     )
     add_qa(qa_records, section, "빈 주소", 0, empty_address)
     add_qa(qa_records, section, "시도 미분류", 0, unclassified)
-    add_qa(qa_records, section, "주소 미분류", 0, address_unclassified)
+    add_qa(
+        qa_records,
+        section,
+        "주소 미분류",
+        spec.get("address_unclassified", 0),
+        address_unclassified,
+        note="연번 1794 충청남도 공주시청은 시군구 필드가 '충정남도'로 오탈자라 분류 불가. "
+        "시도 필드(충남)는 정상이라 집계에는 영향 없다."
+        if year == 2016
+        else "",
+    )
     mismatch_note = ""
     if year == 2021:
         mismatch_note = (
             "공식 원본 연번 2400은 시도=충남, 주소지=충청북도 청주시이다. "
             "집계용 전용 시도 열(충남)을 적용하고 원자료 불일치를 보존한다."
+        )
+    if year == 2016:
+        mismatch_note = (
+            "연번 549 (주)대흥에코는 시도=서울, 주소지=경기도 양주시로 원자료 자체가 "
+            "불일치한다. 연번 1794는 주소 오탈자('충정남도')로 인한 미분류가 함께 "
+            "잡힌 것이다. 두 건 다 집계용 전용 시도 열을 적용하고 원자료 불일치를 보존한다."
         )
     add_qa(
         qa_records,
