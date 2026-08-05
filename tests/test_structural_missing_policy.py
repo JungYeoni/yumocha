@@ -98,12 +98,15 @@ def test_committed_policy_mapping_is_complete_and_conservative():
 
 def test_block_imputation_is_independent_from_missing_cause():
     mapping = pd.read_csv(MAPPING_PATH)
-    survey_missing = mapping.loc[mapping["missing_cause"].eq("조사 비실시 연도")]
+    # 원자료 부재 원인 안에 keep_missing(차단, 산후조리원·분만실)과 boundary_carry(비차단,
+    # 청년고용률 등)이 공존한다 — block_imputation이 missing_cause만으로 정해지지 않는다는
+    # 근거다.
+    source_absent = mapping.loc[mapping["missing_cause"].eq("원자료 부재")]
+    assert set(source_absent["block_imputation"]) == {False, True}
 
-    assert set(survey_missing["block_imputation"]) == {False, True}
     nonlinear = mapping["지표_id"].eq("housework_gender_equality")
-    assert mapping.loc[nonlinear, "imputation_policy"].eq("pending_review").all()
-    assert mapping.loc[nonlinear, "block_imputation"].all()
+    assert mapping.loc[nonlinear, "imputation_policy"].eq("linear_interpolation").all()
+    assert not mapping.loc[nonlinear, "block_imputation"].any()
 
 
 def test_auxiliary_boundaries_are_scenario_only():
@@ -143,7 +146,7 @@ def test_boundary_carry_records_distance_direction_and_long_range_risk():
     assert mapping["policy_risk_level"].eq("high").all()
 
 
-def test_issue_82_provincial_blockers_total_391():
+def test_issue_82_provincial_blockers_total_323():
     mapping = pd.read_csv(MAPPING_PATH)
     provincial_blockers = mapping["지역"].ne("전국") & mapping["block_imputation"]
     family_friendly = provincial_blockers & mapping["지표_id"].eq(
@@ -155,11 +158,20 @@ def test_issue_82_provincial_blockers_total_391():
     delivery_bed = provincial_blockers & mapping["지표_id"].eq("delivery_bed_supply")
 
     assert family_friendly.sum() == 51
-    assert nonlinear_housework.sum() == 68
+    assert nonlinear_housework.sum() == 0
     assert postpartum_supply.sum() == 119
     assert postpartum_fee.sum() == 119
     assert delivery_bed.sum() == 34
-    assert provincial_blockers.sum() == 391
+    assert provincial_blockers.sum() == 323
+
+
+def test_housework_gender_equality_resolved_to_linear_interpolation():
+    mapping = pd.read_csv(MAPPING_PATH)
+    housework = mapping.loc[mapping["지표_id"].eq("housework_gender_equality")]
+
+    assert len(housework) == 72
+    assert housework["imputation_policy"].eq("linear_interpolation").all()
+    assert not housework["block_imputation"].any()
 
 
 def test_boundary_carry_artifact_risk_counts():

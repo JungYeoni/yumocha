@@ -43,17 +43,17 @@ expected_counts:
     inferred: 0
     unresolved: 65
   imputation_policy:
-    linear_interpolation: 414
+    linear_interpolation: 486
     boundary_carry: 388
     auxiliary_boundary_interpolation: 0
     keep_missing: 297
-    pending_review: 137
+    pending_review: 65
   block_imputation:
-    false: 802
-    true: 434
+    false: 874
+    true: 362
   analysis_included:
-    false: 434
-    true: 802
+    false: 362
+    true: 874
   missing_position:
     leading_missing: 622
     intermediate_missing: 506
@@ -81,11 +81,11 @@ expected_counts:
       high: 256
   issue_82_blockers:
     family_friendly_certification_rate: 51
-    housework_gender_equality: 68
+    housework_gender_equality: 0
     postpartum_center_supply: 119
     postpartum_center_fee: 119
     delivery_bed_supply: 34
-    total: 391
+    total: 323
 
 rules:
   - rule_id: youth_employment_2016_source_absent
@@ -260,17 +260,22 @@ rules:
     evidence: configs/structural_indicators_verification.yaml:576
     note: 2018·2020·2022·2024 관측값 사이의 비조사연도이다.
 
-  - rule_id: nonlinear_housework_pending_review
+  - rule_id: nonlinear_housework_direct_interpolation
     indicator_ids: [housework_gender_equality]
     regions: all
     years: [2017, 2019, 2021, 2023]
     missing_cause: 조사 비실시 연도
     cause_status: confirmed
-    imputation_policy: pending_review
-    block_imputation: true
-    analysis_included: false
-    evidence: reports/20260725_구조환경지표_통합파일_결측치_검증_결과.md:78
-    note: 비선형 변환 전 구성요소와 변환 후 지표 중 어느 단계에서 처리할지 검토가 필요하다.
+    imputation_policy: linear_interpolation
+    block_imputation: false
+    analysis_included: true
+    evidence: reports/methodology/20260805_가사분담_성평등_인식_직접보간_안전성_검증.md
+    note: >-
+      원산식 `1-|평균응답값-3|/2`은 비선형(절댓값) 변환이지만, 18개 지역 × 5개
+      관측연도(2016·2018·2020·2022·2024) 전부에서 평균응답값이 3점(중간) 미만이라
+      그 구간에서는 순수 선형함수와 같다. 검증 스크립트
+      (`scripts/verify_housework_gender_equality_interpolation_safety.py`)로 확인했으며,
+      최종값을 직접 선형보간해도 구성요소를 먼저 보간한 뒤 변환한 것과 정확히 같다.
 
   - rule_id: youth_regular_national_unresolved
     indicator_ids: [youth_regular_employment_rate]

@@ -335,15 +335,19 @@ def validate_policy_mapping(
 
     nonlinear_housework = mapping["지표_id"].eq("housework_gender_equality")
     check(
-        "비선형 가사분담 지표 pending_review",
-        72,
+        "비선형 가사분담 지표 직접 선형보간 적용(pending_review 잔존 없음)",
+        0,
         int(
             (
                 nonlinear_housework
-                & mapping["imputation_policy"].eq("pending_review")
-                & mapping["block_imputation"]
+                & (mapping["imputation_policy"].eq("pending_review") | mapping["block_imputation"])
             ).sum()
         ),
+    )
+    check(
+        "비선형 가사분담 지표 선형보간 건수",
+        72,
+        int((nonlinear_housework & mapping["imputation_policy"].eq("linear_interpolation")).sum()),
     )
 
     blocked_policy = mapping["imputation_policy"].isin(["keep_missing", "pending_review"])
@@ -352,14 +356,12 @@ def validate_policy_mapping(
         0,
         int(mapping["block_imputation"].ne(blocked_policy).sum()),
     )
-    survey_block_values = set(
-        mapping.loc[mapping["missing_cause"].eq("조사 비실시 연도"), "block_imputation"]
-    )
+    block_values_per_cause = mapping.groupby("missing_cause")["block_imputation"].nunique()
     check(
-        "조사 비실시 원인의 block 값 종류",
-        2,
-        len(survey_block_values),
-        "동일 missing_cause 안에 차단·비차단 정책이 모두 있어야 한다.",
+        "적어도 한 missing_cause에 차단·비차단이 공존",
+        True,
+        bool((block_values_per_cause == 2).any()),
+        "block_imputation이 missing_cause만으로 결정되지 않음을 보여주는 근거가 최소 하나는 있어야 한다.",
     )
 
     auxiliary = mapping["auxiliary_scenario_policy"].eq("auxiliary_boundary_interpolation")
@@ -630,7 +632,8 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
         "- 조사 비실시 연도는 자동 차단하지 않고 관측값 사이면 선형보간 후보로 둔다.",
         "- 경계 결측은 본계열 `boundary_carry` 후보로 두되 이번 단계에서는 값을 만들지 않는다.",
         "- `analysis_included_after_imputation`은 현재 포함 상태가 아니라 대체·QA 완료 후 포함 예정 상태다.",
-        f"- 원인 미확정 {int(mapping['cause_status'].eq('unresolved').sum()):,}건과 비선형 가사분담 지표는 `pending_review`로 차단한다.",
+        f"- 원인 미확정 {int(mapping['cause_status'].eq('unresolved').sum()):,}건은 `pending_review`로 차단한다.",
+        "- 비선형 가사분담 지표는 관측구간 전체가 중간값(3점) 미만이라 직접 선형보간이 안전함을 검증한 뒤 `linear_interpolation`으로 전환했다.",
         "- 완전격자 생성 여부는 `original_row_exists`로 보존하며 더 구체적인 결측 원인을 덮지 않는다.",
         "",
         "## 정책별 건수",
@@ -708,11 +711,11 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
             "| 지표 | 차단 결측 | 후속 조건 |",
             "|---|---:|---|",
             "| 가족친화 인증기업 비율 | 51 | 2016·2017·2019 공식 연도별 자료 확보 전 pending_review 유지 |",
-            "| 가사분담 성평등 인식 | 68 | 최종 지표 직접 보간 금지, 원산식·구성 응답값 우선 검토 |",
             "| 산후조리원 보급도 | 119 | 시계열 시작점(2023년) 이전 구간, keep_missing 유지 |",
             "| 산후조리원 이용 요금 | 119 | 시계열 시작점(2023년) 이전 구간, keep_missing 유지 |",
             "| 분만실 병상수 보급도 | 34 | 시계열 시작점(2018년 3분기) 이전 구간, keep_missing 유지 |",
-            "| 합계 | 391 | 전국 행을 제외한 17개 시도 기준 |",
+            "| 합계 | 323 | 전국 행을 제외한 17개 시도 기준. 가사분담 성평등 인식은 직접 선형보간 안전성이 "
+            "검증되어 이 목록에서 빠졌다(0건) |",
         ]
     )
 
@@ -731,9 +734,9 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
             f"{int((unresolved['지표_id'].eq('youth_regular_employment_rate') & unresolved['지역'].eq('전국')).sum()):,} | "
             "unresolved | pending_review |",
             "",
-            "비선형 가사분담에 대한 성평등 인식 72건은 원인은 `confirmed`지만 처리 단계가 ",
-            "미확정이므로 별도의 `pending_review` 정책으로 차단한다. 최종 변환값을 직접 선형보간하지 ",
-            "않고 원산식과 구성 응답값을 확인한 뒤 구성요소 보간 가능성을 먼저 검토한다.",
+            "비선형 가사분담에 대한 성평등 인식 72건은 원인이 `confirmed`이고, 관측구간 전체가 "
+            "중간값(3점) 미만이라 직접 선형보간이 안전함을 검증해 `linear_interpolation`으로 전환했다 "
+            "(더 이상 미확정 목록에 없음).",
             "",
             "## QA",
             "",
@@ -741,9 +744,17 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
             f"- {len(mapping):,}개 결측 키는 중복·누락 없이 정확히 한 번 매핑됨",
             f"- {len(unresolved):,}개 원인 미확정 행은 모두 pending_review·대체 차단·본계열 분석 제외",
             f"- {config['panel']['expected_observed']:,}개 실측값과 전체 {config['panel']['expected_rows']:,}개 키 변경 없음",
-            "- 조사 비실시 원인 안에 block_imputation=True/False가 모두 있어 두 개념이 독립됨",
+            "- 원자료 부재 원인 안에 block_imputation=True/False가 모두 있어 두 개념이 독립됨",
             "- auxiliary_boundary_interpolation 72건은 별도 시나리오 열에만 존재해 본계열 정책과 중복되지 않음",
-            "- #82의 17개 시도 차단 결측은 가족친화 51건+가사분담 68건=119건",
+            (
+                "- #82의 17개 시도 차단 결측 합계: "
+                + ", ".join(
+                    f"{indicator} {count:,}건"
+                    for indicator, count in config["expected_counts"]["issue_82_blockers"].items()
+                    if indicator != "total"
+                )
+                + f" = {config['expected_counts']['issue_82_blockers']['total']:,}건"
+            ),
         ]
     )
     return "\n".join(lines) + "\n"
