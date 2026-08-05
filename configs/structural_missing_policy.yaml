@@ -44,16 +44,16 @@ expected_counts:
     unresolved: 65
   imputation_policy:
     linear_interpolation: 414
-    boundary_carry: 676
+    boundary_carry: 388
     auxiliary_boundary_interpolation: 0
-    keep_missing: 9
+    keep_missing: 297
     pending_review: 137
   block_imputation:
-    false: 1090
-    true: 146
+    false: 802
+    true: 434
   analysis_included:
-    false: 146
-    true: 1090
+    false: 434
+    true: 802
   missing_position:
     leading_missing: 622
     intermediate_missing: 506
@@ -62,27 +62,29 @@ expected_counts:
   auxiliary_scenario_rows: 72
   original_grid_rows: 396
   boundary_review:
-    total: 676
+    total: 388
     carry_direction:
-      backward: 586
+      backward: 298
       forward: 90
     consecutive_missing_years:
       1: 132
-      2: 72
+      2: 36
       4: 220
-      7: 252
     long_range_backcast:
       false: 132
-      true: 544
+      true: 256
     sensitivity_required:
-      true: 676
+      true: 388
     policy_risk_level:
       medium: 132
-      high: 544
+      high: 256
   issue_82_blockers:
     family_friendly_certification_rate: 51
     housework_gender_equality: 68
-    total: 119
+    postpartum_center_supply: 119
+    postpartum_center_fee: 119
+    delivery_bed_supply: 34
+    total: 391
 
 rules:
   - rule_id: youth_employment_2016_source_absent
@@ -167,11 +169,14 @@ rules:
     years: [2016, 2017]
     missing_cause: 원자료 부재
     cause_status: confirmed
-    imputation_policy: boundary_carry
-    block_imputation: false
-    analysis_included: true
-    evidence: reports/20260724_구조환경지표_21개_검증_진행상황.md:90
-    note: 원자료는 2018년 3분기부터 시작하며 선행 결측 정책을 별도로 적용한다.
+    imputation_policy: keep_missing
+    block_imputation: true
+    analysis_included: false
+    evidence: reports/20260725_구조환경지표_통합파일_결측치_검증_결과.md:59
+    note: >-
+      원자료는 2018년 3분기부터 시작한다. 20260725 검증 리포트가 이 구간을 "통계 자체가
+      최근에 신설됨(시계열 시작점 문제)"으로 분류하고 보간(경계값 이월 포함) 불가로
+      판단했으므로 boundary_carry를 적용하지 않고 결측으로 유지한다.
 
   - rule_id: postpartum_before_source_start
     indicator_ids: [postpartum_center_supply, postpartum_center_fee]
@@ -179,11 +184,15 @@ rules:
     years: [2016, 2017, 2018, 2019, 2020, 2021, 2022]
     missing_cause: 원자료 부재
     cause_status: confirmed
-    imputation_policy: boundary_carry
-    block_imputation: false
-    analysis_included: true
-    evidence: reports/20260724_구조환경지표_21개_검증_진행상황.md:103
-    note: 승인된 원자료는 2023년부터 존재하며 선행 결측 정책을 별도로 적용한다.
+    imputation_policy: keep_missing
+    block_imputation: true
+    analysis_included: false
+    evidence: reports/20260725_구조환경지표_통합파일_결측치_검증_결과.md:59
+    note: >-
+      승인된 원자료는 2023년부터 존재한다. 20260725 검증 리포트가 이 구간을 "통계 자체가
+      최근에 신설됨(시계열 시작점 문제)"으로 분류하고 2023년 값을 과거로 이월하는 것은
+      존재하지 않는 시계열 구간을 만드는 것이라 보간 불가로 판단했으므로 boundary_carry를
+      적용하지 않고 결측으로 유지한다.
 
   - rule_id: social_survey_interior_non_survey
     indicator_ids: [social_safety_perception, marriage_perception]

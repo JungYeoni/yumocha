@@ -143,28 +143,34 @@ def test_boundary_carry_records_distance_direction_and_long_range_risk():
     assert mapping["policy_risk_level"].eq("high").all()
 
 
-def test_issue_82_provincial_blockers_total_119():
+def test_issue_82_provincial_blockers_total_391():
     mapping = pd.read_csv(MAPPING_PATH)
     provincial_blockers = mapping["지역"].ne("전국") & mapping["block_imputation"]
     family_friendly = provincial_blockers & mapping["지표_id"].eq(
         "family_friendly_certification_rate"
     )
     nonlinear_housework = provincial_blockers & mapping["지표_id"].eq("housework_gender_equality")
+    postpartum_supply = provincial_blockers & mapping["지표_id"].eq("postpartum_center_supply")
+    postpartum_fee = provincial_blockers & mapping["지표_id"].eq("postpartum_center_fee")
+    delivery_bed = provincial_blockers & mapping["지표_id"].eq("delivery_bed_supply")
 
     assert family_friendly.sum() == 51
     assert nonlinear_housework.sum() == 68
-    assert provincial_blockers.sum() == 119
+    assert postpartum_supply.sum() == 119
+    assert postpartum_fee.sum() == 119
+    assert delivery_bed.sum() == 34
+    assert provincial_blockers.sum() == 391
 
 
 def test_boundary_carry_artifact_risk_counts():
     mapping = pd.read_csv(MAPPING_PATH)
     boundary = mapping.loc[mapping["imputation_policy"].eq("boundary_carry")]
 
-    assert len(boundary) == 676
+    assert len(boundary) == 388
     assert boundary["sensitivity_required"].all()
-    assert boundary["long_range_backcast"].sum() == 544
+    assert boundary["long_range_backcast"].sum() == 256
     assert boundary["policy_risk_level"].value_counts().to_dict() == {
-        "high": 544,
+        "high": 256,
         "medium": 132,
     }
 

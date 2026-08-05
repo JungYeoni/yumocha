@@ -449,10 +449,6 @@ def validate_policy_mapping(
     )
 
     long_range_targets = {
-        "산후조리원 2종 장기 소급": (
-            mapping["지표_id"].isin(["postpartum_center_supply", "postpartum_center_fee"]),
-            252,
-        ),
         "가족실태조사 3종 2016~2019 장기 소급": (
             mapping["지표_id"].isin(
                 [
@@ -464,7 +460,6 @@ def validate_policy_mapping(
             & mapping["연도"].le(2019),
             216,
         ),
-        "분만실 병상수 장기 소급": (mapping["지표_id"].eq("delivery_bed_supply"), 36),
         "출산 인식 장기 소급": (
             mapping["지표_id"].eq("childbirth_perception") & mapping["연도"].le(2017),
             36,
@@ -487,6 +482,20 @@ def validate_policy_mapping(
             ),
         )
 
+    source_start_indicators = mapping["지표_id"].isin(
+        ["postpartum_center_supply", "postpartum_center_fee", "delivery_bed_supply"]
+    )
+    check(
+        "시계열 시작점 이전 구간(산후조리원 2종·분만실 병상수) keep_missing 적용",
+        int(source_start_indicators.sum()),
+        int((source_start_indicators & mapping["imputation_policy"].eq("keep_missing")).sum()),
+    )
+    check(
+        "시계열 시작점 이전 구간의 boundary_carry 잔존",
+        0,
+        int((source_start_indicators & mapping["imputation_policy"].eq("boundary_carry")).sum()),
+    )
+
     issue_82_expected = expected_counts["issue_82_blockers"]
     provinces = mapping["지역"].ne("전국")
     issue_82_blocked = provinces & mapping["block_imputation"]
@@ -494,7 +503,18 @@ def validate_policy_mapping(
         "family_friendly_certification_rate"
     )
     housework_provinces = issue_82_blocked & mapping["지표_id"].eq("housework_gender_equality")
-    issue_82_known = family_friendly_provinces | housework_provinces
+    postpartum_supply_provinces = issue_82_blocked & mapping["지표_id"].eq(
+        "postpartum_center_supply"
+    )
+    postpartum_fee_provinces = issue_82_blocked & mapping["지표_id"].eq("postpartum_center_fee")
+    delivery_bed_provinces = issue_82_blocked & mapping["지표_id"].eq("delivery_bed_supply")
+    issue_82_known = (
+        family_friendly_provinces
+        | housework_provinces
+        | postpartum_supply_provinces
+        | postpartum_fee_provinces
+        | delivery_bed_provinces
+    )
     check(
         "#82 가족친화 인증기업 비율 차단",
         issue_82_expected["family_friendly_certification_rate"],
@@ -504,6 +524,21 @@ def validate_policy_mapping(
         "#82 가사분담 성평등 인식 차단",
         issue_82_expected["housework_gender_equality"],
         int(housework_provinces.sum()),
+    )
+    check(
+        "#82 산후조리원 보급도 차단(시계열 시작점)",
+        issue_82_expected["postpartum_center_supply"],
+        int(postpartum_supply_provinces.sum()),
+    )
+    check(
+        "#82 산후조리원 이용 요금 차단(시계열 시작점)",
+        issue_82_expected["postpartum_center_fee"],
+        int(postpartum_fee_provinces.sum()),
+    )
+    check(
+        "#82 분만실 병상수 차단(시계열 시작점)",
+        issue_82_expected["delivery_bed_supply"],
+        int(delivery_bed_provinces.sum()),
     )
     check("#82 17개 시도 차단 합계", issue_82_expected["total"], int(issue_82_blocked.sum()))
     check("#82 기타 차단 결측", 0, int((issue_82_blocked & ~issue_82_known).sum()))
@@ -625,16 +660,19 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
             f"- 역방향 carry: {int(boundary['carry_direction'].eq('backward').sum()):,}건",
             f"- 순방향 carry: {int(boundary['carry_direction'].eq('forward').sum()):,}건",
             f"- 장기 소급: {len(long_range):,}건(high), 1년 경계 carry: {len(boundary) - len(long_range):,}건(medium)",
-            "- 676건 모두 관측구간 밖 외삽 성격이므로 `sensitivity_required=True`다.",
+            f"- {len(boundary):,}건 모두 관측구간 밖 외삽 성격이므로 `sensitivity_required=True`다.",
             "- high 정책은 관측값으로 해석할 수 없으며 carry만을 단독 본계열 근거로 삼기에는 타당성이 낮다.",
             "",
             "| 장기 소급 대상 | 행 | 기준 관측연도 | 거리 | 연속 결측 | 평가 |",
             "|---|---:|---:|---:|---:|---|",
-            "| 산후조리원 보급도·이용요금 2016–2022 | 252 | 2023 | 1–7년 | 7년 | high; 2023 수준을 과거 7년에 고정하는 것은 단독 본계열 가정으로 부적합 |",
             "| 가족실태조사 3종 2016–2019 | 216 | 2020 | 1–4년 | 4년 | high; 2020 조사 수준의 과거 소급은 시점 효과를 제거하므로 민감도 비교 필수 |",
-            "| 분만실 병상수 2016–2017 | 36 | 2018 | 1–2년 | 2년 | high; 통계 시작 전 수준을 생성하므로 별도 가정임을 명시해야 함 |",
             "| 출산 인식 2016–2017 | 36 | 2018 | 1–2년 | 2년 | high; 문항·조사 가용성 확인 전 과거 수준 확정 불가 |",
             "| 세종 근로시간 2016–2019 | 4 | 2020 | 1–4년 | 4년 | high; 원자료 부재 구간의 추가 장기 소급 사례 |",
+            "",
+            "산후조리원 보급도·이용요금(2016–2022, 252건)과 분만실 병상수(2016–2017, 36건)는 더 이상 이 "
+            "boundary_carry 위험 목록에 없다 — `reports/20260725_구조환경지표_통합파일_결측치_검증_결과.md`가 "
+            '이 구간을 "통계 자체가 최근에 신설됨(시계열 시작점 문제)"으로 분류하고 보간(경계값 이월 포함) '
+            "불가로 판단했으므로, `keep_missing`으로 정책을 바꿔 결측으로 유지하고 본계열 분석에서 제외한다.",
             "",
             "위 정책은 아직 실행 승인이 아니라 후보 매핑이다. 실제 적용 단계에서는 carry 포함 결과와 ",
             "관측구간 제한 또는 해당 구간 제외 결과를 함께 산출해야 한다.",
@@ -645,7 +683,10 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
             "|---|---:|---|",
             "| 가족친화 인증기업 비율 | 51 | 2016·2017·2019 공식 연도별 자료 확보 전 pending_review 유지 |",
             "| 가사분담 성평등 인식 | 68 | 최종 지표 직접 보간 금지, 원산식·구성 응답값 우선 검토 |",
-            "| 합계 | 119 | 전국 행을 제외한 17개 시도 기준 |",
+            "| 산후조리원 보급도 | 119 | 시계열 시작점(2023년) 이전 구간, keep_missing 유지 |",
+            "| 산후조리원 이용 요금 | 119 | 시계열 시작점(2023년) 이전 구간, keep_missing 유지 |",
+            "| 분만실 병상수 보급도 | 34 | 시계열 시작점(2018년 3분기) 이전 구간, keep_missing 유지 |",
+            "| 합계 | 391 | 전국 행을 제외한 17개 시도 기준 |",
         ]
     )
 
