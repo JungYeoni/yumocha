@@ -254,6 +254,11 @@ def remove_resolved_rows_from_mapping(
 
 
 def render_report(candidates: pd.DataFrame, qa: pd.DataFrame, panel_audit: pd.DataFrame) -> str:
+    if "반영전값" in panel_audit.columns:
+        violation_count = int(panel_audit["반영전값"].notna().sum())
+    else:
+        violation_count = 0
+
     lines = [
         "# 가족친화 인증기업 비율 2017·2019년 raking 추정치 본계열 반영 QA",
         "",
@@ -268,8 +273,8 @@ def render_report(candidates: pd.DataFrame, qa: pd.DataFrame, panel_audit: pd.Da
         "## QA 요약",
         "",
         f"- 후보 계산 QA: {len(qa)}개 항목 모두 PASS",
-        f"- 패널 반영 행 수: {len(panel_audit)}건 (기대 34건)",
-        f"- 반영 전 기존 값 존재(위반) 건수: {int(panel_audit['반영전값'].notna().sum())} (기대 0)",
+        f"- 패널 반영 행 수: {len(panel_audit)}건 (기대 34건, `--panel` 미지정 시 0건)",
+        f"- 반영 전 기존 값 존재(위반) 건수: {violation_count} (기대 0)",
         "",
         "## 한계",
         "",

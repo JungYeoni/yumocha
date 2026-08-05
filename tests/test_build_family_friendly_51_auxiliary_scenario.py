@@ -9,6 +9,7 @@ from scripts.build_family_friendly_51_auxiliary_scenario import (
     apply_raking_candidates_to_panel,
     build_raking_candidates,
     remove_resolved_rows_from_mapping,
+    render_report,
 )
 from scripts.build_family_friendly_candidates import INDICATOR_ID, REGION_ORDER
 from scripts.build_family_friendly_national_candidates import NATIONAL_CUMULATIVE_TOTALS
@@ -200,3 +201,16 @@ def test_remove_resolved_rows_from_mapping_drops_only_2017_2019():
     assert len(removed) == 34
     assert len(updated) == 1
     assert updated.iloc[0]["연도"] == 2016
+
+
+def test_render_report_does_not_crash_when_panel_not_applied():
+    candidates = _sample_candidates()
+    qa = pd.DataFrame(
+        [{"구분": "테스트", "검증항목": "항목", "기대값": 1, "실제값": 1, "판정": "PASS"}]
+    )
+    empty_panel_audit = pd.DataFrame()
+
+    report = render_report(candidates, qa, empty_panel_audit)
+
+    assert "패널 반영 행 수: 0건" in report
+    assert "반영 전 기존 값 존재(위반) 건수: 0" in report
