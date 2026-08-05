@@ -9,6 +9,10 @@ from typing import Any
 import pandas as pd
 import yaml
 
+ALLOWED_AUXILIARY_SCENARIO_POLICIES = {
+    "auxiliary_boundary_interpolation",
+    "auxiliary_raking_composition_ratio",
+}
 KEY_COLUMNS = ["지역", "지표_id", "연도"]
 REQUIRED_PANEL_COLUMNS = [*KEY_COLUMNS, "지표명", "측정값", "원본행존재"]
 MAPPING_COLUMNS = [
@@ -63,7 +67,7 @@ def load_policy_config(path: Path) -> dict[str, Any]:
             if not isinstance(rule.get(field), bool):
                 raise ValueError(f"{rule['rule_id']}: {field}는 boolean이어야 합니다.")
         auxiliary = rule.get("auxiliary_scenario_policy")
-        if auxiliary is not None and auxiliary != "auxiliary_boundary_interpolation":
+        if auxiliary is not None and auxiliary not in ALLOWED_AUXILIARY_SCENARIO_POLICIES:
             raise ValueError(f"{rule['rule_id']}: 허용되지 않은 보조 시나리오입니다.")
 
     return config
@@ -374,6 +378,28 @@ def validate_policy_mapping(
             (auxiliary & mapping["imputation_policy"].eq("auxiliary_boundary_interpolation")).sum()
         ),
         "보조 시나리오는 별도 열에만 기록한다.",
+    )
+
+    raking_composition = mapping["auxiliary_scenario_policy"].eq(
+        "auxiliary_raking_composition_ratio"
+    )
+    check(
+        "가족친화 raking·구성비 보조 시나리오 행 수",
+        expected_counts["auxiliary_raking_composition_rows"],
+        int(raking_composition.sum()),
+    )
+    check(
+        "가족친화 raking·구성비 보조 시나리오의 본계열 정책 위반",
+        0,
+        int((raking_composition & mapping["imputation_policy"].ne("pending_review")).sum()),
+        "본계열은 여전히 pending_review로 차단된 채 보조 시나리오만 별도 열에 추가한다.",
+    )
+    check(
+        "가족친화 raking·구성비 보조 시나리오 지표 위반",
+        0,
+        int(
+            (raking_composition & mapping["지표_id"].ne("family_friendly_certification_rate")).sum()
+        ),
     )
     check(
         "완전격자 원본 미존재 행 수",

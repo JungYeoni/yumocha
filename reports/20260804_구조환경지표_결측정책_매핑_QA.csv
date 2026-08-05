@@ -44,6 +44,9 @@ missing_position=all_period_unobserved,18,18,PASS,
 보조 경계 시나리오 행 수,72,72,PASS,
 보조 경계 시나리오의 본계열 정책 위반,0,0,PASS,
 보조 경계 시나리오의 본계열 정책 중복 적용,0,0,PASS,보조 시나리오는 별도 열에만 기록한다.
+가족친화 raking·구성비 보조 시나리오 행 수,51,51,PASS,
+가족친화 raking·구성비 보조 시나리오의 본계열 정책 위반,0,0,PASS,본계열은 여전히 pending_review로 차단된 채 보조 시나리오만 별도 열에 추가한다.
+가족친화 raking·구성비 보조 시나리오 지표 위반,0,0,PASS,
 완전격자 원본 미존재 행 수,396,396,PASS,원본행존재는 missing_cause와 별도 관리한다.
 boundary_carry 세분 검토 행 수,388,388,PASS,
 boundary_carry nearest_observed_year 결측,0,0,PASS,

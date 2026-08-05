@@ -60,6 +60,7 @@ expected_counts:
     trailing_missing: 90
     all_period_unobserved: 18
   auxiliary_scenario_rows: 72
+  auxiliary_raking_composition_rows: 51
   original_grid_rows: 396
   boundary_review:
     total: 388
@@ -215,8 +216,13 @@ rules:
     imputation_policy: pending_review
     block_imputation: true
     analysis_included: false
+    auxiliary_scenario_policy: auxiliary_raking_composition_ratio
     evidence: configs/structural_indicators_verification.yaml:518
-    note: 공식 명단을 확보하지 못한 17개 시도의 2016·2017·2019년 51건은 임의 대체하지 않는다.
+    note: >-
+      공식 명단을 확보하지 못한 17개 시도의 2016·2017·2019년 51건은 임의 대체하지
+      않는다. 2019(중간 결측)는 2018·2020 선형보간 후 전국 실측 합계로 raking,
+      2016·2017(선행 결측)은 2018년 지역 구성비 × 해당 연도 전국 실측 합계로 추정한
+      보조 시나리오만 별도 열에 기록한다(`reports/20260805_가족친화_지역별_51건_보조시나리오_후보.csv`).
 
   - rule_id: family_friendly_national_unresolved
     indicator_ids: [family_friendly_certification_rate]
