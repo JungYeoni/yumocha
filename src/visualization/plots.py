@@ -27,6 +27,17 @@ def get_korean_font() -> str:
 sns.set_style("whitegrid")
 KOREAN_FONT = get_korean_font()
 
+# yumocha-web/src/theme.js의 라이트 테마 색상 토큰과 맞춘 정적 그래프 팔레트.
+YOMOCHA_WEB_COLORS = {
+    "accent": "#246BEB",
+    "accent_hover": "#0B50D0",
+    "surface_alt": "#ECF2FE",
+    "surface_neutral": "#f3f4f6",
+    "muted_bar": "#d1d5db",
+    "line": "#9ca3af",
+    "danger": "#c0392b",
+}
+
 # 전역 스타일 설정
 plt.rcParams.update(
     {
@@ -39,7 +50,14 @@ plt.rcParams.update(
         "axes.labelsize": 11,
     }
 )
-PALETTE = sns.color_palette("colorblind")
+PALETTE = [
+    YOMOCHA_WEB_COLORS["accent"],
+    YOMOCHA_WEB_COLORS["muted_bar"],
+    YOMOCHA_WEB_COLORS["surface_neutral"],
+    YOMOCHA_WEB_COLORS["danger"],
+    YOMOCHA_WEB_COLORS["line"],
+    YOMOCHA_WEB_COLORS["surface_alt"],
+]
 
 
 def save_figure(fig: plt.Figure, path: str | Path, formats: list[str] | None = None) -> None:

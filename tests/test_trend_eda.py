@@ -157,5 +157,5 @@ def test_structural_region_report_contains_every_region_row():
     report = render_structural_region_report(summary)
 
     assert "## 청년고용률" in report
-    assert "| 서울 | 60 | 61 | 1 | 개선 | 1 | 2/0 | - |" in report
-    assert "| 부산 | 55 | 57 | 2 | 개선 | 2 | 2/0 | - |" in report
+    assert "| 서울 | 60 | 61 | 1 | 개선 | 1 | 2/0 | 2/0 | - |" in report
+    assert "| 부산 | 55 | 57 | 2 | 개선 | 2 | 2/0 | 2/0 | - |" in report

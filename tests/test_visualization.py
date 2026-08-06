@@ -12,6 +12,15 @@ def test_korean_font_is_not_overwritten_by_seaborn_style():
     assert plots.plt.rcParams["axes.unicode_minus"] is False
 
 
+def test_static_palette_matches_yumocha_web_light_theme():
+    from src.visualization import plots
+
+    assert plots.PALETTE[0] == "#246BEB"
+    assert plots.PALETTE[1] == "#d1d5db"
+    assert plots.PALETTE[2] == "#f3f4f6"
+    assert plots.PALETTE[3] == "#c0392b"
+
+
 def test_structural_overview_uses_regional_median_when_nationwide_is_missing():
     from src.visualization.trends import plot_structural_indicator_overview
 
