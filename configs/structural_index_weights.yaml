@@ -1,3 +1,29 @@
+provenance:
+  source_file: data/lookup/구조환경지표_AHP가중치_3방식.xlsx
+  source_sheet: AHP
+  source_range: A7:M34
+  original_report: 제주여성가족연구원 「제주지역 출산환경지수 개발 연구」 p.83 <표 Ⅳ-3>
+  weight_basis: AHP 열
+  original_indicator_count: 31
+  retained_indicator_count: 28
+  original_display_sum: 0.998
+  normalization_divisor: 0.998
+  adjustment_rule: 삭제 지표의 가중치를 동일 세부영역 잔존 지표에 원래 비율대로 재배분한 뒤 전체 합을 1로 정규화
+  removed_indicators:
+    - code: IFCCR
+      name: 난임시술기관 보급도
+      weight: 0.017
+      redistributed_to: [DOCR, PCCR]
+    - code: SVR
+      name: 학교폭력 발생률
+      weight: 0.013
+      redistributed_to: [TRA, PSS]
+    - code: LDBR
+      name: 저출생 대응 예산액
+      weight: 0.044
+      redistributed_to: [PLR, FCR]
+  replacement_note: DOCR과 PCCR은 원 연구의 가중치 슬롯을 각각 분만실 병상수와 소아청소년과 전문인력 대체지표에 승계
+
 weights:
   youth_employment_rate:
     code: YER

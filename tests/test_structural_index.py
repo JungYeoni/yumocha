@@ -80,24 +80,24 @@ def test_processed_panel_adapter_and_scenarios_allow_nationwide_only_missing():
     assert comparison["abs_rank_diff"].ge(0).all()
 
 
-def test_load_structural_index_weights_matches_manifest(tmp_path: Path):
+@pytest.mark.filterwarnings("ignore:Unknown extension is not supported.*:UserWarning")
+@pytest.mark.filterwarnings(
+    "ignore:Conditional Formatting extension is not supported.*:UserWarning"
+)
+def test_load_structural_index_weights_matches_manifest_and_source_workbook():
     repo_root = Path(__file__).resolve().parents[1]
     manifest = load_structural_indicator_manifest(repo_root)
     weights = load_structural_index_weights(repo_root)
-    yaml_lines = (
-        (repo_root / "configs" / "structural_index_weights.yaml")
-        .read_text(encoding="utf-8")
-        .splitlines()
+    source = pd.read_excel(
+        repo_root / "data" / "lookup" / "구조환경지표_AHP가중치_3방식.xlsx",
+        sheet_name="AHP",
+        header=None,
     )
-    yaml_indicator_ids = [
-        line.strip()[:-1]
-        for line in yaml_lines
-        if line.startswith("  ") and not line.startswith("    ") and line.strip().endswith(":")
-    ]
+    source_weights = source.iloc[6:34, [4, 12]].copy()
+    source_weights.columns = ["code", "source_weight"]
+    source_weights["source_weight"] = pd.to_numeric(source_weights["source_weight"], errors="raise")
 
     validate_structural_index_weights(weights, manifest)
-    assert len(yaml_indicator_ids) == 28
-    assert len(yaml_indicator_ids) == len(set(yaml_indicator_ids))
     assert len(weights) == 28
     assert weights["id"].is_unique
     assert manifest["id"].is_unique
@@ -105,6 +105,12 @@ def test_load_structural_index_weights_matches_manifest(tmp_path: Path):
     assert np.isclose(weights["weight"].sum(), 1.0, atol=1e-9)
     assert weights["code"].map(lambda value: isinstance(value, str) and bool(value.strip())).all()
     assert weights["name"].map(lambda value: isinstance(value, str) and bool(value.strip())).all()
+    comparison = weights.merge(source_weights, on="code", how="outer", validate="one_to_one")
+    assert len(comparison) == 28
+    assert comparison[["weight", "source_weight"]].notna().all().all()
+    assert np.allclose(comparison["weight"], comparison["source_weight"], atol=1e-15)
+    assert np.isclose(source.iloc[1, 12], 0.998, atol=1e-12)
+    assert np.isclose(source.iloc[1, 14], 1.0, atol=1e-12)
 
 
 def test_validate_structural_index_input_basic():
