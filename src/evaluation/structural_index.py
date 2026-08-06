@@ -112,6 +112,10 @@ def load_structural_indicator_manifest(repo_root: Path) -> pd.DataFrame:
     for item in indicators:
         if not isinstance(item, dict):
             continue
+        if "id" not in item or item["id"] is None or str(item["id"]).strip() == "":
+            raise ValueError(
+                "structural_indicators_verification.yaml: manifest 지표에 id 값이 없습니다."
+            )
         records.append(
             {
                 "id": item["id"],
@@ -139,12 +143,23 @@ def load_structural_index_weights(repo_root: Path) -> pd.DataFrame:
             raise ValueError(
                 f"structural_index_weights.yaml: {indicator_id}의 값은 매핑이어야 합니다."
             )
+        if "weight" not in payload or payload["weight"] is None:
+            raise ValueError(
+                f"structural_index_weights.yaml: {indicator_id}에 weight 값이 없습니다."
+            )
+        try:
+            weight_value = float(payload["weight"])
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"structural_index_weights.yaml: {indicator_id}의 weight가 숫자가 아닙니다: "
+                f"{payload['weight']!r}"
+            ) from exc
         records.append(
             {
                 "id": indicator_id,
                 "code": payload.get("code"),
                 "name": payload.get("name"),
-                "weight": float(payload.get("weight")),
+                "weight": weight_value,
             }
         )
     df = pd.DataFrame(records)
@@ -463,7 +478,7 @@ def standardize_structural_indicators(
 
     df = validate_structural_index_input(
         df,
-        manifest=pd.DataFrame(),
+        manifest=None,
         expected_regions=expected_regions,
         expected_years=expected_years,
         expected_indicator_ids=expected_indicator_ids,

@@ -761,7 +761,7 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
         if count > 0:
             lines.append(f"| {label} | {count:,} | {note} |")
         else:
-            resolved_labels.append(label)
+            resolved_labels.append(f"{label}({note})")
     resolved_note = (
         f" 다음 지표는 실측/raking 확보 또는 직접 선형보간 안전성 검증으로 이 목록에서"
         f" 빠졌다(0건): {', '.join(resolved_labels)}."

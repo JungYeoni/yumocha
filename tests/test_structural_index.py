@@ -296,6 +296,49 @@ def test_standardize_structural_indicators_pooled():
     assert np.isclose(result.loc[result["region"] == "B", "score_0_100"].iloc[0], 100.0)
 
 
+def test_standardize_structural_indicators_without_expected_ids_uses_no_manifest():
+    df = pd.DataFrame(
+        [
+            {
+                "region": "A",
+                "year": 2022,
+                "indicator_id": "x",
+                "category": "cat",
+                "subcategory": "sub",
+                "direction": "positive",
+                "value": 1.0,
+            },
+            {
+                "region": "B",
+                "year": 2022,
+                "indicator_id": "x",
+                "category": "cat",
+                "subcategory": "sub",
+                "direction": "positive",
+                "value": 3.0,
+            },
+            {
+                "region": "전국",
+                "year": 2022,
+                "indicator_id": "x",
+                "category": "cat",
+                "subcategory": "sub",
+                "direction": "positive",
+                "value": 2.0,
+            },
+        ]
+    )
+
+    result = standardize_structural_indicators(
+        df,
+        method="pooled",
+        expected_regions=["A", "B"],
+        expected_years=[2022],
+    )
+
+    assert len(result) == 2
+
+
 def test_compute_structural_index_scores():
     indicator_scores = pd.DataFrame(
         [
