@@ -27,6 +27,15 @@
 - Preserve structural missing-policy implementation (#70) ([a35db4c](https://github.com/JungYeoni/da-template/commit/a35db4c647c33143895c2c932d2a5b8620fb3e7e))
 - Checkpoint #70 missing-data panel work ([bf3ae83](https://github.com/JungYeoni/da-template/commit/bf3ae83833604a4d23f5e73f74d1c46ed6a70729))
 
+### 검증
+
+- AHP 가중치 원자료와 재정규화 경로 고정 (#82) ([c762a51](https://github.com/JungYeoni/da-template/commit/c762a511011d25af432546dddf5ac36d3863c2a7))
+
+### 기능
+
+- 가족친화 2016·2017 가중치를 육아휴직에 이전 (#82) ([f14629a](https://github.com/JungYeoni/da-template/commit/f14629aee96b4f5d5ede20a118a47b13c17c725e))
+- 금액지표 전체에 전국 CPI 실질화 적용 (#82) ([e741bf0](https://github.com/JungYeoni/da-template/commit/e741bf03949ff79b6a01bf9754002bd525170cca))
+
 ### 기타
 
 - 주거실태조사·가족실태조사 노트북 커널 재시작 전체 실행 검증 (#44) (#59) ([f9f6cd7](https://github.com/JungYeoni/da-template/commit/f9f6cd76c334b4c29e18fa84ebceb87216aeb4e6))
@@ -63,6 +72,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([54f6261](https://github.com/JungYeoni/da-template/commit/54f62614e62fe1651bb8fa842ac0838a7e87a370))
 - 가족친화 인증기업 전국 통계 "누계" 정의 검증 기록 (#70) ([46952bf](https://github.com/JungYeoni/da-template/commit/46952bf609641fc817b7d0b8b246e42b873e390f))
 - 가족친화 지역별 51건 보간 방법 제안 (#70) ([3708564](https://github.com/JungYeoni/da-template/commit/37085644c0e2e317ff045f4e98b825a658a7d46c))
 - Record full test verification for #70 handoff ([062cd70](https://github.com/JungYeoni/da-template/commit/062cd70544e30bd185d8f245b5592e0514d1239b))
@@ -268,6 +278,9 @@
 
 ### 새 기능
 
+- Deflate selected cost indicators with CPI (#82) ([5bcd579](https://github.com/JungYeoni/da-template/commit/5bcd5796320ac32502701801b3f34385b2acaeb6))
+- Compare structural index scenarios (#82) ([2305b04](https://github.com/JungYeoni/da-template/commit/2305b046d01c874453b1acb19e040c33c2b780eb))
+- Complete structural index panel calculation (#82) ([1462d29](https://github.com/JungYeoni/da-template/commit/1462d29a9f4cd3351b8023e87814a49488ad4937))
 - 가족친화 2017·2019 raking 추정치 34건 본계열 반영 (#70) ([08d67d3](https://github.com/JungYeoni/da-template/commit/08d67d398afcc9e8de7c98a6f6d92d4cdd42c12b))
 - 가족친화 2017년 raking 재계산(2016 실측 활용) 및 ffsb 크롤링 스크립트 반영 (#70) ([5a5bbea](https://github.com/JungYeoni/da-template/commit/5a5bbeaafbee63bf5c226a606302f923c4279a07))
 - 가족친화 2016년 지역별 실측값 확보로 51건 중 17건 해소 (#70) ([236cd76](https://github.com/JungYeoni/da-template/commit/236cd7618ff53a4b8fa679df24bf8979dd7ebdea))
@@ -285,6 +298,7 @@
 - 시도별 총세출 분모 패널 생성 (#69) ([bed29ee](https://github.com/JungYeoni/da-template/commit/bed29ee640215b4321b0c8a8e6826dd17ab00082))
 - #70 구조환경지표 결측 처리 모듈 사전 구현 ([e89b7c0](https://github.com/JungYeoni/da-template/commit/e89b7c01b6eed041a23bac33fa75ebd181adfa04))
 - 구조환경지표 28개 보간 전 통합패널 구축 (#80) ([492e092](https://github.com/JungYeoni/da-template/commit/492e09269b9f6de1fdd1bafc4a48e258e5354f21))
+- Implement structural index scoring (#82) ([be9e60e](https://github.com/JungYeoni/da-template/commit/be9e60e1cb5fcab7a28e384b7df6336c79a40f89))
 - 검토 워크북에 실시간 진행현황 시트 추가 (#77) ([abd3009](https://github.com/JungYeoni/da-template/commit/abd30095b7af377aea4fd0cf2acd5373db87f8d7))
 - 2016-2020 예측과 2021-2024 확정 라벨을 예산·메모까지 합친 통합 검토 워크북 (#77) ([a032db9](https://github.com/JungYeoni/da-template/commit/a032db9b468029bf40c816b05cb4eb8f40ff8a9c))
 - 2016-2020 전용 TF-IDF 예측 대상 취합 스크립트 추가 (#77) ([d70fb6f](https://github.com/JungYeoni/da-template/commit/d70fb6f00dd5a88409cbd0979f139454c8c27410))
@@ -348,6 +362,11 @@
 - 시도_지역코드_매핑 데이터 파일 생성 (#5) ([3db3e5c](https://github.com/JungYeoni/da-template/commit/3db3e5cb7b0c0f5bde75c0cf5d68fcc8294e766a))
 - 2024년도 전체 시도 분리·정제 파이프라인 진행 (이슈 #5) ([7af5ee3](https://github.com/JungYeoni/da-template/commit/7af5ee3a02eae1186b655d2840170821cbbabdfe))
 - 저장 경로에 시도명 하위폴더 추가 (#3) ([62950d4](https://github.com/JungYeoni/da-template/commit/62950d48ced0fac6cc18057049ab6ae4b0b959d7))
+
+### 수정
+
+- 구조지수 리뷰 의견 및 결측 QA 보강 (#87) (#82) ([3ac2af3](https://github.com/JungYeoni/da-template/commit/3ac2af32fd103d469a123c0d20fb3249639ddd78))
+- CPI 메타데이터 검증 및 보고서 전달 보강 (#87) (#82) ([911d43e](https://github.com/JungYeoni/da-template/commit/911d43e8643bf55b72f3abba9b74675580519a67))
 
 ### 테스트
 
