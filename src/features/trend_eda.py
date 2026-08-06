@@ -19,14 +19,15 @@ STRUCTURAL_INDICATOR_DIRECTIONS = {
     "청년고용률": "높을수록 양호",
     "소득만족도": "높을수록 양호",
     "소득수준": "높을수록 양호",
+    "소득 수준": "높을수록 양호",
     "보육시설 보급률": "높을수록 양호",
     "방과후 돌봄시설 보급도": "높을수록 양호",
     "사교육비 지출액": "낮을수록 양호",
     "문화기반시설 보급도": "높을수록 양호",
     "도시공원 보급도": "높을수록 양호",
     "여가생활 만족도": "높을수록 양호",
-    "분만실 병상수 보급도": "높을수록 양호",
-    "소아청소년과 전문인력 보급도": "높을수록 양호",
+    "(대체)분만실 병상수 보급도": "높을수록 양호",
+    "(대체)소아청소년과 전문인력 보급도": "높을수록 양호",
     "산후조리원 보급도": "높을수록 양호",
     "산후조리원 이용 요금": "낮을수록 양호",
     "어린이 교통사고 발생률": "낮을수록 양호",
@@ -34,9 +35,18 @@ STRUCTURAL_INDICATOR_DIRECTIONS = {
     "근로시간": "낮을수록 양호",
     "육아휴직 사용률": "높을수록 양호",
     "가족친화인증기업 비율": "높을수록 양호",
+    "가족친화 인증기업 비율": "높을수록 양호",
     "결혼에 대한 인식": "높을수록 양호",
     "출산에 대한 인식": "높을수록 양호",
     "가사 분담에 대한 성평등 인식": "높을수록 양호",
+    "가사분담에 대한 성평등 인식": "높을수록 양호",
+    "청년층 정규직 근로자 비율": "높을수록 양호",
+    "현재 주택가격": "낮을수록 양호",
+    "전체 가구 자가점유비율": "높을수록 양호",
+    "임차가구 연간 주거비 HCC": "낮을수록 양호",
+    "가사노동 공동 참여도": "높을수록 양호",
+    "돌봄노동 공동 참여도": "높을수록 양호",
+    "사회경제적 지위에 대한 인식": "높을수록 양호",
 }
 
 
@@ -246,6 +256,7 @@ def build_structural_region_summary(
         values = indicator_df.pivot(index="지역", columns="연도", values="측정값")
         base_values = values.get(base_year, pd.Series(dtype="float64"))
         reference_values = values.get(reference_year, pd.Series(dtype="float64"))
+        comparison_rows = indicator_df.loc[indicator_df["연도"].between(base_year, reference_year)]
         if direction == "3점에 가까울수록 양호":
             ranking_values = reference_values.sub(3).abs()
             ranks = ranking_values.rank(method="min", ascending=True)
@@ -288,6 +299,12 @@ def build_structural_region_summary(
                     ),
                     "실측연도수": int(region_rows["실측여부"].sum()),
                     "결측연도수": int((~region_rows["실측여부"]).sum()),
+                    "비교기간실측연도수": int(
+                        comparison_rows.loc[comparison_rows["지역"].eq(region), "실측여부"].sum()
+                    ),
+                    "비교기간결측연도수": int(
+                        (~comparison_rows.loc[comparison_rows["지역"].eq(region), "실측여부"]).sum()
+                    ),
                     "급등락후보연도": ", ".join(map(str, outlier_years)) or "-",
                 }
             )
@@ -311,7 +328,7 @@ def render_structural_region_report(summary: pd.DataFrame) -> str:
     lines = [
         "# 구조환경지표별 17개 시도 상세 결과",
         "",
-        "이 부록은 검증된 21개 구조환경지표의 지역별 결과를 비교한다. "
+        "이 부록은 검증된 28개 구조환경지표의 지역별 결과를 비교한다. "
         "각 지표에서 17개 시도 관측 수가 가장 많은 연도 중 최초·최신 연도를 사용했다.",
         "",
         "- `개선·악화`는 지표의 방향성에 따른 기술적 변화이며 정책 효과를 뜻하지 않는다.",
@@ -331,21 +348,30 @@ def render_structural_region_report(summary: pd.DataFrame) -> str:
             f"{row.지역}({_format_report_value(row.기준값)})"
             for row in observed.tail(3).sort_values("기준연도순위", ascending=False).itertuples()
         )
+        observation_period = first.get("관측기간") or (
+            f"{first['비교시작연도']}–{first['비교기준연도']}"
+        )
         lines.extend(
             [
                 f"## {indicator}",
                 "",
                 f"- 영역: {first['대영역']} > {first['세부영역']}",
                 f"- 방향성: {first['방향성']}",
+                f"- 단위: {first.get('단위', '-')}",
+                f"- 출처: {first.get('출처', '-')}",
+                f"- 관측기간: {observation_period}",
+                f"- 자료 기준: {first.get('자료기준', '검증 원자료 기준')}",
                 f"- 비교: {first['비교시작연도']}년 → {first['비교기준연도']}년",
                 f"- 기준연도 양호 상위: {top_regions or '-'}",
                 f"- 기준연도 하위: {bottom_regions or '-'}",
                 "",
-                "| 지역 | 시작값 | 기준값 | 변화량 | 방향성 기준 | 순위 | 실측/결측 연도 | 급등락 후보 연도 |",
-                "|---|---:|---:|---:|---|---:|---:|---|",
+                "| 지역 | 시작값 | 기준값 | 변화량 | 방향성 기준 | 순위 | 입력기간 실측/결측 | 비교기간 실측/결측 | 급등락 후보 연도 |",
+                "|---|---:|---:|---:|---|---:|---:|---:|---|",
             ]
         )
         for row in group.itertuples(index=False):
+            comparison_observed = getattr(row, "비교기간실측연도수", row.실측연도수)
+            comparison_missing = getattr(row, "비교기간결측연도수", row.결측연도수)
             lines.append(
                 "| "
                 + " | ".join(
@@ -357,6 +383,7 @@ def render_structural_region_report(summary: pd.DataFrame) -> str:
                         row.방향성기준결과,
                         _format_report_value(row.기준연도순위),
                         f"{row.실측연도수}/{row.결측연도수}",
+                        f"{comparison_observed}/{comparison_missing}",
                         row.급등락후보연도,
                     ]
                 )
