@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from scripts.build_structural_index import compare_scenarios
 from src.evaluation.structural_index import (
     StructuralIndexResult,
     compute_structural_index,
@@ -49,6 +50,12 @@ def test_processed_panel_adapter_and_scenarios_allow_nationwide_only_missing():
     assert all(len(result.final_index) == 2 for result in results.values())
     assert all("전국" not in set(result.indicator_scores["region"]) for result in results.values())
     assert "is_imputed" in results["pooled"].indicator_scores.columns
+
+    comparison = compare_scenarios(results)
+    assert len(comparison) == 2
+    assert set(comparison["region"]) == {"A", "B"}
+    assert comparison["abs_score_diff"].ge(0).all()
+    assert comparison["abs_rank_diff"].ge(0).all()
 
 
 def test_load_structural_index_weights_matches_manifest(tmp_path: Path):

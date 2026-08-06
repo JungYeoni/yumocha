@@ -23,7 +23,46 @@ DEFAULT_OUTPUT_DIR = REPO_ROOT / "data/processed/structural_index"
 DEFAULT_REPORT = REPO_ROOT / "reports/methodology/20260806_구조환경지수_실제패널_산출_QA.md"
 
 
-def build_report(results: dict, input_rows: int) -> str:
+def compare_scenarios(results: dict) -> pd.DataFrame:
+    """pooled와 yearly 최종지수·연도 내 순위를 동일 지역·연도에서 비교한다."""
+    frames = {}
+    for method in ("pooled", "yearly"):
+        frames[method] = (
+            results[method]
+            .final_index[["region", "year", "final_index", "rank"]]
+            .rename(
+                columns={
+                    "final_index": f"final_index_{method}",
+                    "rank": f"rank_{method}",
+                }
+            )
+        )
+    comparison = frames["pooled"].merge(
+        frames["yearly"], on=["region", "year"], how="inner", validate="one_to_one"
+    )
+    comparison["score_diff_yearly_minus_pooled"] = (
+        comparison["final_index_yearly"] - comparison["final_index_pooled"]
+    )
+    comparison["abs_score_diff"] = comparison["score_diff_yearly_minus_pooled"].abs()
+    comparison["rank_diff_yearly_minus_pooled"] = (
+        comparison["rank_yearly"] - comparison["rank_pooled"]
+    )
+    comparison["abs_rank_diff"] = comparison["rank_diff_yearly_minus_pooled"].abs()
+    return comparison.sort_values(["year", "region"]).reset_index(drop=True)
+
+
+def build_report(results: dict, comparison: pd.DataFrame, input_rows: int) -> str:
+    yearly_stats = comparison.groupby("year", sort=True).apply(
+        lambda group: pd.Series(
+            {
+                "pearson": group["final_index_pooled"].corr(group["final_index_yearly"]),
+                "score_mae": group["abs_score_diff"].mean(),
+                "mean_abs_rank_diff": group["abs_rank_diff"].mean(),
+                "max_abs_rank_diff": group["abs_rank_diff"].max(),
+            }
+        ),
+        include_groups=False,
+    )
     lines = [
         "# 구조환경지수 실제 패널 산출 QA",
         "",
@@ -51,8 +90,44 @@ def build_report(results: dict, input_rows: int) -> str:
             "",
             "모든 시나리오에서 지역·연도별 28개 지표가 완비되고 최종지수 153개가 산출됐다.",
             "전국 근로시간 9개 결측은 전국 행 자체가 분석 대상이 아니므로 결과에 유입되지 않는다.",
+            "",
+            "## pooled–yearly 민감도 비교",
+            "",
+            f"- 연도 내 Pearson 상관계수 범위: {yearly_stats['pearson'].min():.4f}–{yearly_stats['pearson'].max():.4f}",
+            f"- 평균 절대 순위 차이: {comparison['abs_rank_diff'].mean():.4f}단계",
+            f"- 동일 순위 비율: {comparison['abs_rank_diff'].eq(0).mean() * 100:.1f}%",
+            f"- 2단계 이내 순위 차이 비율: {comparison['abs_rank_diff'].le(2).mean() * 100:.1f}%",
+            f"- 최대 순위 차이: {int(comparison['abs_rank_diff'].max())}단계",
+            "",
+            "연도별 Min-Max는 매년 최소·최대를 0·100으로 다시 맞추므로 연도 간 절대 수준 비교에는 적합하지 않다. "
+            "따라서 **pooled를 본계열**, yearly를 연도 내 순위의 민감도 분석으로 사용한다.",
+            "전체 연도를 한꺼번에 계산한 두 점수의 상관계수는 시간축 재척도화의 영향을 받으므로 판단 근거로 사용하지 않는다.",
+            "",
+            "### 순위 차이가 큰 지역·연도",
+            "",
+            "| 지역 | 연도 | pooled 순위 | yearly 순위 | 절대 차이 |",
+            "|---|---:|---:|---:|---:|",
         ]
     )
+    for row in comparison.nlargest(5, "abs_rank_diff").itertuples(index=False):
+        lines.append(
+            f"| {row.region} | {row.year} | {int(row.rank_pooled)} | "
+            f"{int(row.rank_yearly)} | {int(row.abs_rank_diff)} |"
+        )
+    lines.extend(
+        [
+            "",
+            "### 연도별 비교",
+            "",
+            "| 연도 | Pearson 상관 | 점수 MAE | 평균 절대 순위 차이 | 최대 순위 차이 |",
+            "|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for year, row in yearly_stats.iterrows():
+        lines.append(
+            f"| {year} | {row['pearson']:.4f} | {row['score_mae']:.4f} | "
+            f"{row['mean_abs_rank_diff']:.4f} | {int(row['max_abs_rank_diff'])} |"
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -72,6 +147,7 @@ def main() -> None:
     weights = load_structural_index_weights(REPO_ROOT)
     validate_structural_index_weights(weights, manifest)
     results = run_structural_index_scenarios(panel, weights)
+    comparison = compare_scenarios(results)
 
     expected_indicator_rows = (
         len(DEFAULT_STRUCTURAL_REGIONS) * len(DEFAULT_STRUCTURAL_YEARS) * len(weights)
@@ -95,7 +171,12 @@ def main() -> None:
                 index=False,
                 encoding="utf-8-sig",
             )
-    args.report.write_text(build_report(results, len(raw)), encoding="utf-8")
+    comparison.to_csv(
+        args.output_dir / "structural_index_pooled_yearly_comparison.csv",
+        index=False,
+        encoding="utf-8-sig",
+    )
+    args.report.write_text(build_report(results, comparison, len(raw)), encoding="utf-8")
     print(f"구조환경지수 산출 완료: {args.output_dir}")
     print(f"QA 보고서: {args.report}")
 
