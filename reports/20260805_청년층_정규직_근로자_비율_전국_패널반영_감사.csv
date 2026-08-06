@@ -1,0 +1,10 @@
+﻿지역,지표_id,연도,반영전값,반영후값,반영유형,관측상태,QA_상태
+전국,youth_regular_employment_rate,2016,,64.1,원자료 마이크로데이터 직접계산,관측,PASS
+전국,youth_regular_employment_rate,2017,,67.7,원자료 마이크로데이터 직접계산,관측,PASS
+전국,youth_regular_employment_rate,2018,,67.9,원자료 마이크로데이터 직접계산,관측,PASS
+전국,youth_regular_employment_rate,2019,,67.8,원자료 마이크로데이터 직접계산,관측,PASS
+전국,youth_regular_employment_rate,2020,,57.5,원자료 마이크로데이터 직접계산,관측,PASS
+전국,youth_regular_employment_rate,2021,,63.5,원자료 마이크로데이터 직접계산,관측,PASS
+전국,youth_regular_employment_rate,2022,,60.9,원자료 마이크로데이터 직접계산,관측,PASS
+전국,youth_regular_employment_rate,2023,,71.7,원자료 마이크로데이터 직접계산,관측,PASS
+전국,youth_regular_employment_rate,2024,,70.9,원자료 마이크로데이터 직접계산,관측,PASS
