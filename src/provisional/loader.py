@@ -198,6 +198,23 @@ def _prepare_funding_rows(
         ).str.strip().eq("방비")
         frame.loc[truncated, "사업분류재정구분"] = "지방비"
 
+        # 경북 "여성지도자 육성"(원본행 8200)의 2018년 예산이 원본 PDF에 "-20"으로
+        # 인쇄돼 있다(전년도 45, 증감액 -65와 산술적으로는 일관됨). 예산이 음수일 수
+        # 없어 원본 작성 단계의 오탈자로 보고 재정팀에 확인했고, 20으로 보정하기로
+        # 했다(2026-08-07, 팀 채팅 확인). 총예산 대비 0.0016%라 소계·총계 대조로는
+        # 검증이 불가능해 사람 확인에 의존한다 — reports/20260726_..._생성.md,
+        # 이슈 #81 코멘트 참고.
+        gyeongbuk_typo = frame["지역"].eq("경북") & frame["원본행"].eq(8200)
+        matched = int(gyeongbuk_typo.sum())
+        if matched != 1:
+            raise ValueError(f"2018 경북 여성지도자 육성 보정 대상 행이 1개가 아닙니다: {matched}")
+        original_value = frame.loc[gyeongbuk_typo, current_column].iloc[0]
+        if float(original_value) != -20.0:
+            raise ValueError(
+                f"2018 경북 여성지도자 육성 원본값이 예상과 다릅니다: {original_value}"
+            )
+        frame.loc[gyeongbuk_typo, current_column] = 20
+
     if year == 2019:
         finance_type = frame["사업분류재정구분"].astype("string").str.strip()
         frame["사업분류재정구분"] = finance_type.replace({"｣계": "계"})

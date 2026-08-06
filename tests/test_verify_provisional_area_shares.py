@@ -2,11 +2,7 @@ import pandas as pd
 
 import pytest
 
-from scripts.verify_provisional_area_shares import (
-    check_out_of_range_is_only_known_cause,
-    check_share_ranges,
-    compute_shares,
-)
+from scripts.verify_provisional_area_shares import check_share_ranges, compute_shares
 
 
 def test_compute_shares_sums_to_one_for_normal_budgets():
@@ -49,18 +45,13 @@ def test_check_share_ranges_flags_share_sum_mismatch():
     assert row["실제값"] == 1
 
 
-def test_check_out_of_range_is_only_known_cause_passes_for_gyeongbuk_2018():
-    panel = pd.DataFrame(
-        [
-            {"지역": "경북", "연도": 2018, "대영역": "A", "당해계획예산_백만원_provisional": -20.0},
-            {"지역": "경북", "연도": 2018, "대영역": "B", "당해계획예산_백만원_provisional": 120.0},
-        ]
-    )
-    shares = compute_shares(panel, category_column="대영역")
-    check_out_of_range_is_only_known_cause(shares)  # 예외 없이 통과해야 한다
+def test_check_share_ranges_flags_out_of_range_share():
+    """음수 예산 셀이 있으면(더 이상 알려진 예외 없음) 그 자체로 실패해야 한다.
 
-
-def test_check_out_of_range_raises_for_unexpected_region_year():
+    경북 2018 "여성지도자 육성" -20은 원본 PDF 오탈자로 확인돼 20으로
+    보정했으므로(src/provisional/loader.py), 이제 범위 이탈이 있으면 예외
+    없이 바로 실패로 잡아야 한다.
+    """
     panel = pd.DataFrame(
         [
             {"지역": "서울", "연도": 2021, "대영역": "A", "당해계획예산_백만원_provisional": -20.0},
@@ -68,5 +59,8 @@ def test_check_out_of_range_raises_for_unexpected_region_year():
         ]
     )
     shares = compute_shares(panel, category_column="대영역")
-    with pytest.raises(ValueError, match="알려진 원인"):
-        check_out_of_range_is_only_known_cause(shares)
+    qa = check_share_ranges(shares, category_column="대영역")
+    row = qa.loc[qa["검사항목"].str.contains("범위 이탈")].iloc[0]
+    assert row["판정"] == "FAIL"
+    # 총액이 100인데 -20(구성비 -0.2)과 120(구성비 1.2) 둘 다 0~1 범위를 벗어난다.
+    assert row["실제값"] == 2
