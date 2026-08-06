@@ -28,6 +28,26 @@ VALID_DIRECTIONS = {
 }
 
 DEFAULT_WEIGHT_SUM_TOLERANCE = 1e-9
+DEFAULT_STRUCTURAL_YEARS = tuple(range(2016, 2025))
+DEFAULT_STRUCTURAL_REGIONS = (
+    "서울",
+    "부산",
+    "대구",
+    "인천",
+    "광주",
+    "대전",
+    "울산",
+    "세종",
+    "경기",
+    "강원",
+    "충북",
+    "충남",
+    "전북",
+    "전남",
+    "경북",
+    "경남",
+    "제주",
+)
 
 
 @dataclass
@@ -189,6 +209,35 @@ def prepare_structural_index_input(
     return result
 
 
+def prepare_processed_structural_panel(
+    df: pd.DataFrame, *, value_col: str = "processed_value"
+) -> pd.DataFrame:
+    """#70 결측처리 완료 패널을 구조환경지수 공통 스키마로 변환한다."""
+    result = prepare_structural_index_input(
+        df,
+        region_col="지역",
+        year_col="연도",
+        indicator_id_col="지표_id",
+        value_col=value_col,
+        category_col="대분류",
+        subcategory_col="세부영역",
+        direction_col="방향",
+    )
+    optional = ["지표명", "is_observed", "is_imputed", "processing_strategy", "missing_type"]
+    return result[
+        [
+            "region",
+            "year",
+            "indicator_id",
+            "value",
+            "category",
+            "subcategory",
+            "direction",
+            *[column for column in optional if column in result.columns],
+        ]
+    ]
+
+
 def validate_structural_index_input(
     df: pd.DataFrame,
     manifest: pd.DataFrame | None = None,
@@ -246,7 +295,8 @@ def validate_structural_index_input(
             f"무한값 또는 비수치 값이 있습니다: {bad_rows[['region', 'year', 'indicator_id', 'value']].to_dict(orient='records')}"
         )
 
-    missing_values = df["value"].isna().sum()
+    analysis_rows = df["region"].astype(str).ne(nationwide_label)
+    missing_values = df.loc[analysis_rows, "value"].isna().sum()
     if missing_values > 0 and not allow_missing_values:
         raise ValueError(f"측정값 결측이 있습니다: {missing_values}건")
 
@@ -344,11 +394,11 @@ def standardize_structural_indicators(
     # Do not allow missing values to propagate into final standardization.
     # `allow_missing_values` is diagnostic only and will not permit final
     # aggregation with missing numbers.
-    if df["value"].isna().any():
+    data = df.loc[df["region"] != nationwide_label].copy()
+    if data["value"].isna().any():
         raise ValueError(
             "입력에 결측값이 포함되어 있습니다. allow_missing_values는 진단용이며 최종 지수 계산에서는 허용되지 않습니다."
         )
-    data = df.loc[df["region"] != nationwide_label].copy()
     if data.empty:
         raise ValueError("전국을 제외한 지역 데이터가 존재하지 않습니다.")
 
@@ -440,26 +490,34 @@ def standardize_structural_indicators(
         group["zero_variance"] = bool(zero_variance)
 
         for _, row in group.iterrows():
-            records.append(
-                {
-                    "region": row["region"],
-                    "year": int(row["year"]),
-                    "indicator_id": row["indicator_id"],
-                    "category": category,
-                    "subcategory": subcategory,
-                    "direction": direction,
-                    "value": float(row["value"]),
-                    "method": method,
-                    "z_score": float(row["z_score"]),
-                    "group_mean": float(row["group_mean"]),
-                    "group_std": float(row["group_std"]),
-                    "group_min_z": float(row["group_min_z"]),
-                    "group_max_z": float(row["group_max_z"]),
-                    "score_0_100": float(row["score_0_100"]),
-                    "directional_score": float(row["directional_score"]),
-                    "zero_variance": bool(row["zero_variance"]),
-                }
-            )
+            record = {
+                "region": row["region"],
+                "year": int(row["year"]),
+                "indicator_id": row["indicator_id"],
+                "category": category,
+                "subcategory": subcategory,
+                "direction": direction,
+                "value": float(row["value"]),
+                "method": method,
+                "z_score": float(row["z_score"]),
+                "group_mean": float(row["group_mean"]),
+                "group_std": float(row["group_std"]),
+                "group_min_z": float(row["group_min_z"]),
+                "group_max_z": float(row["group_max_z"]),
+                "score_0_100": float(row["score_0_100"]),
+                "directional_score": float(row["directional_score"]),
+                "zero_variance": bool(row["zero_variance"]),
+            }
+            for column in (
+                "지표명",
+                "is_observed",
+                "is_imputed",
+                "processing_strategy",
+                "missing_type",
+            ):
+                if column in row.index:
+                    record[column] = row[column]
+            records.append(record)
 
     result = pd.DataFrame(records)
     if result.empty:
@@ -493,6 +551,70 @@ def compute_structural_index(
         source_name="지수 산출 입력",
     )
     require_columns(weights, ["id", weight_col], source_name="AHP 가중치")
+
+    if indicator_scores.duplicated(subset=[region_col, year_col, indicator_id_col]).any():
+        duplicates = (
+            indicator_scores.loc[
+                indicator_scores.duplicated(
+                    subset=[region_col, year_col, indicator_id_col], keep=False
+                ),
+                [region_col, year_col, indicator_id_col],
+            ]
+            .drop_duplicates()
+            .head(5)
+            .to_dict(orient="records")
+        )
+        raise ValueError(f"지역+연도+지표 ID 중복이 있습니다: {duplicates}")
+
+    if weights["id"].duplicated().any():
+        duplicate_weight_ids = sorted(
+            weights.loc[weights["id"].duplicated(keep=False), "id"].astype(str).unique()
+        )
+        raise ValueError(f"AHP 가중치 지표 ID 중복이 있습니다: {duplicate_weight_ids}")
+
+    expected_indicator_ids = set(weights["id"].astype(str))
+    actual_indicator_ids = set(indicator_scores[indicator_id_col].astype(str))
+    missing_globally = sorted(expected_indicator_ids - actual_indicator_ids)
+    extra_globally = sorted(actual_indicator_ids - expected_indicator_ids)
+    if missing_globally or extra_globally:
+        parts = []
+        if missing_globally:
+            parts.append(f"가중치에 있지만 입력에 없는 지표: {missing_globally}")
+        if extra_globally:
+            parts.append(f"입력에 있지만 가중치에 없는 지표: {extra_globally}")
+        raise ValueError(" / ".join(parts))
+
+    inconsistent_metadata = []
+    for indicator_id, group in indicator_scores.groupby(indicator_id_col, sort=False):
+        categories = group[category_col].dropna().astype(str).unique()
+        subcategories = group[subcategory_col].dropna().astype(str).unique()
+        if len(categories) != 1 or len(subcategories) != 1:
+            inconsistent_metadata.append(
+                {
+                    "indicator_id": indicator_id,
+                    "categories": categories.tolist(),
+                    "subcategories": subcategories.tolist(),
+                }
+            )
+    if inconsistent_metadata:
+        raise ValueError(f"지표별 대분류·세부영역이 일관되지 않습니다: {inconsistent_metadata[:5]}")
+
+    incomplete_groups = []
+    for (region, year), group in indicator_scores.groupby(
+        [region_col, year_col], sort=False, observed=True
+    ):
+        group_ids = set(group[indicator_id_col].astype(str))
+        missing = sorted(expected_indicator_ids - group_ids)
+        extra = sorted(group_ids - expected_indicator_ids)
+        if missing or extra:
+            incomplete_groups.append(
+                {region_col: region, year_col: year, "missing": missing, "extra": extra}
+            )
+    if incomplete_groups:
+        raise ValueError(
+            "지역·연도별 지표 구성이 가중치의 완전한 지표 집합과 일치하지 않습니다: "
+            f"{incomplete_groups[:5]}"
+        )
 
     numeric_scores = pd.to_numeric(indicator_scores[score_col], errors="coerce")
     score_values = numeric_scores.to_numpy(dtype=float, na_value=np.nan)
@@ -597,13 +719,42 @@ def compute_structural_index(
     )
 
 
+def run_structural_index_scenarios(
+    df: pd.DataFrame,
+    weights: pd.DataFrame,
+    *,
+    methods: Iterable[str] = ("pooled", "yearly"),
+    expected_regions: Iterable[str] = DEFAULT_STRUCTURAL_REGIONS,
+    expected_years: Iterable[int] = DEFAULT_STRUCTURAL_YEARS,
+    nationwide_label: str = "전국",
+) -> dict[str, StructuralIndexResult]:
+    """동일한 완전 패널에 pooled/yearly 표준화 시나리오를 일관되게 실행한다."""
+    indicator_ids = weights["id"].astype(str).tolist()
+    results: dict[str, StructuralIndexResult] = {}
+    for method in methods:
+        standardized = standardize_structural_indicators(
+            df,
+            method=method,
+            nationwide_label=nationwide_label,
+            expected_regions=expected_regions,
+            expected_years=expected_years,
+            expected_indicator_ids=indicator_ids,
+        )
+        results[method] = compute_structural_index(
+            standardized, weights, nationwide_label=nationwide_label
+        )
+    return results
+
+
 __all__ = [
     "StructuralIndexResult",
     "load_structural_indicator_manifest",
     "load_structural_index_weights",
     "validate_structural_index_weights",
     "prepare_structural_index_input",
+    "prepare_processed_structural_panel",
     "validate_structural_index_input",
     "standardize_structural_indicators",
     "compute_structural_index",
+    "run_structural_index_scenarios",
 ]

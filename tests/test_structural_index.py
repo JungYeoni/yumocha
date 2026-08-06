@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from src.evaluation.structural_index import (
     StructuralIndexResult,
@@ -12,7 +13,42 @@ from src.evaluation.structural_index import (
     validate_structural_index_input,
     validate_structural_index_weights,
     prepare_structural_index_input,
+    prepare_processed_structural_panel,
+    run_structural_index_scenarios,
 )
+
+
+def test_processed_panel_adapter_and_scenarios_allow_nationwide_only_missing():
+    rows = []
+    for region, values in (("A", (1.0, 10.0)), ("B", (3.0, 30.0)), ("전국", (None, 20.0))):
+        for indicator_id, value in zip(("x", "y"), values, strict=True):
+            rows.append(
+                {
+                    "지역": region,
+                    "연도": 2022,
+                    "지표_id": indicator_id,
+                    "processed_value": value,
+                    "대분류": "cat",
+                    "세부영역": "sub",
+                    "방향": "positive",
+                    "is_imputed": region == "A",
+                }
+            )
+    panel = prepare_processed_structural_panel(pd.DataFrame(rows))
+    weights = pd.DataFrame([{"id": "x", "weight": 0.5}, {"id": "y", "weight": 0.5}])
+
+    results = run_structural_index_scenarios(
+        panel,
+        weights,
+        expected_regions=["A", "B"],
+        expected_years=[2022],
+    )
+
+    assert set(results) == {"pooled", "yearly"}
+    assert all(len(result.indicator_scores) == 4 for result in results.values())
+    assert all(len(result.final_index) == 2 for result in results.values())
+    assert all("전국" not in set(result.indicator_scores["region"]) for result in results.values())
+    assert "is_imputed" in results["pooled"].indicator_scores.columns
 
 
 def test_load_structural_index_weights_matches_manifest(tmp_path: Path):
@@ -930,3 +966,85 @@ def test_prepare_adapter_and_manifest_direction_roundtrip():
         ["region", "year", "indicator_id", "value", "category", "subcategory", "direction"]
     ).issubset(set(out.columns))
     assert out["direction"].tolist() == ["positive", "negative", "center_or_positive"]
+
+
+def test_compute_structural_index_rejects_missing_indicator_row():
+    scores = pd.DataFrame(
+        [
+            {
+                "region": "A",
+                "year": 2022,
+                "indicator_id": "i1",
+                "category": "c",
+                "subcategory": "s",
+                "directional_score": 50.0,
+            }
+        ]
+        + [
+            {
+                "region": "B",
+                "year": 2022,
+                "indicator_id": indicator_id,
+                "category": "c",
+                "subcategory": "s",
+                "directional_score": 50.0,
+            }
+            for indicator_id in ("i1", "i2")
+        ]
+    )
+    weights = pd.DataFrame(
+        [
+            {"id": "i1", "weight": 0.5},
+            {"id": "i2", "weight": 0.5},
+        ]
+    )
+
+    with pytest.raises(ValueError, match="지역·연도별 지표 구성"):
+        compute_structural_index(scores, weights)
+
+
+def test_compute_structural_index_rejects_duplicate_indicator_row():
+    scores = pd.DataFrame(
+        [
+            {
+                "region": "A",
+                "year": 2022,
+                "indicator_id": "i1",
+                "category": "c",
+                "subcategory": "s",
+                "directional_score": 50.0,
+            },
+            {
+                "region": "A",
+                "year": 2022,
+                "indicator_id": "i1",
+                "category": "c",
+                "subcategory": "s",
+                "directional_score": 60.0,
+            },
+        ]
+    )
+    weights = pd.DataFrame([{"id": "i1", "weight": 1.0}])
+
+    with pytest.raises(ValueError, match=r"지역\+연도\+지표 ID 중복"):
+        compute_structural_index(scores, weights)
+
+
+def test_compute_structural_index_rejects_inconsistent_indicator_metadata():
+    scores = pd.DataFrame(
+        [
+            {
+                "region": region,
+                "year": 2022,
+                "indicator_id": "i1",
+                "category": category,
+                "subcategory": "s",
+                "directional_score": 50.0,
+            }
+            for region, category in (("A", "c1"), ("B", "c2"))
+        ]
+    )
+    weights = pd.DataFrame([{"id": "i1", "weight": 1.0}])
+
+    with pytest.raises(ValueError, match="대분류·세부영역이 일관되지"):
+        compute_structural_index(scores, weights)
