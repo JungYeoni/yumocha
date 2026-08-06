@@ -86,6 +86,8 @@ def apply_regional_confirmed_observations_to_panel(
         result.loc[mask, "측정값"] = float(row["측정값"])
         if "원본행존재" in result.columns:
             result.loc[mask, "원본행존재"] = True
+        if "관측상태" in result.columns:
+            result.loc[mask, "관측상태"] = row["관측상태"]
         audit_rows.append(
             {
                 "지역": row["지역"],

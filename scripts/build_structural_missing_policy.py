@@ -618,6 +618,20 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
     lines = [
         "# 구조환경지표 28개 결측 정책 매핑 요약",
         "",
+        "## 검증 범위",
+        "",
+        "- 데이터셋 버전·기간: `data/processed/구조환경지표_28개_보간전_기준패널.csv`, "
+        "2016–2024, 18개 지역, 28개 지표",
+        "- 분할 전략: 해당 없음 — 예측 모델 학습이 아니라 결측 셀 각각에 정책을 매핑하는 "
+        "결정론적 규칙 적용이다",
+        "- 평가 지표·CV fold 수: 해당 없음(위와 같은 이유) — 대신 `validate_policy_mapping()`의 "
+        "89개 QA 항목(허용값 범위, 기대 건수 일치, 정책-차단 플래그 일관성 등)을 판정 기준으로 쓴다",
+        "- 핵심 가정: 각 정책 규칙(`configs/structural_missing_policy.yaml`)이 지표·지역·연도 "
+        "조합을 중복·누락 없이 정확히 한 번씩만 다룬다고 가정한다",
+        "- 방법론적 제약·한계: 정책 규칙은 사람이 문서화한 근거(`evidence`)에 기반하며, 원자료 "
+        "자체의 진위(예: 특정 연도 자료가 실제로 부재한지)는 이 스크립트가 아니라 각 근거 "
+        "문서에서 검증한다",
+        "",
         "## 범위",
         "",
         "- 입력: `data/processed/구조환경지표_28개_보간전_기준패널.csv`",
@@ -632,7 +646,7 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
         "- 조사 비실시 연도는 자동 차단하지 않고 관측값 사이면 선형보간 후보로 둔다.",
         "- 경계 결측은 본계열 `boundary_carry` 후보로 두되 이번 단계에서는 값을 만들지 않는다.",
         "- `analysis_included_after_imputation`은 현재 포함 상태가 아니라 대체·QA 완료 후 포함 예정 상태다.",
-        f"- 원인 미확정 {int(mapping['cause_status'].eq('unresolved').sum()):,}건은 `pending_review`로 차단한다.",
+        "- 원인 미확정 건은 `pending_review`로 차단한다.",
         "- 비선형 가사분담 지표는 관측구간 전체가 중간값(3점) 미만이라 직접 선형보간이 안전함을 검증한 뒤 `linear_interpolation`으로 전환했다.",
         "- 완전격자 생성 여부는 `original_row_exists`로 보존하며 더 구체적인 결측 원인을 덮지 않는다.",
         "",
@@ -659,18 +673,21 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
             "",
             "## 지표별 요약",
             "",
-            "| 지표 | 결측 | 결측연도 | 원인 | 본계열 정책 | 차단 | 대체 후 분석포함 예정 |",
-            "|---|---:|---|---|---|---:|---:|",
+            "| 지표 | 결측 | 결측연도 | 지역 | 원인 | 본계열 정책 | 차단 | 대체 후 분석포함 예정 |",
+            "|---|---:|---|---|---|---|---:|---:|",
         ]
     )
     for _, group in mapping.groupby(["지표_id", "지표명"], sort=False):
+        regions = sorted(group["지역"].unique())
+        region_label = "전국" if regions == ["전국"] else _format_unique(group["지역"])
         lines.append(
-            "| {name} (`{indicator}`) | {count:,} | {years} | {causes} | {policies} | "
+            "| {name} (`{indicator}`) | {count:,} | {years} | {regions} | {causes} | {policies} | "
             "{blocked:,} | {included:,} |".format(
                 name=group["지표명"].iloc[0],
                 indicator=group["지표_id"].iloc[0],
                 count=len(group),
                 years=_format_years(group["연도"]),
+                regions=region_label,
                 causes=_format_unique(group["missing_cause"]),
                 policies=_format_unique(group["imputation_policy"]),
                 blocked=int(group["block_imputation"].sum()),
@@ -743,8 +760,8 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
         else:
             resolved_labels.append(label)
     resolved_note = (
-        f" {'·'.join(resolved_labels)}은(는) 실측/raking 확보 또는 직접 선형보간 안전성 검증으로"
-        " 이 목록에서 빠졌다(0건)."
+        f" 다음 지표는 실측/raking 확보 또는 직접 선형보간 안전성 검증으로 이 목록에서"
+        f" 빠졌다(0건): {', '.join(resolved_labels)}."
         if resolved_labels
         else ""
     )

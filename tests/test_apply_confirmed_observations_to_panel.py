@@ -147,6 +147,40 @@ def test_fills_missing_restoration_cell_and_overwrites_correction_cell():
     assert other_indicator["측정값"] == 42.0
 
 
+def test_propagates_observed_status_when_panel_has_the_column():
+    panel = pd.concat(
+        [
+            _sample_panel(),
+            pd.DataFrame(
+                [
+                    {
+                        "지역": f"지역{i}",
+                        "지표_id": INDICATOR_ID,
+                        "연도": 2020,
+                        "측정값": float("nan"),
+                        "원본행존재": False,
+                    }
+                    for i in range(34)
+                ]
+            ),
+        ],
+        ignore_index=True,
+    )
+    panel["관측상태"] = "미관측"
+    panel.loc[panel["연도"].eq(2018), "관측상태"] = "관측"
+    confirmed = _sample_confirmed()
+    assert len(confirmed) == 37
+
+    updated, _ = apply_regional_confirmed_observations_to_panel(panel, confirmed)
+
+    seoul_2020 = updated.loc[
+        updated["지역"].eq("서울") & updated["연도"].eq(2020) & updated["지표_id"].eq(INDICATOR_ID)
+    ].iloc[0]
+    assert seoul_2020["관측상태"] == "관측"
+    unrelated = updated.loc[updated["연도"].eq(2018)].iloc[0]
+    assert unrelated["관측상태"] == "관측"
+
+
 def test_rejects_conflicting_existing_value_for_restoration_type():
     panel = _sample_panel()
     panel.loc[panel["연도"].eq(2020) & panel["지역"].eq("서울"), "측정값"] = 555.0
