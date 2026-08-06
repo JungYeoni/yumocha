@@ -53,6 +53,7 @@
 
 ### 리팩터링
 
+- 제주 전용 종합지수 그래프 제거 (#91) ([db9065b](https://github.com/JungYeoni/da-template/commit/db9065b1bd312ea4eaaace28273474930b8e70bf))
 - 학습·예측 산출 파일명에서 연도 범위 제거 (#77) ([bba7eab](https://github.com/JungYeoni/da-template/commit/bba7eab3ba1d0a4dc3ee4a198a59cd5481dd4213))
 - TF-IDF 분류 대상 경로 명확화 (#60) ([9c36e7c](https://github.com/JungYeoni/da-template/commit/9c36e7c29e068a4768dfe4c3f280558eab794572))
 - 구조환경지표 시각화 산출물 폴더 분리 (#45) ([322b357](https://github.com/JungYeoni/da-template/commit/322b3576fe993531d562de70ecc7438db1319207))
@@ -72,6 +73,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([8d7995c](https://github.com/JungYeoni/da-template/commit/8d7995c0e809e87d7122e54639612476838fc628))
 - CHANGELOG 자동 업데이트 [skip ci] ([9bcae66](https://github.com/JungYeoni/da-template/commit/9bcae66c8e7dd3f2ba285ebd1bbc41a05c968bfd))
 - CHANGELOG 자동 업데이트 [skip ci] ([5cd49cc](https://github.com/JungYeoni/da-template/commit/5cd49cc4e13d9f4207d851867e9502b086e04267))
 - CHANGELOG 자동 업데이트 [skip ci] ([54f6261](https://github.com/JungYeoni/da-template/commit/54f62614e62fe1651bb8fa842ac0838a7e87a370))
@@ -195,6 +197,10 @@
 
 ### 버그 수정
 
+- AHP 지수 시각화 리뷰 반영 (#91) ([938bc2e](https://github.com/JungYeoni/da-template/commit/938bc2e0934cb1c4a779901f788519a6d86f61fe))
+- 종합지수 시각화 테스트 fixture 분리 (#91) ([a7e6834](https://github.com/JungYeoni/da-template/commit/a7e68345e1414955a9207560721d685e7c8d131c))
+- 대영역 기여도 색상 대비 개선 (#91) ([d201d7a](https://github.com/JungYeoni/da-template/commit/d201d7a8e6f7cbadad0b1be5ceec21e35c06f14f))
+- 대영역 기여도 팔레트 개선 (#91) ([a364009](https://github.com/JungYeoni/da-template/commit/a36400945fbb087c6f81984c1ce1e3e1dd5856cd))
 - 추세 시각화 리뷰 의견 반영 (#63) ([8ceb7cc](https://github.com/JungYeoni/da-template/commit/8ceb7cca2518e3a528b2489e9eb2ab40f225a1bb))
 - 2차 코드리뷰 반영 — 관측상태 전파 3번째 함수, 문서 표현·모호성 정리 (#70) ([2322659](https://github.com/JungYeoni/da-template/commit/232265998b0a0257b1267e4cc5f11e761278d876))
 - PR #89 코드리뷰 남은 항목 반영 — 정책 재생성 크래시, 방어 검증 보강 (#70) ([bde4ea4](https://github.com/JungYeoni/da-template/commit/bde4ea456eb1c9ce518a86644f2fd459f55332a4))
@@ -281,6 +287,8 @@
 
 ### 새 기능
 
+- 종합지수 기여도 heatmap 추가 (#91) ([6d1f6d1](https://github.com/JungYeoni/da-template/commit/6d1f6d1b1cd26bb4017e5b5fc1e6e4919018b7d6))
+- AHP 구조환경지수 종합지수 시각화 반영 (#91) ([8f6882d](https://github.com/JungYeoni/da-template/commit/8f6882dbcc03591c3a23251e24552b4391d7beb6))
 - 공식 분석 산출물 선택적 추적 반영 (#90) ([c485e32](https://github.com/JungYeoni/da-template/commit/c485e322ff14e245b41dcc7130a6f49b3715c7fc))
 - 28개 구조환경지표 추세 시각화 반영 (#63) ([bc5e994](https://github.com/JungYeoni/da-template/commit/bc5e994956cdde2d01bc0bb6176c1016ad458dd5))
 - Deflate selected cost indicators with CPI (#82) ([5bcd579](https://github.com/JungYeoni/da-template/commit/5bcd5796320ac32502701801b3f34385b2acaeb6))
