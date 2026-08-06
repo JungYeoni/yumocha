@@ -22,6 +22,11 @@
 
 - Config 파일명 변경 (#38) ([392d835](https://github.com/JungYeoni/da-template/commit/392d835af07a5cb6d686c912d88f6e4b929debe9))
 
+### wip
+
+- Preserve structural missing-policy implementation (#70) ([a35db4c](https://github.com/JungYeoni/da-template/commit/a35db4c647c33143895c2c932d2a5b8620fb3e7e))
+- Checkpoint #70 missing-data panel work ([bf3ae83](https://github.com/JungYeoni/da-template/commit/bf3ae83833604a4d23f5e73f74d1c46ed6a70729))
+
 ### 기타
 
 - 주거실태조사·가족실태조사 노트북 커널 재시작 전체 실행 검증 (#44) (#59) ([f9f6cd7](https://github.com/JungYeoni/da-template/commit/f9f6cd76c334b4c29e18fa84ebceb87216aeb4e6))
@@ -58,6 +63,10 @@
 
 ### 문서
 
+- 가족친화 인증기업 전국 통계 "누계" 정의 검증 기록 (#70) ([46952bf](https://github.com/JungYeoni/da-template/commit/46952bf609641fc817b7d0b8b246e42b873e390f))
+- 가족친화 지역별 51건 보간 방법 제안 (#70) ([3708564](https://github.com/JungYeoni/da-template/commit/37085644c0e2e317ff045f4e98b825a658a7d46c))
+- Record full test verification for #70 handoff ([062cd70](https://github.com/JungYeoni/da-template/commit/062cd70544e30bd185d8f245b5592e0514d1239b))
+- CHANGELOG 자동 업데이트 [skip ci] ([84ad3e7](https://github.com/JungYeoni/da-template/commit/84ad3e7aa161075179aa44da59d6fee790d80f51))
 - 총세출 분모 패널 최종보고서 작성 (#69) ([101d902](https://github.com/JungYeoni/da-template/commit/101d9024bc35c6f595659d5abfbf8682fff9d8ad))
 - 총세출 분모 패널 데이터 사전 작성 (#69) ([74bbffd](https://github.com/JungYeoni/da-template/commit/74bbffdffc7dd9b366c52907faa3863bc0891fb8))
 - 지방재정365 세출예산 원자료 구조 점검 (#69) ([0b2367b](https://github.com/JungYeoni/da-template/commit/0b2367b26711c383eaa4b79b4db8f9593eb5709a))
@@ -174,6 +183,12 @@
 
 ### 버그 수정
 
+- 2차 코드리뷰 반영 — 관측상태 전파 3번째 함수, 문서 표현·모호성 정리 (#70) ([2322659](https://github.com/JungYeoni/da-template/commit/232265998b0a0257b1267e4cc5f11e761278d876))
+- PR #89 코드리뷰 남은 항목 반영 — 정책 재생성 크래시, 방어 검증 보강 (#70) ([bde4ea4](https://github.com/JungYeoni/da-template/commit/bde4ea456eb1c9ce518a86644f2fd459f55332a4))
+- PR #89 코드리뷰 반영 — 관측상태 전파 누락, 빈 패널감사표 KeyError (#70) ([1bfb6ad](https://github.com/JungYeoni/da-template/commit/1bfb6ad6b7cb6f0ac3290334a667a64929a18cd0))
+- 가족친화 공식원본 메타데이터 CSV 확장에 맞춰 테스트 갱신 (#70) ([f89158a](https://github.com/JungYeoni/da-template/commit/f89158a2ea7402225745ff99856232af9036a14b))
+- 산후조리원·분만실 병상수 결측 정책을 boundary_carry에서 keep_missing으로 정정 (#70) ([7f074fe](https://github.com/JungYeoni/da-template/commit/7f074fe53fe2b3210d7e238a4d96b79df6549568))
+- Break clean-checkout circular dependency in family-friendly generation (#70) ([0c64c46](https://github.com/JungYeoni/da-template/commit/0c64c46b0226ffefcfaf2369d8830cfc2b8f05a5))
 - CodeRabbit 리뷰 피드백 반영 (#69) ([5a9d728](https://github.com/JungYeoni/da-template/commit/5a9d7282060c47e8912cdd0842d8065167deebd5))
 - Address CodeRabbit findings in missing-value handling ([3e29203](https://github.com/JungYeoni/da-template/commit/3e292038f252685b960c51ccef7b4c73850b3692))
 - Resolve PR #86 CI failures ([62dd30e](https://github.com/JungYeoni/da-template/commit/62dd30e033cbc26e81eb2e490b30919ee2272f32))
@@ -253,6 +268,17 @@
 
 ### 새 기능
 
+- 가족친화 2017·2019 raking 추정치 34건 본계열 반영 (#70) ([08d67d3](https://github.com/JungYeoni/da-template/commit/08d67d398afcc9e8de7c98a6f6d92d4cdd42c12b))
+- 가족친화 2017년 raking 재계산(2016 실측 활용) 및 ffsb 크롤링 스크립트 반영 (#70) ([5a5bbea](https://github.com/JungYeoni/da-template/commit/5a5bbeaafbee63bf5c226a606302f923c4279a07))
+- 가족친화 2016년 지역별 실측값 확보로 51건 중 17건 해소 (#70) ([236cd76](https://github.com/JungYeoni/da-template/commit/236cd7618ff53a4b8fa679df24bf8979dd7ebdea))
+- 청년층 정규직 근로자 비율 전국 9개년 값 원자료 직접계산 (#70) ([5ec83a1](https://github.com/JungYeoni/da-template/commit/5ec83a16e696e18815123f9c2db569dd50a7319a))
+- 가사분담 성평등 인식 직접 선형보간으로 전환 (#70) ([8198222](https://github.com/JungYeoni/da-template/commit/8198222cf79657e2094abc374a09efb2a1327c85))
+- 가족친화 51건 raking·구성비 보조 시나리오 계산 (#70) ([ccce398](https://github.com/JungYeoni/da-template/commit/ccce398f5d9ca5b92d8872f68323368156bf84e1))
+- 구조환경지표 결측 정책 실제 패널 적용 (#70) ([cb04abf](https://github.com/JungYeoni/da-template/commit/cb04abf78602afbd07d7ef9bc108652eee7b3efa))
+- 전국 5건 패널·매핑 병합 함수 준비 (#70) ([f42f66b](https://github.com/JungYeoni/da-template/commit/f42f66b532739871b8207eea4f03b4b936ea7638))
+- Restore national family-friendly certification rate for 2016-2021 (#70) ([d82d7c2](https://github.com/JungYeoni/da-template/commit/d82d7c2fa94734029c08965da3a7d32b4f383148))
+- Add family-friendly certification candidates for 2020-2021 (#70) ([429a324](https://github.com/JungYeoni/da-template/commit/429a324715dbb10f2a39b99450186d450b30701c))
+- Define structural missing-value policies (#70) ([9d8d0aa](https://github.com/JungYeoni/da-template/commit/9d8d0aa777a9cb820d2cc2a90c7cfe058f4362b9))
 - 총세출 대비 계획예산 비율 패널 구축 (#69) ([5daee3d](https://github.com/JungYeoni/da-template/commit/5daee3de531f8bcc23edc121bc73b45cf0af5480))
 - 기금 포함 총세출 분모 대안 추가 (#69) ([f9cc700](https://github.com/JungYeoni/da-template/commit/f9cc7008f1c1c1c50510b62cacd753be5fcd4043))
 - 총세출 분모 민감도 대안 구축 (#69) ([721e694](https://github.com/JungYeoni/da-template/commit/721e694227dac19584dde4d3f6003f70d3d1a1b7))
