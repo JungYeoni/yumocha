@@ -43,6 +43,50 @@ def test_deflate_structural_cost_indicators_includes_all_four_monetary_indicator
 
     assert np.allclose(result["value"], 100.0)
     assert result["price_basis"].eq("real(2020=100)").all()
+    assert result.attrs["cpi_base_year"] == "2020=100"
+    assert result.attrs["cpi_base_value"] == 100.0
+
+
+@pytest.mark.parametrize(
+    "cpi,base_value,error_match",
+    [
+        (
+            pd.DataFrame({"연도": [2016], "소비자물가지수": [100.0], "기준연도": [None]}),
+            100.0,
+            "기준연도",
+        ),
+        (
+            pd.DataFrame(
+                {
+                    "연도": [2016, 2017],
+                    "소비자물가지수": [100.0, 101.0],
+                    "기준연도": ["2020=100", "2015=100"],
+                }
+            ),
+            100.0,
+            "기준연도",
+        ),
+        (
+            pd.DataFrame(
+                {"연도": [2016], "소비자물가지수": [float("inf")], "기준연도": ["2020=100"]}
+            ),
+            100.0,
+            "소비자물가지수",
+        ),
+        (
+            pd.DataFrame({"연도": [2016], "소비자물가지수": [100.0], "기준연도": ["2020=100"]}),
+            0.0,
+            "기준값",
+        ),
+    ],
+)
+def test_deflate_structural_cost_indicators_rejects_invalid_cpi_metadata(
+    cpi, base_value, error_match
+):
+    panel = pd.DataFrame({"year": [2016], "indicator_id": ["housing_price"], "value": [100.0]})
+
+    with pytest.raises(ValueError, match=error_match):
+        deflate_structural_cost_indicators(panel, cpi, base_value=base_value)
 
 
 def test_processed_panel_adapter_and_scenarios_allow_nationwide_only_missing():

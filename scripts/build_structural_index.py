@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from src.evaluation.structural_index import (
@@ -178,6 +179,8 @@ def build_report(
     nominal_results: dict,
     family_friendly_comparison: pd.DataFrame,
     input_rows: int,
+    cpi_base_year: str,
+    cpi_base_value: float,
 ) -> str:
     yearly_stats = comparison.groupby("year", sort=True).apply(
         lambda group: pd.Series(
@@ -199,7 +202,7 @@ def build_report(
         "- 분석 격자: 17개 시도 × 2016–2024년 × 28개 지표 = 4,284행",
         "- 전국 행은 표준화·지수 산출에서 제외",
         "- 표준화 시나리오: pooled Min-Max, 연도별(yearly) Min-Max",
-        "- 실질화: 주택가격·임차가구 연간 주거비·사교육비·산후조리원 이용요금에 전국 연평균 CPI(2020=100) 적용",
+        f"- 실질화: 주택가격·임차가구 연간 주거비·사교육비·산후조리원 이용요금에 전국 연평균 CPI({cpi_base_year}) 적용",
         "",
         "## 산출 QA",
         "",
@@ -246,14 +249,14 @@ def build_report(
             "## 비용지표 CPI 실질화 영향",
             "",
             f"- 실질화 대상 ID: {', '.join(sorted(REAL_COST_INDICATOR_IDS))}",
-            "- 계산식: 실질금액(2020년 가격) = 명목금액 × 100 / 해당 연도 CPI",
+            f"- 계산식: 실질금액({cpi_base_year} 가격) = 명목금액 × {cpi_base_value:g} / 해당 연도 CPI",
             f"- pooled 최종지수 평균 절대 변화: "
             f"{(results['pooled'].final_index['final_index'] - nominal_results['pooled'].final_index['final_index']).abs().mean():.4f}점",
             f"- pooled 최종지수 최대 절대 변화: "
             f"{(results['pooled'].final_index['final_index'] - nominal_results['pooled'].final_index['final_index']).abs().max():.4f}점",
             "- 전국 공통 물가상승분만 제거해 지역 간 명목가격 격차를 유지하고 연도 간 화폐가치를 통일",
             "- 시도별 CPI는 각 지역의 물가 변화율 지수로 지역 간 절대 물가수준을 나타내지 않으므로 본계열 디플레이터로 사용하지 않음",
-            "- 2020년은 사용한 CPI의 기준연도이며, 기준연도 변경은 실질금액의 표시 단위만 바꾸고 동일한 선형 표준화 결과에는 영향을 주지 않음",
+            f"- {cpi_base_year}은 사용한 CPI의 기준연도이며, 기준연도 변경은 실질금액의 표시 단위만 바꾸고 동일한 선형 표준화 결과에는 영향을 주지 않음",
             "",
             "## pooled–yearly 민감도 비교",
             "",
@@ -305,6 +308,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    np.random.seed(42)
     args = parse_args()
     raw = pd.read_csv(args.input, encoding="utf-8-sig")
     panel = prepare_processed_structural_panel(raw)
@@ -314,6 +318,8 @@ def main() -> None:
     validate_structural_index_weights(weights, manifest)
     nominal_results = run_family_friendly_weight_transfer_scenarios(panel, weights)
     real_panel = deflate_structural_cost_indicators(panel, cpi)
+    cpi_base_year = str(real_panel.attrs["cpi_base_year"])
+    cpi_base_value = float(real_panel.attrs["cpi_base_value"])
     raking_results = run_structural_index_scenarios(real_panel, weights)
     results = run_family_friendly_weight_transfer_scenarios(real_panel, weights)
     comparison = compare_scenarios(results)
@@ -363,6 +369,8 @@ def main() -> None:
             nominal_results,
             family_friendly_comparison,
             len(raw),
+            cpi_base_year,
+            cpi_base_value,
         ),
         encoding="utf-8",
     )

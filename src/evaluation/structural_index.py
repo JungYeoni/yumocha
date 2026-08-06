@@ -254,12 +254,33 @@ def deflate_structural_cost_indicators(
     indicator_ids: Iterable[str] = REAL_COST_INDICATOR_IDS,
     base_value: float = DEFAULT_CPI_BASE_VALUE,
 ) -> pd.DataFrame:
-    """선택한 비용지표를 전국 연평균 CPI 기준 불변가격으로 변환한다."""
+    """선택한 비용지표를 전국 연평균 CPI 기준 불변가격으로 변환한다.
+
+    기존 지표별 전처리 경로는 지역·연도·지표가 결합된 구조환경지수 패널과
+    CPI 기준연도 메타데이터를 함께 보존하지 않으므로, 이 공통 스키마에 맞춘
+    실질화와 기준연도 검증을 이 함수에서 수행한다.
+    """
     require_columns(df, ["year", "indicator_id", "value"], source_name="비용지표 실질화 입력")
     require_columns(cpi, ["연도", "소비자물가지수", "기준연도"], source_name="CPI lookup")
+    try:
+        base_value = float(base_value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("CPI 기준값은 유한한 양수여야 합니다.") from exc
+    if not math.isfinite(base_value) or base_value <= 0:
+        raise ValueError("CPI 기준값은 유한한 양수여야 합니다.")
     if cpi["연도"].duplicated().any():
         duplicates = sorted(cpi.loc[cpi["연도"].duplicated(keep=False), "연도"].unique())
         raise ValueError(f"CPI lookup에 중복 연도가 있습니다: {duplicates}")
+
+    base_years = cpi["기준연도"].astype("string").str.strip()
+    if (
+        base_years.empty
+        or base_years.isna().any()
+        or base_years.eq("").any()
+        or base_years.nunique() != 1
+    ):
+        raise ValueError("CPI lookup의 기준연도는 비어 있지 않은 단일 값이어야 합니다.")
+    cpi_base_year = str(base_years.iloc[0])
 
     cpi_slim = cpi[["연도", "소비자물가지수", "기준연도"]].rename(
         columns={
@@ -269,8 +290,12 @@ def deflate_structural_cost_indicators(
         }
     )
     cpi_slim["cpi_index"] = pd.to_numeric(cpi_slim["cpi_index"], errors="raise")
-    if cpi_slim["cpi_index"].isna().any() or (cpi_slim["cpi_index"] <= 0).any():
-        raise ValueError("CPI lookup의 소비자물가지수는 결측 없이 양수여야 합니다.")
+    if (
+        cpi_slim["cpi_index"].isna().any()
+        or ~np.isfinite(cpi_slim["cpi_index"]).all()
+        or (cpi_slim["cpi_index"] <= 0).any()
+    ):
+        raise ValueError("CPI lookup의 소비자물가지수는 유한한 양수여야 합니다.")
 
     result = df.merge(cpi_slim, on="year", how="left", validate="many_to_one")
     target = result["indicator_id"].astype(str).isin(set(indicator_ids))
@@ -287,6 +312,8 @@ def deflate_structural_cost_indicators(
         lambda value: f"real({value})"
     )
     result.loc[~target, ["cpi_index", "cpi_base_year"]] = pd.NA
+    result.attrs["cpi_base_year"] = cpi_base_year
+    result.attrs["cpi_base_value"] = base_value
     return result
 
 
