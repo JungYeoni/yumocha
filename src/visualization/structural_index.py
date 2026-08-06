@@ -340,6 +340,37 @@ def plot_region_component_comparison(
     return fig
 
 
+def plot_region_contribution_heatmap(
+    artifacts: dict[str, pd.DataFrame], *, region: str = "제주"
+) -> plt.Figure:
+    """선택 지역의 대영역 최종지수 기여도를 heatmap으로 표시한다."""
+
+    category = artifacts["pooled_category"].loc[lambda frame: frame["region"].eq(region)].copy()
+    if category.empty:
+        raise ValueError(f"구성점수에 지역이 없습니다: {region}")
+    contribution = category.pivot(index="category", columns="year", values="category_contribution")
+    contribution = contribution.reindex(columns=DEFAULT_STRUCTURAL_YEARS)
+    cmap = LinearSegmentedColormap.from_list(
+        "yumocha_contribution",
+        [YOMOCHA_WEB_COLORS["surface_alt"], YOMOCHA_WEB_COLORS["accent"]],
+    )
+    fig, ax = plt.subplots(figsize=(13, 4.8))
+    sns.heatmap(
+        contribution,
+        annot=True,
+        fmt=".1f",
+        cmap=cmap,
+        linewidths=0.4,
+        cbar_kws={"label": "최종지수 기여도(점)"},
+        ax=ax,
+    )
+    ax.set_title(f"{region} pooled 대영역별 최종지수 기여도")
+    ax.set_xlabel("연도")
+    ax.set_ylabel("대영역")
+    fig.tight_layout()
+    return fig
+
+
 def plot_family_friendly_impact(artifacts: dict[str, pd.DataFrame]) -> plt.Figure:
     """2016·2017 가족친화인증기업 가중치 이전의 점수·순위 영향을 표시한다."""
 

@@ -19,6 +19,7 @@ from src.visualization.structural_index import (
     plot_pooled_index_trends,
     plot_pooled_yearly_comparison,
     plot_region_component_comparison,
+    plot_region_contribution_heatmap,
     summarize_qa,
     validate_structural_index_artifacts,
 )
@@ -63,6 +64,10 @@ def build_visualization_outputs(
         output_dir / "제주_대영역_기여도_구성비교.png",
     )
     _save_figure(
+        plot_region_contribution_heatmap(artifacts, region="제주"),
+        output_dir / "제주_대영역_기여도_heatmap.png",
+    )
+    _save_figure(
         plot_family_friendly_impact(artifacts), output_dir / "가족친화인증기업_가중치이전_영향.png"
     )
 
@@ -103,6 +108,7 @@ def build_visualization_outputs(
         "- `pooled_종합지수_연도별_지역순위.png`: 연도별 순위 heatmap\n"
         "- `pooled_yearly_종합지수_비교.png`: 본계열·민감도 비교\n"
         "- `제주_대영역_기여도_구성비교.png`: 지역 선택형 구성 비교 예시(제주)\n"
+        "- `제주_대영역_기여도_heatmap.png`: 대영역별 기여도 크기 비교(제주)\n"
         "- `가족친화인증기업_가중치이전_영향.png`: 2016·2017 처리 영향\n"
         "- `구조환경지수_지역연도_요약.csv`, `구조환경지수_대영역_기여도.csv`, `구조환경지수_세부영역_기여도.csv`\n",
         encoding="utf-8",

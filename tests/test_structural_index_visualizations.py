@@ -7,6 +7,7 @@ from src.visualization.structural_index import (
     build_index_summary,
     load_structural_index_artifacts,
     plot_region_component_comparison,
+    plot_region_contribution_heatmap,
     validate_structural_index_artifacts,
 )
 
@@ -45,3 +46,11 @@ def test_region_component_comparison_rejects_unknown_region():
 
     with pytest.raises(ValueError, match="구성점수에 지역"):
         plot_region_component_comparison(artifacts, region="없는 지역")
+
+
+def test_region_contribution_heatmap_rejects_unknown_region():
+    repo_root = Path(__file__).resolve().parents[1]
+    artifacts = load_structural_index_artifacts(repo_root)
+
+    with pytest.raises(ValueError, match="구성점수에 지역"):
+        plot_region_contribution_heatmap(artifacts, region="없는 지역")
