@@ -11,11 +11,13 @@ from src.evaluation.structural_index import (
     DEFAULT_STRUCTURAL_REGIONS,
     DEFAULT_STRUCTURAL_YEARS,
     REAL_COST_INDICATOR_IDS,
+    compute_structural_index,
     deflate_structural_cost_indicators,
     load_structural_index_weights,
     load_structural_indicator_manifest,
     prepare_processed_structural_panel,
     run_structural_index_scenarios,
+    standardize_structural_indicators,
     validate_structural_index_weights,
 )
 
@@ -24,6 +26,9 @@ DEFAULT_INPUT = REPO_ROOT / "data/processed/구조환경지표_28개_결측처�
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "data/processed/structural_index"
 DEFAULT_REPORT = REPO_ROOT / "reports/methodology/20260806_구조환경지수_실제패널_산출_QA.md"
 DEFAULT_CPI = REPO_ROOT / "data/lookup/연도별_소비자물가지수.csv"
+FAMILY_FRIENDLY_INDICATOR_ID = "family_friendly_certification_rate"
+PARENTAL_LEAVE_INDICATOR_ID = "parental_leave_usage"
+FAMILY_FRIENDLY_EXCLUDED_YEARS = (2016, 2017)
 
 
 def compare_scenarios(results: dict) -> pd.DataFrame:
@@ -54,10 +59,124 @@ def compare_scenarios(results: dict) -> pd.DataFrame:
     return comparison.sort_values(["year", "region"]).reset_index(drop=True)
 
 
+def run_family_friendly_weight_transfer_scenarios(
+    panel: pd.DataFrame,
+    weights: pd.DataFrame,
+    *,
+    methods=("pooled", "yearly"),
+    expected_regions=DEFAULT_STRUCTURAL_REGIONS,
+    expected_years=DEFAULT_STRUCTURAL_YEARS,
+) -> dict:
+    """2016·2017 가족친화 가중치 몫을 육아휴직 점수로 이전해 지수를 산출한다."""
+    prepared = panel.copy()
+    target = prepared["indicator_id"].eq(FAMILY_FRIENDLY_INDICATOR_ID) & prepared["year"].isin(
+        FAMILY_FRIENDLY_EXCLUDED_YEARS
+    )
+    fit_values = prepared.loc[
+        prepared["indicator_id"].eq(FAMILY_FRIENDLY_INDICATOR_ID)
+        & ~prepared["year"].isin(FAMILY_FRIENDLY_EXCLUDED_YEARS)
+        & prepared["region"].ne("전국"),
+        "value",
+    ].astype(float)
+    if fit_values.empty:
+        raise ValueError("가족친화 지표의 2018년 이후 표준화 기준값이 없습니다.")
+
+    # 완전 격자 검증은 유지하되, 제외 연도 값이 pooled 최솟값·최댓값에 영향을 주지
+    # 않도록 유효 관측구간의 최솟값을 임시 앵커로 사용한다. 최종 점수는 아래에서
+    # 육아휴직 점수로 대체되므로 이 임시값은 지수에 직접 사용되지 않는다.
+    prepared.loc[target, "value"] = float(fit_values.min())
+    indicator_ids = weights["id"].astype(str).tolist()
+    results = {}
+    for method in methods:
+        standardized = standardize_structural_indicators(
+            prepared,
+            method=method,
+            expected_regions=expected_regions,
+            expected_years=expected_years,
+            expected_indicator_ids=indicator_ids,
+        )
+
+        if method == "pooled":
+            valid = standardized["indicator_id"].eq(FAMILY_FRIENDLY_INDICATOR_ID) & ~standardized[
+                "year"
+            ].isin(FAMILY_FRIENDLY_EXCLUDED_YEARS)
+            values = standardized.loc[valid, "value"].astype(float)
+            mean = float(values.mean())
+            std = float(values.std(ddof=0))
+            vmin = float(values.min())
+            vmax = float(values.max())
+            standardized.loc[valid, "z_score"] = (values - mean) / std
+            standardized.loc[valid, "score_0_100"] = 100.0 * (values - vmin) / (vmax - vmin)
+            standardized.loc[valid, "directional_score"] = standardized.loc[valid, "score_0_100"]
+            standardized.loc[valid, "group_mean"] = mean
+            standardized.loc[valid, "group_std"] = std
+            standardized.loc[valid, "group_min_z"] = standardized.loc[valid, "z_score"].min()
+            standardized.loc[valid, "group_max_z"] = standardized.loc[valid, "z_score"].max()
+
+        target_scores = standardized["indicator_id"].eq(
+            FAMILY_FRIENDLY_INDICATOR_ID
+        ) & standardized["year"].isin(FAMILY_FRIENDLY_EXCLUDED_YEARS)
+        source = standardized.loc[
+            standardized["indicator_id"].eq(PARENTAL_LEAVE_INDICATOR_ID)
+            & standardized["year"].isin(FAMILY_FRIENDLY_EXCLUDED_YEARS),
+            ["region", "year", "score_0_100", "directional_score"],
+        ].rename(
+            columns={
+                "score_0_100": "transferred_score_0_100",
+                "directional_score": "transferred_directional_score",
+            }
+        )
+        target_index = standardized.loc[target_scores, ["region", "year"]]
+        transferred = target_index.merge(
+            source, on=["region", "year"], how="left", validate="one_to_one"
+        )
+        if transferred["transferred_directional_score"].isna().any():
+            raise ValueError("2016·2017 육아휴직 점수를 가족친화 가중치에 연결하지 못했습니다.")
+        standardized.loc[target_scores, "value"] = pd.NA
+        standardized.loc[target_scores, "z_score"] = pd.NA
+        standardized.loc[target_scores, "score_0_100"] = transferred[
+            "transferred_score_0_100"
+        ].to_numpy()
+        standardized.loc[target_scores, "directional_score"] = transferred[
+            "transferred_directional_score"
+        ].to_numpy()
+        standardized["weight_transfer_applied"] = False
+        standardized.loc[target_scores, "weight_transfer_applied"] = True
+        standardized["effective_score_source"] = standardized["indicator_id"]
+        standardized.loc[target_scores, "effective_score_source"] = PARENTAL_LEAVE_INDICATOR_ID
+        results[method] = compute_structural_index(standardized, weights)
+    return results
+
+
+def compare_family_friendly_decision(main_results: dict, raking_results: dict) -> pd.DataFrame:
+    """2016·2017 가중치 이전 본계열과 raking 값을 사용한 대안계열을 비교한다."""
+    main = (
+        main_results["pooled"]
+        .final_index[["region", "year", "final_index", "rank"]]
+        .rename(columns={"final_index": "final_index_가중치이전", "rank": "rank_가중치이전"})
+    )
+    alternative = (
+        raking_results["pooled"]
+        .final_index[["region", "year", "final_index", "rank"]]
+        .rename(columns={"final_index": "final_index_raking사용", "rank": "rank_raking사용"})
+    )
+    comparison = main.merge(alternative, on=["region", "year"], how="inner", validate="one_to_one")
+    comparison["score_diff_가중치이전_minus_raking"] = (
+        comparison["final_index_가중치이전"] - comparison["final_index_raking사용"]
+    )
+    comparison["abs_score_diff"] = comparison["score_diff_가중치이전_minus_raking"].abs()
+    comparison["rank_diff_가중치이전_minus_raking"] = (
+        comparison["rank_가중치이전"] - comparison["rank_raking사용"]
+    )
+    comparison["abs_rank_diff"] = comparison["rank_diff_가중치이전_minus_raking"].abs()
+    return comparison.sort_values(["year", "region"]).reset_index(drop=True)
+
+
 def build_report(
     results: dict,
     comparison: pd.DataFrame,
     nominal_results: dict,
+    family_friendly_comparison: pd.DataFrame,
     input_rows: int,
 ) -> str:
     yearly_stats = comparison.groupby("year", sort=True).apply(
@@ -108,6 +227,21 @@ def build_report(
             "- 정규화: 원문 표시값 합계 0.998을 분모로 사용해 28개 조정 가중치 합을 1로 정규화",
             "- 대체: 원 연구의 분만 가능 산부인과·소아청소년과 보급도 가중치 슬롯을 분만실 병상수·소아청소년과 전문인력 보급도에 승계",
             "- 자동 검증: 원자료 AHP 시트의 28개 최종 조정값과 `configs/structural_index_weights.yaml`을 코드 기준으로 1:1 대조",
+            "",
+            "## 가족친화인증기업 2016·2017 처리",
+            "",
+            "- 2016·2017년 가족친화인증기업 비율은 본계열에서 제외하고 표준화 기준에도 포함하지 않음",
+            "- 해당 연도의 가족친화 AHP 가중치 0.0434202는 같은 일·가정 양립 여건의 육아휴직 점수에 이전",
+            "- 육아휴직의 2016·2017년 유효 가중치: 0.0998664 + 0.0434202 = 0.1432866",
+            "- 2019년 가족친화인증기업 비율은 raking 보간값을 원래 AHP 가중치 0.0434202로 사용",
+            "- 비교 대안: PR #89에서 복원·추정한 2016·2017 값을 모두 사용하는 28개 고정 AHP 계열",
+            "- pooled 표준화에서는 2016·2017 가족친화 값을 기준집단에서도 제외하므로 2018년 이후 가족친화 점수 척도도 대안계열과 달라질 수 있음",
+            f"- 영향을 받는 2016·2017년 평균 절대 점수 차이: {family_friendly_comparison.loc[family_friendly_comparison['year'].isin(FAMILY_FRIENDLY_EXCLUDED_YEARS), 'abs_score_diff'].mean():.4f}점",
+            f"- 영향을 받는 2016·2017년 최대 절대 점수 차이: {family_friendly_comparison.loc[family_friendly_comparison['year'].isin(FAMILY_FRIENDLY_EXCLUDED_YEARS), 'abs_score_diff'].max():.4f}점",
+            f"- 영향을 받는 2016·2017년 평균 절대 순위 차이: {family_friendly_comparison.loc[family_friendly_comparison['year'].isin(FAMILY_FRIENDLY_EXCLUDED_YEARS), 'abs_rank_diff'].mean():.4f}단계",
+            f"- 영향을 받는 2016·2017년 최대 절대 순위 차이: {int(family_friendly_comparison.loc[family_friendly_comparison['year'].isin(FAMILY_FRIENDLY_EXCLUDED_YEARS), 'abs_rank_diff'].max())}단계",
+            f"- 전체 기간 평균 절대 점수 차이: {family_friendly_comparison['abs_score_diff'].mean():.4f}점",
+            f"- 전체 기간 최대 절대 점수 차이: {family_friendly_comparison['abs_score_diff'].max():.4f}점",
             "",
             "## 비용지표 CPI 실질화 영향",
             "",
@@ -178,10 +312,12 @@ def main() -> None:
     manifest = load_structural_indicator_manifest(REPO_ROOT)
     weights = load_structural_index_weights(REPO_ROOT)
     validate_structural_index_weights(weights, manifest)
-    nominal_results = run_structural_index_scenarios(panel, weights)
+    nominal_results = run_family_friendly_weight_transfer_scenarios(panel, weights)
     real_panel = deflate_structural_cost_indicators(panel, cpi)
-    results = run_structural_index_scenarios(real_panel, weights)
+    raking_results = run_structural_index_scenarios(real_panel, weights)
+    results = run_family_friendly_weight_transfer_scenarios(real_panel, weights)
     comparison = compare_scenarios(results)
+    family_friendly_comparison = compare_family_friendly_decision(results, raking_results)
 
     expected_indicator_rows = (
         len(DEFAULT_STRUCTURAL_REGIONS) * len(DEFAULT_STRUCTURAL_YEARS) * len(weights)
@@ -210,8 +346,25 @@ def main() -> None:
         index=False,
         encoding="utf-8-sig",
     )
+    raking_results["pooled"].final_index.to_csv(
+        args.output_dir / "structural_index_family_friendly_raking_pooled_final_index.csv",
+        index=False,
+        encoding="utf-8-sig",
+    )
+    family_friendly_comparison.to_csv(
+        args.output_dir / "structural_index_family_friendly_weight_transfer_comparison.csv",
+        index=False,
+        encoding="utf-8-sig",
+    )
     args.report.write_text(
-        build_report(results, comparison, nominal_results, len(raw)), encoding="utf-8"
+        build_report(
+            results,
+            comparison,
+            nominal_results,
+            family_friendly_comparison,
+            len(raw),
+        ),
+        encoding="utf-8",
     )
     print(f"구조환경지수 산출 완료: {args.output_dir}")
     print(f"QA 보고서: {args.report}")

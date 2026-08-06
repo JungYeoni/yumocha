@@ -23,6 +23,13 @@ provenance:
       weight: 0.044
       redistributed_to: [PLR, FCR]
   replacement_note: DOCR과 PCCR은 원 연구의 가중치 슬롯을 각각 분만실 병상수와 소아청소년과 전문인력 대체지표에 승계
+  temporal_application:
+    family_friendly_certification_rate:
+      excluded_years: [2016, 2017]
+      transfer_weight_to: parental_leave_usage
+      transfer_rule: 제외 연도의 가족친화 AHP 가중치 전액을 동일 세부영역의 육아휴직 점수에 이전
+      interpolation_years: [2019]
+      interpolation_rule: 2018·2020 지역값 선형보간 후 전국 실측 총량에 맞춰 raking
 
 weights:
   youth_employment_rate:

@@ -4,7 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from scripts.build_structural_index import compare_scenarios
+from scripts.build_structural_index import (
+    compare_family_friendly_decision,
+    compare_scenarios,
+    run_family_friendly_weight_transfer_scenarios,
+)
 from src.evaluation.structural_index import (
     StructuralIndexResult,
     compute_structural_index,
@@ -78,6 +82,63 @@ def test_processed_panel_adapter_and_scenarios_allow_nationwide_only_missing():
     assert set(comparison["region"]) == {"A", "B"}
     assert comparison["abs_score_diff"].ge(0).all()
     assert comparison["abs_rank_diff"].ge(0).all()
+
+
+def test_family_friendly_weight_moves_to_parental_leave_in_2016_and_2017():
+    rows = []
+    for year in (2016, 2017, 2019):
+        for region, values in (("A", (1.0, 4.0)), ("B", (3.0, 2.0)), ("전국", (2.0, 3.0))):
+            for indicator_id, value in zip(
+                ("parental_leave_usage", "family_friendly_certification_rate"),
+                values,
+                strict=True,
+            ):
+                rows.append(
+                    {
+                        "region": region,
+                        "year": year,
+                        "indicator_id": indicator_id,
+                        "value": value + (year - 2016),
+                        "category": "사회·문화",
+                        "subcategory": "일·가정 양립 여건",
+                        "direction": "positive",
+                    }
+                )
+    panel = pd.DataFrame(rows)
+    weights = pd.DataFrame(
+        [
+            {"id": "parental_leave_usage", "weight": 0.7},
+            {"id": "family_friendly_certification_rate", "weight": 0.3},
+        ]
+    )
+
+    results = run_family_friendly_weight_transfer_scenarios(
+        panel,
+        weights,
+        expected_regions=("A", "B"),
+        expected_years=(2016, 2017, 2019),
+    )
+
+    scores = results["pooled"].indicator_scores
+    transferred = scores["weight_transfer_applied"]
+    assert transferred.sum() == 4
+    assert scores.loc[transferred, "year"].isin((2016, 2017)).all()
+    assert scores.loc[transferred, "effective_score_source"].eq("parental_leave_usage").all()
+    for _, group in scores.loc[scores["year"].isin((2016, 2017))].groupby(["region", "year"]):
+        assert group["directional_score"].nunique() == 1
+        assert np.isclose(
+            group["indicator_weighted_contribution"].sum(), group["directional_score"].iloc[0]
+        )
+
+    raking_results = run_structural_index_scenarios(
+        panel,
+        weights,
+        expected_regions=("A", "B"),
+        expected_years=(2016, 2017, 2019),
+    )
+    comparison = compare_family_friendly_decision(results, raking_results)
+    assert len(comparison) == 6
+    assert comparison.loc[comparison["year"].isin((2016, 2017)), "abs_score_diff"].gt(0).any()
 
 
 @pytest.mark.filterwarnings("ignore:Unknown extension is not supported.*:UserWarning")
