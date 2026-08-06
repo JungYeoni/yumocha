@@ -89,6 +89,34 @@ def test_select_labels_falls_back_to_prediction_when_not_confirmed():
     assert result["라벨출처"] == "TFIDF_예측"
 
 
+def test_select_labels_treats_blank_status_with_note_as_confirmed():
+    """검토상태가 비어도 S열(명칭_내용_불일치_복합대응)에 값이 있으면 이미 검토가
+    끝난 것으로 본다 — 재정팀이 소계성 항목은 검토상태 대신 이 비고 열에
+    사유를 남기는 관행이 있음을 실제 데이터에서 확인했다(24건 전부 S열=
+    "소계 표기").
+    """
+    row = _confirmed_row(2021, "서울", 1, "지표체계 외")
+    row["검토상태"] = None
+    row["명칭_내용_불일치_복합대응"] = "소계 표기"
+    review = _sample_review([row])
+    labeled = select_labels(review)
+    result = labeled.iloc[0]
+    assert result["세부영역"] == "지표체계 외"
+    assert result["라벨출처"] == "검토_비고기반확정"
+
+
+def test_select_labels_falls_back_to_prediction_when_status_blank_and_no_note():
+    row = _confirmed_row(2021, "서울", 1)
+    row["검토상태"] = None
+    row["검토_세부영역"] = None
+    row["검토_대영역"] = None
+    review = _sample_review([row])
+    labeled = select_labels(review)
+    result = labeled.iloc[0]
+    assert result["세부영역"] == "1-1. 고용여건"
+    assert result["라벨출처"] == "TFIDF_예측"
+
+
 def test_select_labels_leaves_unassigned_when_neither_available():
     row = _confirmed_row(2021, "서울", 1)
     row["검토상태"] = "보류"

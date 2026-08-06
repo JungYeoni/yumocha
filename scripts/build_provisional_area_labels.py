@@ -176,12 +176,26 @@ def validate_schema_and_keys(review: pd.DataFrame, qa_records: list[dict[str, ob
     )
 
 
+NOTE_COLUMN = "명칭_내용_불일치_복합대응"
+
+
 def select_labels(review: pd.DataFrame) -> pd.DataFrame:
-    """라벨 선택 규칙(확정·수정 우선 → TF-IDF 예측 → 미배정)을 적용한다."""
+    """라벨 선택 규칙(확정·수정 우선 → TF-IDF 예측 → 미배정)을 적용한다.
+
+    검토상태가 비어 있어도 명칭_내용_불일치_복합대응(S열)에 값이 있으면(예:
+    "소계 표기") 검토_세부영역을 무시하지 않는다 — 재정팀이 이미 "소계성
+    항목이라 실제 사업 카테고리로 억지 분류하지 않는다"고 판단해 그 비고
+    열에 사유를 남기고 세부영역엔 `지표체계 외`를 넣어둔 것이므로, 검토상태
+    드롭다운을 안 눌렀다고 TF-IDF 예측으로 넘기면 이미 끝난 검토를 덮어쓰게
+    된다.
+    """
     frame = review.copy()
     frame["지역"] = frame["지역"].map(normalize_text)
 
-    confirmed_mask = frame["검토상태"].isin(CONFIRMED_STATUSES) & frame["검토_세부영역"].notna()
+    reviewed_without_status = frame["검토상태"].isna() & frame[NOTE_COLUMN].notna()
+    confirmed_mask = (frame["검토상태"].isin(CONFIRMED_STATUSES) | reviewed_without_status) & frame[
+        "검토_세부영역"
+    ].notna()
     predicted_mask = ~confirmed_mask & frame["예측_세부영역"].notna()
 
     frame["세부영역"] = pd.NA
@@ -191,6 +205,7 @@ def select_labels(review: pd.DataFrame) -> pd.DataFrame:
 
     frame["라벨출처"] = "미배정"
     frame.loc[confirmed_mask, "라벨출처"] = "검토_확정수정"
+    frame.loc[confirmed_mask & reviewed_without_status, "라벨출처"] = "검토_비고기반확정"
     frame.loc[predicted_mask, "라벨출처"] = "TFIDF_예측"
     return frame
 
