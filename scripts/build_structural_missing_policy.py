@@ -356,12 +356,16 @@ def validate_policy_mapping(
         0,
         int(mapping["block_imputation"].ne(blocked_policy).sum()),
     )
-    block_values_per_cause = mapping.groupby("missing_cause")["block_imputation"].nunique()
+    nationwide_work_hours = mapping["지표_id"].eq("work_hours") & mapping["지역"].eq("전국")
     check(
-        "적어도 한 missing_cause에 차단·비차단이 공존",
-        True,
-        bool((block_values_per_cause == 2).any()),
-        "block_imputation이 missing_cause만으로 결정되지 않음을 보여주는 근거가 최소 하나는 있어야 한다.",
+        "전국 근로시간 keep_missing 차단",
+        9,
+        int((nationwide_work_hours & mapping["block_imputation"]).sum()),
+    )
+    check(
+        "전국 근로시간 외 차단 잔존",
+        0,
+        int((mapping["block_imputation"] & ~nationwide_work_hours).sum()),
     )
 
     auxiliary = mapping["auxiliary_scenario_policy"].eq("auxiliary_boundary_interpolation")
@@ -514,14 +518,14 @@ def validate_policy_mapping(
         ["postpartum_center_supply", "postpartum_center_fee", "delivery_bed_supply"]
     )
     check(
-        "시계열 시작점 이전 구간(산후조리원 2종·분만실 병상수) keep_missing 적용",
+        "시계열 시작점 이전 구간(산후조리원 2종·분만실 병상수) boundary_carry 적용",
         int(source_start_indicators.sum()),
-        int((source_start_indicators & mapping["imputation_policy"].eq("keep_missing")).sum()),
+        int((source_start_indicators & mapping["imputation_policy"].eq("boundary_carry")).sum()),
     )
     check(
-        "시계열 시작점 이전 구간의 boundary_carry 잔존",
+        "시계열 시작점 이전 구간의 keep_missing 잔존",
         0,
-        int((source_start_indicators & mapping["imputation_policy"].eq("boundary_carry")).sum()),
+        int((source_start_indicators & mapping["imputation_policy"].eq("keep_missing")).sum()),
     )
 
     issue_82_expected = expected_counts["issue_82_blockers"]
@@ -715,10 +719,9 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
             "| 출산 인식 2016–2017 | 36 | 2018 | 1–2년 | 2년 | high; 문항·조사 가용성 확인 전 과거 수준 확정 불가 |",
             "| 세종 근로시간 2016–2019 | 4 | 2020 | 1–4년 | 4년 | high; 원자료 부재 구간의 추가 장기 소급 사례 |",
             "",
-            "산후조리원 보급도·이용요금(2016–2022, 252건)과 분만실 병상수(2016–2017, 36건)는 더 이상 이 "
-            "boundary_carry 위험 목록에 없다 — `reports/20260725_구조환경지표_통합파일_결측치_검증_결과.md`가 "
-            '이 구간을 "통계 자체가 최근에 신설됨(시계열 시작점 문제)"으로 분류하고 보간(경계값 이월 포함) '
-            "불가로 판단했으므로, `keep_missing`으로 정책을 바꿔 결측으로 유지하고 본계열 분석에서 제외한다.",
+            "산후조리원 보급도·이용요금(2016–2022, 252건)과 분만실 병상수(2016–2017, 36건)는 "
+            "통계 시작 전 구간이다. #70 멘토링 결정에 따라 불안정한 추세 역외삽 대신 지역별 최초 "
+            "관측값을 과거에 유지한다. 실제 관측으로 해석하지 않으며 장기 소급 처리와 한계를 명시한다.",
             "",
             "위 정책은 아직 실행 승인이 아니라 후보 매핑이다. 실제 적용 단계에서는 carry 포함 결과와 ",
             "관측구간 제한 또는 해당 구간 제외 결과를 함께 산출해야 한다.",
@@ -740,15 +743,15 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
         ),
         "postpartum_center_supply": (
             "산후조리원 보급도",
-            "시계열 시작점(2023년) 이전 구간, keep_missing 유지",
+            "지역별 2023년 최초 관측값을 2016–2022년에 유지해 해소",
         ),
         "postpartum_center_fee": (
             "산후조리원 이용 요금",
-            "시계열 시작점(2023년) 이전 구간, keep_missing 유지",
+            "지역별 2023년 최초 관측값을 2016–2022년에 유지해 해소",
         ),
         "delivery_bed_supply": (
             "분만실 병상수 보급도",
-            "시계열 시작점(2018년 3분기) 이전 구간, keep_missing 유지",
+            "지역별 2018년 최초 관측값을 2016–2017년에 유지해 해소",
         ),
     }
     lines.extend(["| 지표 | 차단 결측 | 후속 조건 |", "|---|---:|---|"])
@@ -758,7 +761,7 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
         if count > 0:
             lines.append(f"| {label} | {count:,} | {note} |")
         else:
-            resolved_labels.append(label)
+            resolved_labels.append(f"{label}({note})")
     resolved_note = (
         f" 다음 지표는 실측/raking 확보 또는 직접 선형보간 안전성 검증으로 이 목록에서"
         f" 빠졌다(0건): {', '.join(resolved_labels)}."
@@ -811,7 +814,7 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
             f"- {len(mapping):,}개 결측 키는 중복·누락 없이 정확히 한 번 매핑됨",
             f"- {len(unresolved):,}개 원인 미확정 행은 모두 pending_review·대체 차단·본계열 분석 제외",
             f"- {config['panel']['expected_observed']:,}개 실측값과 전체 {config['panel']['expected_rows']:,}개 키 변경 없음",
-            "- 원자료 부재 원인 안에 block_imputation=True/False가 모두 있어 두 개념이 독립됨",
+            "- 17개 시도 결측은 모두 처리되며, 분석에서 제외되는 전국 근로시간 9건만 NA로 보존됨",
             "- auxiliary_boundary_interpolation 72건은 별도 시나리오 열에만 존재해 본계열 정책과 중복되지 않음",
             (
                 "- #82의 17개 시도 차단 결측 합계: "
