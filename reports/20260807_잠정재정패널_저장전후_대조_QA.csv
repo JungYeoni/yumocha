@@ -1,0 +1,6 @@
+﻿파일,메모리_shape,저장본_shape,shape_일치,열_순서_일치,자료형_불일치,값_불일치_셀_수,판정
+provisional_detail_current_budget.csv,"(57978, 15)","(57978, 15)",True,True,[],0,PASS
+provisional_budget_panel.csv,"(153, 8)","(153, 8)",True,True,[],0,PASS
+provisional_budget_panel_cpi.csv,"(153, 12)","(153, 12)",True,True,[],0,PASS
+provisional_major_area_panel.csv,"(765, 6)","(765, 6)",True,True,[],0,PASS
+provisional_sub_area_panel.csv,"(1836, 6)","(1836, 6)",True,True,[],0,PASS
