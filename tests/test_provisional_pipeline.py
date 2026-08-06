@@ -289,6 +289,51 @@ def test_label_aggregation_requires_exact_5_and_12_category_grids() -> None:
     assert sub["당해계획예산_백만원_provisional"].sum() == len(labeled)
 
 
+def test_label_aggregation_zero_fills_combinations_with_no_detail_rows() -> None:
+    """A region·year genuinely funding nothing in a category must not be missing.
+
+    Reproduces the real-data case found for 충남 2024 (0 of 106 leaf rows
+    labeled under "4. 사회·문화") — the full grid must still hold, with the
+    absent combination reported as 사업수=0·예산=0 rather than omitted.
+    """
+    major_labels = [f"대영역{i}" for i in range(5)]
+    sub_labels = [f"세부영역{i}" for i in range(12)]
+    rows = []
+    for region in STANDARD_REGIONS:
+        for year in EXPECTED_YEARS:
+            for index, sub_label in enumerate(sub_labels):
+                if region == "충남" and year == 2024 and index == 0:
+                    continue  # 이 조합만 실제 사업이 하나도 없다고 가정
+                rows.append(
+                    {
+                        "지역": region,
+                        "연도": year,
+                        "세부사업명": f"사업-{index}",
+                        "대영역": major_labels[index % len(major_labels)],
+                        "세부영역": sub_label,
+                        "예산액": 1.0,
+                    }
+                )
+    labeled = pd.DataFrame(rows)
+
+    major, sub = aggregate_labels_to_panels(
+        labeled,
+        expected_regions=STANDARD_REGIONS,
+        expected_years=EXPECTED_YEARS,
+        expected_major_labels=major_labels,
+        expected_sub_labels=sub_labels,
+    )
+
+    assert len(major) == 17 * 9 * 5
+    assert len(sub) == 17 * 9 * 12
+    empty_row = sub.loc[
+        sub["지역"].eq("충남") & sub["연도"].eq(2024) & sub["세부영역"].eq(sub_labels[0])
+    ].iloc[0]
+    assert empty_row["사업수"] == 0
+    assert empty_row["당해계획예산_백만원_provisional"] == 0.0
+    assert empty_row["예산결측_사업수"] == 0
+
+
 def test_manifest_separates_input_lineage_from_outputs(tmp_path: Path) -> None:
     source = tmp_path / "source.xlsx"
     output = tmp_path / "output.csv"

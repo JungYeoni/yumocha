@@ -51,6 +51,34 @@ def validate_full_grid(
         raise ValueError(f"완전격자 검증 실패. 누락={missing[:10]}, 예상외={unexpected[:10]}")
 
 
+def _fill_empty_combinations(
+    panel: pd.DataFrame,
+    *,
+    category_column: str,
+    expected_regions: Sequence[str],
+    expected_years: Sequence[int],
+    expected_categories: Sequence[str],
+) -> pd.DataFrame:
+    """Add explicit zero rows for 지역·연도·카테고리 combinations with no detail rows.
+
+    A combination genuinely absent from ``labeled_long`` (e.g. a region did not
+    fund any project in a category that year) means the sum over an empty set,
+    which is 0 — not an invented or estimated value. ``사업수=0`` keeps this
+    distinguishable from a real observation, so nothing is fabricated.
+    """
+    full_index = pd.MultiIndex.from_product(
+        [expected_regions, expected_years, expected_categories],
+        names=["지역", "연도", category_column],
+    )
+    filled = panel.set_index(["지역", "연도", category_column]).reindex(full_index).reset_index()
+    filled["당해계획예산_백만원_provisional"] = filled["당해계획예산_백만원_provisional"].fillna(
+        0.0
+    )
+    filled["사업수"] = filled["사업수"].fillna(0).astype(int)
+    filled["예산결측_사업수"] = filled["예산결측_사업수"].fillna(0).astype(int)
+    return filled.sort_values(["지역", "연도", category_column]).reset_index(drop=True)
+
+
 def aggregate_labels_to_panels(
     labeled_long: pd.DataFrame,
     *,
@@ -61,9 +89,11 @@ def aggregate_labels_to_panels(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Aggregate an explicitly labeled detail file to major and sub-area panels.
 
-    The function never invents missing labels or zero-filled categories. A full
-    supplied label grid is required, so unlabeled production inputs fail instead
-    of creating misleading 765/1,836-row artifacts.
+    The function never invents missing *labels*. But a 지역·연도·카테고리
+    combination with zero detail rows (e.g. a region funded nothing in a
+    category that year) is filled with 사업수=0·예산=0 so the 765/1,836-row
+    full grid holds — omitting the row would be less honest than an explicit,
+    mathematically correct zero (sum/count over an empty set).
     """
 
     required = {"지역", "연도", "세부사업명", "대영역", "세부영역"}
@@ -110,6 +140,20 @@ def aggregate_labels_to_panels(
         )
         .sort_values(["지역", "연도", "세부영역"])
         .reset_index(drop=True)
+    )
+    major = _fill_empty_combinations(
+        major,
+        category_column="대영역",
+        expected_regions=expected_regions,
+        expected_years=expected_years,
+        expected_categories=expected_major_labels,
+    )
+    sub = _fill_empty_combinations(
+        sub,
+        category_column="세부영역",
+        expected_regions=expected_regions,
+        expected_years=expected_years,
+        expected_categories=expected_sub_labels,
     )
     validate_full_grid(
         major,
