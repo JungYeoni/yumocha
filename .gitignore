@@ -30,6 +30,13 @@ data/processed/
 !data/raw/.gitkeep
 !data/interim/.gitkeep
 !data/processed/.gitkeep
+# 공식 분석 산출물만 선택적으로 추적
+!data/processed/
+data/processed/*
+!data/processed/analysis/
+!data/processed/analysis/*.csv
+!data/processed/analysis/README.md
+data/processed/analysis/2016-2024_지역별고용조사_청년층_정규직_근로자_비율.csv
 
 # 로컬 라벨 검토 원본
 /drive-download-*/
