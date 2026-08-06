@@ -331,7 +331,7 @@ def validate_policy_mapping(
         expected_counts["missing_cause"]["원인 미확정"],
         int((family_friendly & unresolved).sum()),
     )
-    check("정규직 비율 전국 pending_review", 9, int((youth_regular_national & unresolved).sum()))
+    check("정규직 비율 전국 pending_review", 0, int((youth_regular_national & unresolved).sum()))
 
     nonlinear_housework = mapping["지표_id"].eq("housework_gender_equality")
     check(
@@ -708,31 +708,81 @@ def render_summary(mapping: pd.DataFrame, qa: pd.DataFrame, config: dict[str, An
             "",
             "## #82 17개 시도 완전 패널 차단",
             "",
-            "| 지표 | 차단 결측 | 후속 조건 |",
-            "|---|---:|---|",
-            "| 가족친화 인증기업 비율 | 51 | 2016·2017·2019 공식 연도별 자료 확보 전 pending_review 유지 |",
-            "| 산후조리원 보급도 | 119 | 시계열 시작점(2023년) 이전 구간, keep_missing 유지 |",
-            "| 산후조리원 이용 요금 | 119 | 시계열 시작점(2023년) 이전 구간, keep_missing 유지 |",
-            "| 분만실 병상수 보급도 | 34 | 시계열 시작점(2018년 3분기) 이전 구간, keep_missing 유지 |",
-            "| 합계 | 323 | 전국 행을 제외한 17개 시도 기준. 가사분담 성평등 인식은 직접 선형보간 안전성이 "
-            "검증되어 이 목록에서 빠졌다(0건) |",
         ]
     )
 
+    issue_82_blockers = config["expected_counts"]["issue_82_blockers"]
+    issue_82_labels = {
+        "family_friendly_certification_rate": (
+            "가족친화 인증기업 비율",
+            "17개 시도 공식 명단 확보 전 pending_review 유지",
+        ),
+        "housework_gender_equality": (
+            "가사분담 성평등 인식",
+            "직접 선형보간 안전성 검증 전 pending_review 유지",
+        ),
+        "postpartum_center_supply": (
+            "산후조리원 보급도",
+            "시계열 시작점(2023년) 이전 구간, keep_missing 유지",
+        ),
+        "postpartum_center_fee": (
+            "산후조리원 이용 요금",
+            "시계열 시작점(2023년) 이전 구간, keep_missing 유지",
+        ),
+        "delivery_bed_supply": (
+            "분만실 병상수 보급도",
+            "시계열 시작점(2018년 3분기) 이전 구간, keep_missing 유지",
+        ),
+    }
+    lines.extend(["| 지표 | 차단 결측 | 후속 조건 |", "|---|---:|---|"])
+    resolved_labels = []
+    for indicator, (label, note) in issue_82_labels.items():
+        count = issue_82_blockers[indicator]
+        if count > 0:
+            lines.append(f"| {label} | {count:,} | {note} |")
+        else:
+            resolved_labels.append(label)
+    resolved_note = (
+        f" {'·'.join(resolved_labels)}은(는) 실측/raking 확보 또는 직접 선형보간 안전성 검증으로"
+        " 이 목록에서 빠졌다(0건)."
+        if resolved_labels
+        else ""
+    )
+    lines.append(
+        f"| 합계 | {issue_82_blockers['total']:,} | 전국 행을 제외한 17개 시도 기준.{resolved_note} |"
+    )
+
     unresolved = mapping.loc[mapping["cause_status"].eq("unresolved")]
+    family_friendly_unresolved = int(
+        unresolved["지표_id"].eq("family_friendly_certification_rate").sum()
+    )
+    youth_regular_unresolved = int(
+        (
+            unresolved["지표_id"].eq("youth_regular_employment_rate")
+            & unresolved["지역"].eq("전국")
+        ).sum()
+    )
+    lines.extend(["", "## 미확정 목록", ""])
+    if family_friendly_unresolved == 0 and youth_regular_unresolved == 0:
+        lines.append(
+            "현재 unresolved/pending_review 행은 0건이다. 가족친화 인증기업 비율 17개 시도"
+            " 2016·2017·2019 및 전국 2016·2017·2019·2020·2021, 청년층 정규직 근로자 비율 전국"
+            " 2016–2024가 모두 실측 또는 raking(팀 결정, 이슈 #70)으로 해소돼 더 이상 미확정"
+            " 목록에 없다."
+        )
+    else:
+        lines.extend(
+            [
+                "| 지표·범위 | 건수 | 상태 | 정책 |",
+                "|---|---:|---|---|",
+                "| 가족친화 인증기업 비율, 17개 시도 2016·2017·2019 및 전국 2016·2017·2019·2020·2021 | "
+                f"{family_friendly_unresolved:,} | unresolved | pending_review |",
+                "| 청년층 정규직 근로자 비율, 전국 2016–2024 | "
+                f"{youth_regular_unresolved:,} | unresolved | pending_review |",
+            ]
+        )
     lines.extend(
         [
-            "",
-            "## 미확정 목록",
-            "",
-            "| 지표·범위 | 건수 | 상태 | 정책 |",
-            "|---|---:|---|---|",
-            "| 가족친화 인증기업 비율, 17개 시도 2016·2017·2019 및 전국 2016·2017·2019·2020·2021 | "
-            f"{int(unresolved['지표_id'].eq('family_friendly_certification_rate').sum()):,} | "
-            "unresolved | pending_review |",
-            "| 청년층 정규직 근로자 비율, 전국 2016–2024 | "
-            f"{int((unresolved['지표_id'].eq('youth_regular_employment_rate') & unresolved['지역'].eq('전국')).sum()):,} | "
-            "unresolved | pending_review |",
             "",
             "비선형 가사분담에 대한 성평등 인식 72건은 원인이 `confirmed`이고, 관측구간 전체가 "
             "중간값(3점) 미만이라 직접 선형보간이 안전함을 검증해 `linear_interpolation`으로 전환했다 "

@@ -85,30 +85,32 @@ def test_committed_candidate_artifacts_are_complete():
     formula = candidates["공식_분자"] / candidates["사업체수_분모"] * 100
     assert np.allclose(candidates["계산_비율"], formula, rtol=0, atol=1e-14)
 
-    assert len(metadata) == 7
-    assert metadata["연도"].tolist() == [2020, 2021, 2024, 2025, 2018, 2022, 2023]
+    assert len(metadata) == 8
+    assert metadata["연도"].tolist() == [2016, 2018, 2020, 2021, 2022, 2023, 2024, 2025]
     assert metadata["파일크기_bytes"].tolist() == [
+        466_460,
+        120_569,
         211_042,
         242_583,
-        242_330,
-        278_535,
-        120_569,
         189_351,
         205_120,
+        242_330,
+        278_535,
     ]
     assert metadata["SHA-256"].tolist() == [
+        "5e2e1792d4ecfce310e52cb1ea09d0af9394cf7c0b7d0e28e5673315654033d2",
+        "dc5eab3fd5cc00ace2aea8b1ea7ec3af416662368c2ea5a0ff5239c809ec477e",
         "e3bd6762f24a5b66588c242f3e4598f69a328950d8985e11a39e257438d43f64",
         "af79a43769a4b7db59fa2446f832f181cff0f93e8c7978517a350c21dff14b1f",
-        "6026921d157c499156d6ddbce820833c6f96a6709b3814e940dae5a47f3d4696",
-        "187c81031cfdc84032d9419aa1b26cce0f8482a133093c9364b3942a61ff3275",
-        "dc5eab3fd5cc00ace2aea8b1ea7ec3af416662368c2ea5a0ff5239c809ec477e",
         "71ae5370af8a5d12942cdafca891129127d68892c7dfc6807b1b71ea4d1cbce7",
         "3a2de0e483edb98c275d1e5b61171438945977114a11d42a3fb20b45f7a73571",
+        "6026921d157c499156d6ddbce820833c6f96a6709b3814e940dae5a47f3d4696",
+        "187c81031cfdc84032d9419aa1b26cce0f8482a133093c9364b3942a61ff3275",
     ]
-    # 2020·2021·2024·2025는 다운로드 경위·출처가 확인·검증됐고(PASS로 시작),
+    # 2016·2020·2021·2024·2025는 다운로드 경위·출처가 확인·검증됐고(PASS로 시작),
     # 2018·2022·2023은 파일 자체(SHA-256)는 있지만 정확한 다운로드 출처가 아직
     # 미확인 상태임을 "미검증"으로 정직하게 표시한다.
-    assert metadata["원본_검증상태"].str.startswith("PASS").sum() == 4
+    assert metadata["원본_검증상태"].str.startswith("PASS").sum() == 5
     assert metadata["원본_검증상태"].str.startswith("미검증").sum() == 3
     assert qa["판정"].eq("PASS").all()
 
@@ -213,7 +215,8 @@ def test_render_report_handles_missing_panel_cross_checks():
     assert "패널·정책 매핑 파일이 없어" in report
 
 
-def test_unresolved_51_keys_remain_blocked_and_have_no_candidates():
+def test_unresolved_51_keys_are_fully_resolved_and_absent_from_mapping():
+    """2016·2017·2019년 51건은 실측(2016)·raking(2017·2019)으로 전부 해소돼 매핑에 없어야 한다."""
     candidates = pd.read_csv(CANDIDATE_PATH)
     mapping = pd.read_csv(MAPPING_PATH)
     unresolved = mapping.loc[
@@ -222,12 +225,5 @@ def test_unresolved_51_keys_remain_blocked_and_have_no_candidates():
         & mapping["연도"].isin(UNRESOLVED_YEARS)
     ]
 
-    assert len(unresolved) == 51
-    assert unresolved["imputation_policy"].eq("pending_review").all()
-    assert unresolved["block_imputation"].all()
+    assert len(unresolved) == 0
     assert not candidates["연도"].isin(UNRESOLVED_YEARS).any()
-    assert candidates.merge(
-        unresolved[["지역", "지표_id", "연도"]],
-        on=["지역", "지표_id", "연도"],
-        how="inner",
-    ).empty

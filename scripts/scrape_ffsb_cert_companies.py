@@ -82,6 +82,8 @@ def crawl_year(year: str, session: requests.Session) -> pd.DataFrame:
         all_rows.extend(parse_rows(html))
 
     df = pd.DataFrame(all_rows, columns=COLUMNS)
+    if df.empty:
+        raise ValueError(f"{year}년 조회 결과가 0건입니다 — 검색 파라미터나 셀렉터를 확인하세요.")
     unexpected_years = set(df["신규인증년도"]) - {year}
     if unexpected_years:
         raise ValueError(f"{year}년 조회 결과에 다른 연도 혼입: {unexpected_years}")

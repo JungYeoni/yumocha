@@ -330,6 +330,8 @@ def main() -> None:
     print(f"QA: {len(qa)}개 항목 모두 PASS")
 
     panel_audit = pd.DataFrame()
+    if args.panel is not None and not args.panel.exists():
+        raise FileNotFoundError(f"--panel 경로가 존재하지 않습니다: {args.panel}")
     if args.panel is not None and args.panel.exists():
         panel = pd.read_csv(args.panel, encoding="utf-8-sig")
         updated_panel, panel_audit = apply_raking_candidates_to_panel(panel, candidates)
@@ -342,6 +344,8 @@ def main() -> None:
     else:
         print("패널 인자 없음/미존재 — 패널 반영 생략")
 
+    if args.mapping is not None and not args.mapping.exists():
+        raise FileNotFoundError(f"--mapping 경로가 존재하지 않습니다: {args.mapping}")
     if args.mapping is not None and args.mapping.exists():
         mapping = pd.read_csv(args.mapping, encoding="utf-8-sig")
         updated_mapping, removed = remove_resolved_rows_from_mapping(mapping, candidates)

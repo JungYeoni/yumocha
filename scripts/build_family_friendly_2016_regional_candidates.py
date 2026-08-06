@@ -258,6 +258,8 @@ def main() -> None:
     print(f"2016 지역별 후보: {len(candidates)}건 ({args.candidate_output})")
     print(f"QA {len(qa)}개 항목 모두 PASS")
 
+    if args.panel is not None and not args.panel.exists():
+        raise FileNotFoundError(f"--panel 경로가 존재하지 않습니다: {args.panel}")
     if args.panel is not None and args.panel.exists():
         panel = pd.read_csv(args.panel, encoding="utf-8-sig")
         updated_panel, panel_audit = apply_2016_candidates_to_panel(panel, candidates)
@@ -267,6 +269,8 @@ def main() -> None:
         panel_audit.to_csv(args.panel_audit_output, index=False, encoding="utf-8-sig")
         print(f"패널 반영 완료: {panel_output} (감사: {args.panel_audit_output})")
 
+    if args.mapping is not None and not args.mapping.exists():
+        raise FileNotFoundError(f"--mapping 경로가 존재하지 않습니다: {args.mapping}")
     if args.mapping is not None and args.mapping.exists():
         mapping = pd.read_csv(args.mapping, encoding="utf-8-sig")
         updated_mapping, removed = remove_resolved_rows_from_mapping(mapping, candidates)

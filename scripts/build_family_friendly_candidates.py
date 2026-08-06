@@ -893,26 +893,17 @@ def validate_candidates(
         note="재생성 전에는 0, 공식 관측 반영 후에는 34여야 한다.",
     )
 
+    # 2026-08-06: UNRESOLVED_YEARS(2016·2017·2019) 51건은 2016년 실측 17건 +
+    # 2017·2019년 raking 34건으로 전부 해소돼 매핑에서 제거됐다
+    # (build_family_friendly_2016_regional_candidates.py,
+    # build_family_friendly_51_auxiliary_scenario.py). 이제 이 구간은 항상 0건이어야 하며,
+    # 다시 pending_review 행이 나타나면 회귀다.
     unresolved = mapping.loc[
         mapping["지표_id"].eq(INDICATOR_ID)
         & mapping["지역"].isin(REGION_ORDER)
         & mapping["연도"].isin(UNRESOLVED_YEARS)
     ].copy()
-    add_qa(qa_records, "미확보 51개", "행 수", 51, len(unresolved))
-    add_qa(
-        qa_records,
-        "미확보 51개",
-        "pending_review 유지",
-        51,
-        int(unresolved["imputation_policy"].eq("pending_review").sum()),
-    )
-    add_qa(
-        qa_records,
-        "미확보 51개",
-        "block_imputation=True 유지",
-        51,
-        int(unresolved["block_imputation"].sum()),
-    )
+    add_qa(qa_records, "미확보 51개", "행 수(해소 완료, 기대 0)", 0, len(unresolved))
     overlap = candidates[keys].merge(unresolved[keys], on=keys, how="inner")
     add_qa(qa_records, "미확보 51개", "후보와 중복", 0, len(overlap))
     add_qa(
@@ -953,6 +944,16 @@ def validate_reference_years(
 
 
 def build_source_metadata(raw_dir: Path) -> pd.DataFrame:
+    """`OFFICIAL_ROSTERS`(완전 검증된 연도)만 생성한다 — 의도적으로 4행뿐이다.
+
+    커밋된 `reports/20260804_가족친화_공식원본_메타데이터.csv`는 이 함수가 만드는 PASS
+    행 위에, 이 함수로는 재현할 수 없는 행을 수기로 더 추가해 8행이다: `REFERENCE_ROSTERS`
+    (2018·2022·2023, 파일 해시는 있지만 다운로드 경위 미확인이라 "미검증")와 2025년(어느
+    dict에도 없이 공공데이터포털 근거만으로 기록, `read_verified_bytes` 검증 불가). 이 함수를
+    재실행해 산출물을 덮어쓰면 그 4개 미검증/2025 행이 사라지므로, 커밋된 파일을 그대로
+    유지하거나 이 행들을 수기로 다시 추가해야 한다(`tests/test_family_friendly_candidates.py`
+    `test_committed_candidate_artifacts_are_complete`가 8행 상태를 고정 검증한다).
+    """
     rows = []
     for year, spec in OFFICIAL_ROSTERS.items():
         path = raw_dir / spec["file_name"]

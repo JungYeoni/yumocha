@@ -84,6 +84,15 @@ def test_attach_block_imputation_flag_rejects_observed_row_in_mapping():
         attach_block_imputation_flag(panel, mapping)
 
 
+def test_attach_block_imputation_flag_rejects_missing_row_absent_from_mapping():
+    panel = _sample_panel()
+    mapping = _sample_mapping().copy()
+    mapping = mapping.loc[~(mapping["지역"].eq("부산") & mapping["연도"].eq(2019))]
+
+    with pytest.raises(ValueError, match="결측 행인데 결측정책 매핑에 없는"):
+        attach_block_imputation_flag(panel, mapping)
+
+
 def test_build_processed_panels_blocks_pending_and_holds_boundary():
     panel = _sample_panel()
     mapping = _sample_mapping()

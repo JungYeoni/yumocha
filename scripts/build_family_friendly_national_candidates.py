@@ -68,7 +68,16 @@ TARGET_YEARS = (2016, 2017, 2019, 2020, 2021)
 def build_national_denominators(
     raw_dir: Path, qa_records: list[dict[str, object]]
 ) -> dict[int, int]:
-    """전국 사업체수 분모를 연도별로 모은다. 2016은 별도 워크북, 나머지는 기존 분모 소스다."""
+    """전국 사업체수 분모를 연도별로 모은다. 2016은 별도 워크북, 나머지는 기존 분모 소스다.
+
+    같은 워크북(`DENOMINATOR_SOURCE`) 안에서 2019(2,146,156) → 2020(1,865,536) 전국
+    사업체수가 약 13% 줄어든다(2021엔 1,995,751로 다시 늘어남). 통계청 KOSIS 원자료를
+    그대로 읽은 값이고 열 정렬·처리 오류는 아님을 확인했지만(같은 함수로 2020·2021
+    시도별 합계가 이미 검증된 공식 명단 합계와 정확히 일치, `build_national_candidates`의
+    "전국-지역합 교차검증" 참고), 조사 범위·분류 기준이 실제로 바뀐 것인지는 KOSIS
+    통계설명자료로 확인하지 못했다 — 이 사업체수 시계열을 그대로 비교 지표로 쓸 때는
+    이 단절 가능성을 감안해야 한다.
+    """
     denom_2016 = load_denominator_source(
         raw_dir, DENOMINATOR_2016_SOURCE, (2016,), qa_records, "2016 분모(전국)"
     )
@@ -352,6 +361,8 @@ def main() -> None:
     print(f"QA 저장: {args.qa_output} ({len(qa)}개 PASS)")
     print(f"보고서 저장: {args.report_output}")
 
+    if args.panel is not None and not args.panel.exists():
+        raise FileNotFoundError(f"--panel 경로가 존재하지 않습니다: {args.panel}")
     if args.panel is not None and args.panel.exists():
         panel = pd.read_csv(args.panel)
         updated_panel, panel_audit = apply_national_observations_to_panel(panel, candidates)
@@ -364,6 +375,8 @@ def main() -> None:
     else:
         print("패널 인자 없음/미존재 — 패널 반영 생략")
 
+    if args.mapping is not None and not args.mapping.exists():
+        raise FileNotFoundError(f"--mapping 경로가 존재하지 않습니다: {args.mapping}")
     if args.mapping is not None and args.mapping.exists():
         mapping = pd.read_csv(args.mapping)
         updated_mapping, removed = remove_resolved_rows_from_mapping(mapping, candidates)

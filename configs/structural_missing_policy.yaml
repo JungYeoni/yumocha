@@ -5,8 +5,8 @@ panel:
   key_columns: [지역, 지표_id, 연도]
   value_column: 측정값
   expected_rows: 4536
-  expected_observed: 3300
-  expected_missing: 1236
+  expected_observed: 3365
+  expected_missing: 1171
 
 allowed_values:
   missing_cause:
@@ -36,32 +36,32 @@ expected_counts:
     원자료 미공표: 9
     원자료 부재: 298
     완전격자 생성행: 0
-    미산출: 9
-    원인 미확정: 56
+    미산출: 0
+    원인 미확정: 0
   cause_status:
     confirmed: 1171
     inferred: 0
-    unresolved: 65
+    unresolved: 0
   imputation_policy:
     linear_interpolation: 486
     boundary_carry: 388
     auxiliary_boundary_interpolation: 0
     keep_missing: 297
-    pending_review: 65
+    pending_review: 0
   block_imputation:
     false: 874
-    true: 362
+    true: 297
   analysis_included:
-    false: 362
+    false: 297
     true: 874
   missing_position:
-    leading_missing: 622
-    intermediate_missing: 506
+    leading_missing: 586
+    intermediate_missing: 486
     trailing_missing: 90
-    all_period_unobserved: 18
+    all_period_unobserved: 9
   auxiliary_scenario_rows: 72
-  auxiliary_raking_composition_rows: 51
-  original_grid_rows: 396
+  auxiliary_raking_composition_rows: 0
+  original_grid_rows: 387
   boundary_review:
     total: 388
     carry_direction:
@@ -80,12 +80,12 @@ expected_counts:
       medium: 132
       high: 256
   issue_82_blockers:
-    family_friendly_certification_rate: 51
+    family_friendly_certification_rate: 0
     housework_gender_equality: 0
     postpartum_center_supply: 119
     postpartum_center_fee: 119
     delivery_bed_supply: 34
-    total: 323
+    total: 272
 
 rules:
   - rule_id: youth_employment_2016_source_absent
@@ -207,34 +207,13 @@ rules:
     evidence: configs/structural_indicators_verification.yaml:460
     note: 2016·2018·2020·2022·2024 관측값 사이의 비조사연도이다.
 
-  - rule_id: family_friendly_provincial_unresolved
-    indicator_ids: [family_friendly_certification_rate]
-    regions: [서울, 부산, 대구, 인천, 광주, 대전, 울산, 세종, 경기, 강원, 충북, 충남, 전북, 전남, 경북, 경남, 제주]
-    years: [2016, 2017, 2019]
-    missing_cause: 원인 미확정
-    cause_status: unresolved
-    imputation_policy: pending_review
-    block_imputation: true
-    analysis_included: false
-    auxiliary_scenario_policy: auxiliary_raking_composition_ratio
-    evidence: configs/structural_indicators_verification.yaml:518
-    note: >-
-      공식 명단을 확보하지 못한 17개 시도의 2016·2017·2019년 51건은 임의 대체하지
-      않는다. 2019(중간 결측)는 2018·2020 선형보간 후 전국 실측 합계로 raking,
-      2016·2017(선행 결측)은 2018년 지역 구성비 × 해당 연도 전국 실측 합계로 추정한
-      보조 시나리오만 별도 열에 기록한다(`reports/20260805_가족친화_지역별_51건_보조시나리오_후보.csv`).
-
-  - rule_id: family_friendly_national_unresolved
-    indicator_ids: [family_friendly_certification_rate]
-    regions: [전국]
-    years: [2016, 2017, 2019, 2020, 2021]
-    missing_cause: 원인 미확정
-    cause_status: unresolved
-    imputation_policy: pending_review
-    block_imputation: true
-    analysis_included: false
-    evidence: configs/structural_indicators_verification.yaml:518
-    note: 이번 직접 복원 범위는 17개 시도 34건이며 전국 5건은 별도 근거 검토 전까지 차단한다.
+  # family_friendly_provincial_unresolved / family_friendly_national_unresolved:
+  # 2026-08-06 제거됨. 17개 시도 51건(2016 실측 17 + 2017·2019 raking 34) +
+  # 전국 5건이 모두 실측/raking 추정치로 해소돼 base 패널(`구조환경지표_28개_보간전_기준패널.csv`)에
+  # 이미 값이 채워졌다. 더 이상 missing 셀이 아니므로 정책 규칙이 필요 없다.
+  # 경위: reports/methodology/20260806_가족친화_2016_지역별_직접복원_QA.md,
+  # reports/methodology/20260806_가족친화_2017_2019_raking_본계열반영_QA.md,
+  # 이슈 #70 코멘트(2026-08-06).
 
   - rule_id: childbirth_leading_non_survey
     indicator_ids: [childbirth_perception]
@@ -277,17 +256,9 @@ rules:
       (`scripts/verify_housework_gender_equality_interpolation_safety.py`)로 확인했으며,
       최종값을 직접 선형보간해도 구성요소를 먼저 보간한 뒤 변환한 것과 정확히 같다.
 
-  - rule_id: youth_regular_national_unresolved
-    indicator_ids: [youth_regular_employment_rate]
-    regions: [전국]
-    years: [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
-    missing_cause: 미산출
-    cause_status: unresolved
-    imputation_policy: pending_review
-    block_imputation: true
-    analysis_included: false
-    evidence: reports/20260804_구조환경지표_28개_보간전_통합패널_QA.md:140
-    note: 전국값 산출 가능성과 가중치 정책이 확인되지 않아 시도 평균 등으로 대체하지 않는다.
+  # youth_regular_national_unresolved: 2026-08-06 제거됨. 전국 9개년이 MDIS 원자료
+  # 직접 계산으로 모두 해소돼 base 패널에 실측값이 채워졌다
+  # (scripts/build_youth_regular_employment_national_candidates.py).
 
   - rule_id: youth_regular_sejong_source_absent
     indicator_ids: [youth_regular_employment_rate]

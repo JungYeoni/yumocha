@@ -49,6 +49,13 @@ def attach_block_imputation_flag(panel: pd.DataFrame, mapping: pd.DataFrame) -> 
         raise ValueError(
             "실측 행이 결측정책 매핑에 존재합니다. 매핑이 패널과 어긋났을 수 있습니다."
         )
+    missing_without_policy = panel["측정값"].isna() & merged["block_imputation"].isna()
+    if missing_without_policy.any():
+        raise ValueError(
+            "결측 행인데 결측정책 매핑에 없는 키가 있습니다. fillna(False)로 조용히 "
+            f"비차단·보간 대상이 될 뻔했습니다: {missing_without_policy.sum()}건. "
+            "매핑을 재생성하거나 정책 규칙을 보완하세요."
+        )
     merged["block_imputation"] = merged["block_imputation"].fillna(False).astype(bool)
     return merged
 

@@ -76,24 +76,26 @@ def test_committed_policy_mapping_is_complete_and_conservative():
     config = load_policy_config(CONFIG_PATH)
     mapping = pd.read_csv(MAPPING_PATH)
 
-    assert len(mapping) == config["panel"]["expected_missing"] == 1236
+    assert len(mapping) == config["panel"]["expected_missing"] == 1171
     assert not mapping.duplicated(KEY_COLUMNS).any()
     assert set(mapping["missing_cause"]) <= set(config["allowed_values"]["missing_cause"])
     assert set(mapping["cause_status"]) <= set(config["allowed_values"]["cause_status"])
     assert set(mapping["imputation_policy"]) <= set(config["allowed_values"]["imputation_policy"])
 
     unresolved = mapping["cause_status"].eq("unresolved")
-    assert unresolved.sum() == 65
+    assert unresolved.sum() == 0
     assert mapping.loc[unresolved, "imputation_policy"].eq("pending_review").all()
     assert mapping.loc[unresolved, "block_imputation"].all()
     assert (~mapping.loc[unresolved, "analysis_included_after_imputation"]).all()
 
+    # 가족친화 인증기업 비율(51건)·청년층 정규직 전국(9건)은 실측/raking으로 모두 해소돼
+    # 더 이상 unresolved/pending_review로 남지 않는다 (2026-08-06).
     family_friendly = mapping["지표_id"].eq("family_friendly_certification_rate")
     youth_regular_national = mapping["지표_id"].eq("youth_regular_employment_rate") & mapping[
         "지역"
     ].eq("전국")
-    assert (family_friendly & unresolved).sum() == 56
-    assert (youth_regular_national & unresolved).sum() == 9
+    assert (family_friendly & unresolved).sum() == 0
+    assert (youth_regular_national & unresolved).sum() == 0
 
 
 def test_block_imputation_is_independent_from_missing_cause():
@@ -146,7 +148,7 @@ def test_boundary_carry_records_distance_direction_and_long_range_risk():
     assert mapping["policy_risk_level"].eq("high").all()
 
 
-def test_issue_82_provincial_blockers_total_323():
+def test_issue_82_provincial_blockers_total_272():
     mapping = pd.read_csv(MAPPING_PATH)
     provincial_blockers = mapping["지역"].ne("전국") & mapping["block_imputation"]
     family_friendly = provincial_blockers & mapping["지표_id"].eq(
@@ -157,12 +159,13 @@ def test_issue_82_provincial_blockers_total_323():
     postpartum_fee = provincial_blockers & mapping["지표_id"].eq("postpartum_center_fee")
     delivery_bed = provincial_blockers & mapping["지표_id"].eq("delivery_bed_supply")
 
-    assert family_friendly.sum() == 51
+    # 가족친화 51건은 2016 실측 17 + 2017·2019 raking 34로 전부 해소돼 0건이다(2026-08-06).
+    assert family_friendly.sum() == 0
     assert nonlinear_housework.sum() == 0
     assert postpartum_supply.sum() == 119
     assert postpartum_fee.sum() == 119
     assert delivery_bed.sum() == 34
-    assert provincial_blockers.sum() == 323
+    assert provincial_blockers.sum() == 272
 
 
 def test_housework_gender_equality_resolved_to_linear_interpolation():
