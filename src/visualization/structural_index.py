@@ -17,9 +17,9 @@ INDEX_DIRNAME = "structural_index"
 OUTPUT_DIRNAME = "구조환경지수_시각화"
 CATEGORY_PALETTE = [
     YOMOCHA_WEB_COLORS["accent"],
-    YOMOCHA_WEB_COLORS["accent_hover"],
+    "#0E7490",  # 청록 계열: accent와 명도·색상 대비
+    "#7C3AED",  # 보라 계열: 경고용 붉은색을 대체
     YOMOCHA_WEB_COLORS["line"],
-    YOMOCHA_WEB_COLORS["muted_bar"],
 ]
 
 ARTIFACT_FILES = {
