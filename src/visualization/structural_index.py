@@ -15,6 +15,12 @@ from src.visualization.plots import PALETTE, YOMOCHA_WEB_COLORS
 
 INDEX_DIRNAME = "structural_index"
 OUTPUT_DIRNAME = "구조환경지수_시각화"
+CATEGORY_PALETTE = [
+    YOMOCHA_WEB_COLORS["accent"],
+    YOMOCHA_WEB_COLORS["accent_hover"],
+    YOMOCHA_WEB_COLORS["line"],
+    YOMOCHA_WEB_COLORS["muted_bar"],
+]
 
 ARTIFACT_FILES = {
     "pooled_final": "structural_index_pooled_final_index.csv",
@@ -309,7 +315,7 @@ def plot_region_component_comparison(
         DEFAULT_STRUCTURAL_YEARS
     )
     categories = list(contribution.columns)
-    colors = [PALETTE[i % len(PALETTE)] for i in range(len(categories))]
+    colors = [CATEGORY_PALETTE[i % len(CATEGORY_PALETTE)] for i in range(len(categories))]
     fig, axes = plt.subplots(2, 1, figsize=(14, 9), sharex=True)
     axes[0].stackplot(
         contribution.index,
