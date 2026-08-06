@@ -19,6 +19,7 @@ from src.features.pipeline_common import (
     UNIT_NOTATION_PATTERN,
     assign_labels,
     classify_row,
+    clean_text,
     drop_exact_duplicate_rows,
     select_total_budget_rows,
     to_numeric_budget,
@@ -374,13 +375,20 @@ def _classify_rows(frame: pd.DataFrame, year: int) -> pd.DataFrame:
     return frame
 
 
-def _merge_2021_continuations(frame: pd.DataFrame) -> pd.DataFrame:
-    targets = {175: 166, 482: 473, 7454: 7445, 7643: 7630, 7760: 7751, 7949: 7936}
+def _merge_continuation_rows(
+    frame: pd.DataFrame, targets: dict[int, int], *, label: str
+) -> pd.DataFrame:
+    """줄바꿈으로 잘린 세부사업명·주요내용을 뒤 연속행에서 원래 행으로 합친다.
+
+    ``targets``는 ``{연속행_원본행: 대상행_원본행}``이다. 두 행 다 있어야만
+    적용하고(일부만 있으면 실패), 합친 뒤에도 연속행 자체는 그대로 두므로
+    호출부에서 별도로 leaf 제외(헤더반복 등) 처리를 해야 한다.
+    """
     present = set(frame["원본행"].dropna()).intersection(targets)
     if not present:
         return frame
     if present != set(targets):
-        raise ValueError(f"2021 연속행 후보 일부만 존재합니다: {sorted(present)}")
+        raise ValueError(f"{label} 연속행 후보 일부만 존재합니다: {sorted(present)}")
 
     def append_once(original: object, continuation: object) -> str:
         left = "" if pd.isna(original) else re.sub(r"\s+", " ", str(original)).strip()
@@ -393,7 +401,7 @@ def _merge_2021_continuations(frame: pd.DataFrame) -> pd.DataFrame:
         continuation_index = frame.index[frame["원본행"].eq(continuation_row)]
         target_index = frame.index[frame["원본행"].eq(target_row)]
         if len(continuation_index) != 1 or len(target_index) != 1:
-            raise ValueError(f"2021 연속행 병합 키가 유일하지 않습니다: {continuation_row}")
+            raise ValueError(f"{label} 연속행 병합 키가 유일하지 않습니다: {continuation_row}")
         continuation_index = continuation_index[0]
         target_index = target_index[0]
         frame.at[target_index, "세부사업명"] = append_once(
@@ -420,7 +428,18 @@ def _extract_leaf_rows(frame: pd.DataFrame, year: int) -> pd.DataFrame:
             previous_column=previous_column,
         )
     if year == 2021:
-        frame = _merge_2021_continuations(frame)
+        frame = _merge_continuation_rows(
+            frame,
+            {175: 166, 482: 473, 7454: 7445, 7643: 7630, 7760: 7751, 7949: 7936},
+            label="2021",
+        )
+    if year == 2022:
+        # 서울 원본행 28("위한 안전망 구축")이 24행("학대피해아동 보호를")의
+        # 줄바꿈 연속행이다. 기존 코드가 28행을 leaf에서 제외(헤더반복)하는
+        # 것만 해뒀고 텍스트 병합을 빠뜨려 24행 사업명이 잘려 있었다 —
+        # #73 감사 wide 파일(정상 병합됨) 대조로 발견
+        # (reports/20260807_잠정재정패널_73감사wide_불일치_상세.csv).
+        frame = _merge_continuation_rows(frame, {28: 24}, label="2022")
 
     frame = _classify_rows(frame, year)
     zero_tokens = ("-", "·", "비예산") if year == 2023 else ("-",)
@@ -450,6 +469,10 @@ def _extract_leaf_rows(frame: pd.DataFrame, year: int) -> pd.DataFrame:
     leaf["예산_비수치"] = leaf["예산액_원본"].notna() & leaf["예산액"].isna()
     leaf["예산_결측"] = leaf["예산액"].isna()
     leaf["예산_음수"] = leaf["예산액"].lt(0)
+    # 원본 셀의 줄바꿈을 그대로 남기면 #73 감사 wide 파일(줄바꿈을 공백 한 칸으로
+    # 정리)과 텍스트가 달라 보인다 — 같은 정리 유틸을 적용해 일치시킨다.
+    leaf["세부사업명"] = clean_text(leaf["세부사업명"])
+    leaf["주요내용"] = clean_text(leaf["주요내용"])
     return leaf
 
 
