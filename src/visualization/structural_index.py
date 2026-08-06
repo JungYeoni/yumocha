@@ -84,17 +84,26 @@ def _require_columns(frame: pd.DataFrame, required: set[str], name: str) -> None
         raise ValueError(f"{name} 필수 컬럼 누락: {missing}")
 
 
-def _validate_key_grid(frame: pd.DataFrame, *, name: str, key_columns: list[str]) -> None:
-    if frame.duplicated(key_columns).any():
+def _validate_key_grid(
+    frame: pd.DataFrame,
+    *,
+    name: str,
+    key_columns: list[str],
+    allow_duplicate_keys: bool = False,
+) -> None:
+    if not allow_duplicate_keys and frame.duplicated(key_columns).any():
         raise ValueError(f"{name}에 중복 키가 있습니다: {key_columns}")
     if "전국" in set(frame["region"].dropna()):
         raise ValueError(f"{name}에 전국 행이 포함되어 있습니다.")
     expected = len(DEFAULT_STRUCTURAL_REGIONS) * len(DEFAULT_STRUCTURAL_YEARS)
-    if len(frame) != expected:
-        raise ValueError(f"{name} 행 수가 17개 시도×2016–2024와 다릅니다: {len(frame)}")
-    if set(frame["region"]) != set(DEFAULT_STRUCTURAL_REGIONS):
+    unique_keys = frame[key_columns].drop_duplicates()
+    if len(unique_keys) != expected:
+        raise ValueError(
+            f"{name}의 고유 지역·연도 조합 수가 17개 시도×2016–2024와 다릅니다: {len(unique_keys)}"
+        )
+    if set(unique_keys["region"]) != set(DEFAULT_STRUCTURAL_REGIONS):
         raise ValueError(f"{name}의 지역 구성이 17개 시도와 다릅니다.")
-    if set(frame["year"]) != set(DEFAULT_STRUCTURAL_YEARS):
+    if set(unique_keys["year"]) != set(DEFAULT_STRUCTURAL_YEARS):
         raise ValueError(f"{name}의 연도 구성이 2016–2024와 다릅니다.")
 
 
@@ -119,6 +128,9 @@ def validate_structural_index_artifacts(artifacts: dict[str, pd.DataFrame]) -> d
     for key in ("pooled_category",):
         frame = artifacts[key]
         _require_columns(frame, CATEGORY_COLUMNS, key)
+        _validate_key_grid(
+            frame, name=key, key_columns=["region", "year"], allow_duplicate_keys=True
+        )
         _validate_finite(frame, ["category_contribution", "category_score"], key)
         if frame.duplicated(["region", "year", "category"]).any():
             raise ValueError(f"{key}에 지역·연도·대영역 중복이 있습니다.")
@@ -127,6 +139,12 @@ def validate_structural_index_artifacts(artifacts: dict[str, pd.DataFrame]) -> d
 
     frame = artifacts["pooled_subcategory"]
     _require_columns(frame, SUBCATEGORY_COLUMNS, "pooled_subcategory")
+    _validate_key_grid(
+        frame,
+        name="pooled_subcategory",
+        key_columns=["region", "year"],
+        allow_duplicate_keys=True,
+    )
     _validate_finite(frame, ["subcategory_contribution", "subcategory_score"], "pooled_subcategory")
     if frame.duplicated(["region", "year", "subcategory"]).any():
         raise ValueError("pooled_subcategory에 지역·연도·세부영역 중복이 있습니다.")
@@ -143,13 +161,26 @@ def validate_structural_index_artifacts(artifacts: dict[str, pd.DataFrame]) -> d
             "final_index_yearly",
             "rank_pooled",
             "rank_yearly",
+            "score_diff_yearly_minus_pooled",
+            "abs_score_diff",
+            "rank_diff_yearly_minus_pooled",
+            "abs_rank_diff",
         },
         "yearly_comparison",
     )
     _validate_key_grid(comparison, name="yearly_comparison", key_columns=["region", "year"])
     _validate_finite(
         comparison,
-        ["final_index_pooled", "final_index_yearly", "rank_pooled", "rank_yearly"],
+        [
+            "final_index_pooled",
+            "final_index_yearly",
+            "rank_pooled",
+            "rank_yearly",
+            "score_diff_yearly_minus_pooled",
+            "abs_score_diff",
+            "rank_diff_yearly_minus_pooled",
+            "abs_rank_diff",
+        ],
         "yearly_comparison",
     )
 
@@ -158,6 +189,12 @@ def validate_structural_index_artifacts(artifacts: dict[str, pd.DataFrame]) -> d
         indicator,
         {"region", "year", "indicator_id", "indicator_weighted_contribution"},
         "pooled_indicator",
+    )
+    _validate_key_grid(
+        indicator,
+        name="pooled_indicator",
+        key_columns=["region", "year"],
+        allow_duplicate_keys=True,
     )
     if indicator.duplicated(["region", "year", "indicator_id"]).any():
         raise ValueError("pooled_indicator에 지역·연도·지표 중복이 있습니다.")
@@ -381,8 +418,10 @@ def plot_family_friendly_impact(artifacts: dict[str, pd.DataFrame]) -> plt.Figur
     """2016·2017 가족친화인증기업 가중치 이전의 점수·순위 영향을 표시한다."""
 
     impact = artifacts["family_weight_transfer"].copy()
-    annual = impact.groupby("year", as_index=False).agg(
-        abs_score_diff=("abs_score_diff", "mean"), abs_rank_diff=("abs_rank_diff", "mean")
+    annual = (
+        impact.loc[impact["year"].isin([2016, 2017])]
+        .groupby("year", as_index=False)
+        .agg(abs_score_diff=("abs_score_diff", "mean"), abs_rank_diff=("abs_rank_diff", "mean"))
     )
     fig, axes = plt.subplots(1, 2, figsize=(13, 5))
     axes[0].bar(annual["year"].astype(str), annual["abs_score_diff"], color=PALETTE[0])
@@ -402,8 +441,8 @@ def plot_family_friendly_impact(artifacts: dict[str, pd.DataFrame]) -> plt.Figur
 def summarize_qa(artifacts: dict[str, pd.DataFrame], summary: pd.DataFrame) -> dict[str, float]:
     """QA 보고서에 사용할 핵심 비교 통계를 계산한다."""
 
-    correlations = summary.groupby("year").apply(
-        lambda frame: frame["pooled_index"].corr(frame["yearly_index"]), include_groups=False
+    correlations = summary.groupby("year")[["pooled_index", "yearly_index"]].apply(
+        lambda frame: frame["pooled_index"].corr(frame["yearly_index"])
     )
     rank_gap = (summary["pooled_rank"] - summary["yearly_rank"]).abs()
     return {

@@ -119,6 +119,27 @@ def test_structural_index_validation_rejects_nationwide_final_row():
         validate_structural_index_artifacts(artifacts)
 
 
+def test_structural_index_validation_rejects_missing_category_region_year():
+    artifacts = _synthetic_artifacts()
+    artifacts["pooled_category"] = artifacts["pooled_category"].loc[
+        ~(
+            artifacts["pooled_category"]["region"].eq("제주")
+            & artifacts["pooled_category"]["year"].eq(2024)
+        )
+    ]
+
+    with pytest.raises(ValueError, match="고유 지역·연도 조합 수"):
+        validate_structural_index_artifacts(artifacts)
+
+
+def test_structural_index_validation_rejects_missing_yearly_comparison_summary_column():
+    artifacts = _synthetic_artifacts()
+    artifacts["yearly_comparison"] = artifacts["yearly_comparison"].drop(columns="abs_score_diff")
+
+    with pytest.raises(ValueError, match="yearly_comparison 필수 컬럼 누락"):
+        validate_structural_index_artifacts(artifacts)
+
+
 def test_region_component_comparison_rejects_unknown_region():
     artifacts = _synthetic_artifacts()
 

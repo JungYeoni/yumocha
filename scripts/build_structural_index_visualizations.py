@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 from pathlib import Path
 
 import matplotlib
@@ -11,6 +12,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from src.visualization.structural_index import (
+    ARTIFACT_FILES,
     OUTPUT_DIRNAME,
     build_index_summary,
     load_structural_index_artifacts,
@@ -37,6 +39,17 @@ def _save_figure(figure: plt.Figure, path: Path) -> None:
     plt.close(figure)
 
 
+def _artifact_dataset_version(repo_root: Path) -> str:
+    """입력 산출물 바이트를 해시해 재현 가능한 데이터셋 버전을 만든다."""
+
+    digest = hashlib.sha256()
+    for filename in sorted(ARTIFACT_FILES.values()):
+        path = repo_root / "data" / "processed" / "structural_index" / filename
+        digest.update(filename.encode("utf-8"))
+        digest.update(path.read_bytes())
+    return f"structural_index_artifacts_sha256:{digest.hexdigest()[:16]}"
+
+
 def build_visualization_outputs(
     *,
     repo_root: Path = REPO_ROOT,
@@ -48,6 +61,7 @@ def build_visualization_outputs(
     artifacts = load_structural_index_artifacts(repo_root)
     validation = validate_structural_index_artifacts(artifacts)
     summary = build_index_summary(artifacts)
+    dataset_version = _artifact_dataset_version(repo_root)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     _save_figure(
@@ -84,6 +98,10 @@ def build_visualization_outputs(
     report_path.write_text(
         "# #91 AHP 구조환경지수 종합지수 시각화 QA\n\n"
         "## 입력·검증\n\n"
+        f"- 데이터셋 버전: `{dataset_version}` (입력 산출물 8개 파일 SHA-256 식별자)\n"
+        "- 분석 기간: 2016–2024년, 17개 시도\n"
+        "- 분할 전략: 해당 없음(예측·학습이 아닌 지수 산출물 기술통계·시각화)\n"
+        "- 평가 지표·교차검증 fold: 해당 없음(모델 평가·교차검증 없음)\n"
         "- pooled 본계열: `data/processed/structural_index/structural_index_pooled_final_index.csv`\n"
         "- yearly 민감도: `data/processed/structural_index/structural_index_yearly_final_index.csv`\n"
         "- 구성 점수: pooled 대영역·세부영역·지표 점수 CSV\n"
@@ -93,6 +111,11 @@ def build_visualization_outputs(
         f"- 지표 점수 행 수: {validation['indicator_rows']:,}행\n"
         "- 전국 행: 최종지수·구성점수·순위 계산에서 제외됨을 검증\n"
         "- 결측 최종지수·비유한값·지역·연도 중복: 없음\n\n"
+        "## 가정·제약·잠재편향\n\n"
+        "- 핵심 가정: pooled는 연도 간 비교 가능한 고정 표준화 기준이며 yearly는 민감도 분석으로 사용한다.\n"
+        "- 방법론적 제약: AHP 가중치는 모든 연도에 고정되고, 지수는 인과효과가 아닌 상대적 수준을 나타낸다.\n"
+        "- 한계: 표준화 기준과 조사주기 차이로 인해 절대적 복지 수준이나 정책 효과를 직접 해석할 수 없다.\n"
+        "- 잠재편향: 원자료의 조사 표본·자기보고 응답·공표 기준 변경 및 지역별 측정 가능성 차이가 결과에 영향을 줄 수 있다.\n\n"
         "## 해석 원칙\n\n"
         "- pooled를 본계열로, yearly를 표준화 민감도 분석으로 표시한다.\n"
         "- AHP 가중치는 모든 연도에 고정 적용되며, 지수는 인과효과가 아닌 상대적 구조환경 수준이다.\n"
