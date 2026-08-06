@@ -256,6 +256,7 @@ def build_structural_region_summary(
         values = indicator_df.pivot(index="지역", columns="연도", values="측정값")
         base_values = values.get(base_year, pd.Series(dtype="float64"))
         reference_values = values.get(reference_year, pd.Series(dtype="float64"))
+        comparison_rows = indicator_df.loc[indicator_df["연도"].between(base_year, reference_year)]
         if direction == "3점에 가까울수록 양호":
             ranking_values = reference_values.sub(3).abs()
             ranks = ranking_values.rank(method="min", ascending=True)
@@ -298,6 +299,12 @@ def build_structural_region_summary(
                     ),
                     "실측연도수": int(region_rows["실측여부"].sum()),
                     "결측연도수": int((~region_rows["실측여부"]).sum()),
+                    "비교기간실측연도수": int(
+                        comparison_rows.loc[comparison_rows["지역"].eq(region), "실측여부"].sum()
+                    ),
+                    "비교기간결측연도수": int(
+                        (~comparison_rows.loc[comparison_rows["지역"].eq(region), "실측여부"]).sum()
+                    ),
                     "급등락후보연도": ", ".join(map(str, outlier_years)) or "-",
                 }
             )
@@ -341,21 +348,30 @@ def render_structural_region_report(summary: pd.DataFrame) -> str:
             f"{row.지역}({_format_report_value(row.기준값)})"
             for row in observed.tail(3).sort_values("기준연도순위", ascending=False).itertuples()
         )
+        observation_period = first.get("관측기간") or (
+            f"{first['비교시작연도']}–{first['비교기준연도']}"
+        )
         lines.extend(
             [
                 f"## {indicator}",
                 "",
                 f"- 영역: {first['대영역']} > {first['세부영역']}",
                 f"- 방향성: {first['방향성']}",
+                f"- 단위: {first.get('단위', '-')}",
+                f"- 출처: {first.get('출처', '-')}",
+                f"- 관측기간: {observation_period}",
+                f"- 자료 기준: {first.get('자료기준', '검증 원자료 기준')}",
                 f"- 비교: {first['비교시작연도']}년 → {first['비교기준연도']}년",
                 f"- 기준연도 양호 상위: {top_regions or '-'}",
                 f"- 기준연도 하위: {bottom_regions or '-'}",
                 "",
-                "| 지역 | 시작값 | 기준값 | 변화량 | 방향성 기준 | 순위 | 실측/결측 연도 | 급등락 후보 연도 |",
-                "|---|---:|---:|---:|---|---:|---:|---|",
+                "| 지역 | 시작값 | 기준값 | 변화량 | 방향성 기준 | 순위 | 입력기간 실측/결측 | 비교기간 실측/결측 | 급등락 후보 연도 |",
+                "|---|---:|---:|---:|---|---:|---:|---:|---|",
             ]
         )
         for row in group.itertuples(index=False):
+            comparison_observed = getattr(row, "비교기간실측연도수", row.실측연도수)
+            comparison_missing = getattr(row, "비교기간결측연도수", row.결측연도수)
             lines.append(
                 "| "
                 + " | ".join(
@@ -367,6 +383,7 @@ def render_structural_region_report(summary: pd.DataFrame) -> str:
                         row.방향성기준결과,
                         _format_report_value(row.기준연도순위),
                         f"{row.실측연도수}/{row.결측연도수}",
+                        f"{comparison_observed}/{comparison_missing}",
                         row.급등락후보연도,
                     ]
                 )

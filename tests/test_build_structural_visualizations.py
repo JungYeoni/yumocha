@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from scripts.build_structural_visualizations import (
     EXPECTED_YEARS,
@@ -26,6 +27,8 @@ def test_prepare_visualization_input_pivots_long_panel_without_status_duplicates
                     "지표명": "지표",
                     "연도": year,
                     "측정값": float(year),
+                    "단위": "%",
+                    "출처": "테스트",
                     "대분류": "경제·고용·주거",
                     "세부영역": "고용여건",
                     "방향": "positive",
@@ -41,3 +44,28 @@ def test_prepare_visualization_input_pivots_long_panel_without_status_duplicates
     assert len(wide) == 3
     assert set(wide["지역"]) == {"서울", "부산", "전국"}
     assert wide["검증상태"].eq("검증 원자료 기준").all()
+
+
+def test_prepare_visualization_input_rejects_missing_region_year_row():
+    rows = []
+    for region in ["서울", "부산", "전국"]:
+        for year in EXPECTED_YEARS:
+            if region == "부산" and year == 2020:
+                continue
+            rows.append(
+                {
+                    "지역": region,
+                    "지표_id": "indicator",
+                    "지표명": "지표",
+                    "연도": year,
+                    "측정값": float(year),
+                    "단위": "%",
+                    "출처": "테스트",
+                    "대분류": "경제·고용·주거",
+                    "세부영역": "고용여건",
+                    "방향": "positive",
+                }
+            )
+
+    with pytest.raises(ValueError, match="원본 행이 누락"):
+        prepare_visualization_input(pd.DataFrame(rows), expected_regions=("서울", "부산"))
