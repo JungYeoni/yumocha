@@ -72,6 +72,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([9bcae66](https://github.com/JungYeoni/da-template/commit/9bcae66c8e7dd3f2ba285ebd1bbc41a05c968bfd))
 - CHANGELOG 자동 업데이트 [skip ci] ([5cd49cc](https://github.com/JungYeoni/da-template/commit/5cd49cc4e13d9f4207d851867e9502b086e04267))
 - CHANGELOG 자동 업데이트 [skip ci] ([54f6261](https://github.com/JungYeoni/da-template/commit/54f62614e62fe1651bb8fa842ac0838a7e87a370))
 - 가족친화 인증기업 전국 통계 "누계" 정의 검증 기록 (#70) ([46952bf](https://github.com/JungYeoni/da-template/commit/46952bf609641fc817b7d0b8b246e42b873e390f))
@@ -280,6 +281,7 @@
 
 ### 새 기능
 
+- 공식 분석 산출물 선택적 추적 반영 (#90) ([c485e32](https://github.com/JungYeoni/da-template/commit/c485e322ff14e245b41dcc7130a6f49b3715c7fc))
 - 28개 구조환경지표 추세 시각화 반영 (#63) ([bc5e994](https://github.com/JungYeoni/da-template/commit/bc5e994956cdde2d01bc0bb6176c1016ad458dd5))
 - Deflate selected cost indicators with CPI (#82) ([5bcd579](https://github.com/JungYeoni/da-template/commit/5bcd5796320ac32502701801b3f34385b2acaeb6))
 - Compare structural index scenarios (#82) ([2305b04](https://github.com/JungYeoni/da-template/commit/2305b046d01c874453b1acb19e040c33c2b780eb))
