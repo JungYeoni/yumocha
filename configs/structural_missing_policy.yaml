@@ -1,0 +1,318 @@
+version: 1
+
+panel:
+  path: data/processed/구조환경지표_28개_보간전_기준패널.csv
+  key_columns: [지역, 지표_id, 연도]
+  value_column: 측정값
+  expected_rows: 4536
+  expected_observed: 3365
+  expected_missing: 1171
+
+allowed_values:
+  missing_cause:
+    - 조사 비실시 연도
+    - 원자료 미공표
+    - 원자료 부재
+    - 완전격자 생성행
+    - 미산출
+    - 원인 미확정
+  cause_status: [confirmed, inferred, unresolved]
+  imputation_policy:
+    - linear_interpolation
+    - boundary_carry
+    - auxiliary_boundary_interpolation
+    - keep_missing
+    - pending_review
+
+semantics:
+  analysis_included_output: analysis_included_after_imputation
+  analysis_included_description: 대체가 정책대로 완료되고 QA를 통과한 뒤 본계열 분석에 포함할 예정인지 표시한다.
+  block_imputation_description: structural_missing.py에 전달할 실제 대체 차단 플래그다.
+  original_row_exists_description: 완전격자 생성 여부를 결측 원인과 독립적으로 보존한다.
+
+expected_counts:
+  missing_cause:
+    조사 비실시 연도: 864
+    원자료 미공표: 9
+    원자료 부재: 298
+    완전격자 생성행: 0
+    미산출: 0
+    원인 미확정: 0
+  cause_status:
+    confirmed: 1171
+    inferred: 0
+    unresolved: 0
+  imputation_policy:
+    linear_interpolation: 486
+    boundary_carry: 388
+    auxiliary_boundary_interpolation: 0
+    keep_missing: 297
+    pending_review: 0
+  block_imputation:
+    false: 874
+    true: 297
+  analysis_included:
+    false: 297
+    true: 874
+  missing_position:
+    leading_missing: 586
+    intermediate_missing: 486
+    trailing_missing: 90
+    all_period_unobserved: 9
+  auxiliary_scenario_rows: 72
+  auxiliary_raking_composition_rows: 0
+  original_grid_rows: 387
+  boundary_review:
+    total: 388
+    carry_direction:
+      backward: 298
+      forward: 90
+    consecutive_missing_years:
+      1: 132
+      2: 36
+      4: 220
+    long_range_backcast:
+      false: 132
+      true: 256
+    sensitivity_required:
+      true: 388
+    policy_risk_level:
+      medium: 132
+      high: 256
+  issue_82_blockers:
+    family_friendly_certification_rate: 0
+    housework_gender_equality: 0
+    postpartum_center_supply: 119
+    postpartum_center_fee: 119
+    delivery_bed_supply: 34
+    total: 272
+
+rules:
+  - rule_id: youth_employment_2016_source_absent
+    indicator_ids: [youth_employment_rate]
+    regions: [세종, 충남]
+    years: [2016]
+    missing_cause: 원자료 부재
+    cause_status: confirmed
+    imputation_policy: boundary_carry
+    block_imputation: false
+    analysis_included: true
+    evidence: reports/20260724_구조환경지표_21개_검증_진행상황.md:62
+    note: 원자료의 결측 토큰은 확인됐지만 신설 지자체가 원인이라는 설명은 추정이다.
+
+  - rule_id: work_hours_sejong_source_absent
+    indicator_ids: [work_hours]
+    regions: [세종]
+    years: [2016, 2017, 2018, 2019]
+    missing_cause: 원자료 부재
+    cause_status: confirmed
+    imputation_policy: boundary_carry
+    block_imputation: false
+    analysis_included: true
+    evidence: reports/20260724_구조환경지표_21개_검증_진행상황.md:211
+    note: 원자료 부재는 확인됐지만 표본 부족이 원인이라는 설명은 추정이다.
+
+  - rule_id: work_hours_national_unpublished
+    indicator_ids: [work_hours]
+    regions: [전국]
+    years: [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
+    missing_cause: 원자료 미공표
+    cause_status: confirmed
+    imputation_policy: keep_missing
+    block_imputation: true
+    analysis_included: false
+    evidence: reports/20260724_구조환경지표_21개_검증_진행상황.md:212
+    note: 시도별 공표표에 전국 합계가 없으며 시도 평균으로 만들지 않는다.
+
+  - rule_id: income_leisure_interior_non_survey
+    indicator_ids: [income_satisfaction, leisure_satisfaction]
+    regions: all
+    years: [2018, 2020, 2022]
+    missing_cause: 조사 비실시 연도
+    cause_status: confirmed
+    imputation_policy: linear_interpolation
+    block_imputation: false
+    analysis_included: true
+    evidence: reports/20260725_구조환경지표_통합파일_결측치_검증_결과.md:57
+    note: 실제 관측값 사이의 비조사연도로 본계열 선형보간 후보이다.
+
+  - rule_id: income_leisure_leading_non_survey
+    indicator_ids: [income_satisfaction, leisure_satisfaction]
+    regions: all
+    years: [2016]
+    missing_cause: 조사 비실시 연도
+    cause_status: confirmed
+    imputation_policy: boundary_carry
+    block_imputation: false
+    analysis_included: true
+    auxiliary_scenario_policy: auxiliary_boundary_interpolation
+    auxiliary_boundary_year: 2015
+    evidence: configs/structural_indicators_verification.yaml:145
+    note: 본계열은 boundary carry 후보이며 2015년 값은 별도 보조 시나리오에서만 사용한다.
+
+  - rule_id: income_leisure_trailing_non_survey
+    indicator_ids: [income_satisfaction, leisure_satisfaction]
+    regions: all
+    years: [2024]
+    missing_cause: 조사 비실시 연도
+    cause_status: confirmed
+    imputation_policy: boundary_carry
+    block_imputation: false
+    analysis_included: true
+    auxiliary_scenario_policy: auxiliary_boundary_interpolation
+    auxiliary_boundary_year: 2025
+    evidence: configs/structural_indicators_verification.yaml:145
+    note: 본계열은 boundary carry 후보이며 2025년 값은 별도 보조 시나리오에서만 사용한다.
+
+  - rule_id: delivery_bed_before_source_start
+    indicator_ids: [delivery_bed_supply]
+    regions: all
+    years: [2016, 2017]
+    missing_cause: 원자료 부재
+    cause_status: confirmed
+    imputation_policy: keep_missing
+    block_imputation: true
+    analysis_included: false
+    evidence: reports/20260725_구조환경지표_통합파일_결측치_검증_결과.md:59
+    note: >-
+      원자료는 2018년 3분기부터 시작한다. 20260725 검증 리포트가 이 구간을 "통계 자체가
+      최근에 신설됨(시계열 시작점 문제)"으로 분류하고 보간(경계값 이월 포함) 불가로
+      판단했으므로 boundary_carry를 적용하지 않고 결측으로 유지한다.
+
+  - rule_id: postpartum_before_source_start
+    indicator_ids: [postpartum_center_supply, postpartum_center_fee]
+    regions: all
+    years: [2016, 2017, 2018, 2019, 2020, 2021, 2022]
+    missing_cause: 원자료 부재
+    cause_status: confirmed
+    imputation_policy: keep_missing
+    block_imputation: true
+    analysis_included: false
+    evidence: reports/20260725_구조환경지표_통합파일_결측치_검증_결과.md:59
+    note: >-
+      승인된 원자료는 2023년부터 존재한다. 20260725 검증 리포트가 이 구간을 "통계 자체가
+      최근에 신설됨(시계열 시작점 문제)"으로 분류하고 2023년 값을 과거로 이월하는 것은
+      존재하지 않는 시계열 구간을 만드는 것이라 보간 불가로 판단했으므로 boundary_carry를
+      적용하지 않고 결측으로 유지한다.
+
+  - rule_id: social_survey_interior_non_survey
+    indicator_ids: [social_safety_perception, marriage_perception]
+    regions: all
+    years: [2017, 2019, 2021, 2023]
+    missing_cause: 조사 비실시 연도
+    cause_status: confirmed
+    imputation_policy: linear_interpolation
+    block_imputation: false
+    analysis_included: true
+    evidence: configs/structural_indicators_verification.yaml:460
+    note: 2016·2018·2020·2022·2024 관측값 사이의 비조사연도이다.
+
+  # family_friendly_provincial_unresolved / family_friendly_national_unresolved:
+  # 2026-08-06 제거됨. 17개 시도 51건(2016 실측 17 + 2017·2019 raking 34) +
+  # 전국 5건이 모두 실측/raking 추정치로 해소돼 base 패널(`구조환경지표_28개_보간전_기준패널.csv`)에
+  # 이미 값이 채워졌다. 더 이상 missing 셀이 아니므로 정책 규칙이 필요 없다.
+  # 경위: reports/methodology/20260806_가족친화_2016_지역별_직접복원_QA.md,
+  # reports/methodology/20260806_가족친화_2017_2019_raking_본계열반영_QA.md,
+  # 이슈 #70 코멘트(2026-08-06).
+
+  - rule_id: childbirth_leading_non_survey
+    indicator_ids: [childbirth_perception]
+    regions: all
+    years: [2016, 2017]
+    missing_cause: 조사 비실시 연도
+    cause_status: confirmed
+    imputation_policy: boundary_carry
+    block_imputation: false
+    analysis_included: true
+    evidence: configs/structural_indicators_verification.yaml:576
+    note: 지표의 첫 비교 가능 관측연도인 2018년 이전 구간이다.
+
+  - rule_id: childbirth_interior_non_survey
+    indicator_ids: [childbirth_perception]
+    regions: all
+    years: [2019, 2021, 2023]
+    missing_cause: 조사 비실시 연도
+    cause_status: confirmed
+    imputation_policy: linear_interpolation
+    block_imputation: false
+    analysis_included: true
+    evidence: configs/structural_indicators_verification.yaml:576
+    note: 2018·2020·2022·2024 관측값 사이의 비조사연도이다.
+
+  - rule_id: nonlinear_housework_direct_interpolation
+    indicator_ids: [housework_gender_equality]
+    regions: all
+    years: [2017, 2019, 2021, 2023]
+    missing_cause: 조사 비실시 연도
+    cause_status: confirmed
+    imputation_policy: linear_interpolation
+    block_imputation: false
+    analysis_included: true
+    evidence: reports/methodology/20260805_가사분담_성평등_인식_직접보간_안전성_검증.md
+    note: >-
+      원산식 `1-|평균응답값-3|/2`은 비선형(절댓값) 변환이지만, 18개 지역 × 5개
+      관측연도(2016·2018·2020·2022·2024) 전부에서 평균응답값이 3점(중간) 미만이라
+      그 구간에서는 순수 선형함수와 같다. 검증 스크립트
+      (`scripts/verify_housework_gender_equality_interpolation_safety.py`)로 확인했으며,
+      최종값을 직접 선형보간해도 구성요소를 먼저 보간한 뒤 변환한 것과 정확히 같다.
+
+  # youth_regular_national_unresolved: 2026-08-06 제거됨. 전국 9개년이 MDIS 원자료
+  # 직접 계산으로 모두 해소돼 base 패널에 실측값이 채워졌다
+  # (scripts/build_youth_regular_employment_national_candidates.py).
+
+  - rule_id: youth_regular_sejong_source_absent
+    indicator_ids: [youth_regular_employment_rate]
+    regions: [세종]
+    years: [2016]
+    missing_cause: 원자료 부재
+    cause_status: confirmed
+    imputation_policy: boundary_carry
+    block_imputation: false
+    analysis_included: true
+    evidence: notebooks/20260727_EDA_지역별고용조사_청년층_정규직_근로자_비율_산출.ipynb:1503
+    note: 2016년 상·하반기 원자료 모두 세종 코드 29가 없다.
+
+  - rule_id: housing_sejong_combined_sample
+    indicator_ids:
+      - housing_price
+      - household_own_occupancy_rate
+      - renter_household_annual_housing_cost_hcc
+    regions: [세종]
+    years: [2016]
+    missing_cause: 원자료 부재
+    cause_status: confirmed
+    imputation_policy: boundary_carry
+    block_imputation: false
+    analysis_included: true
+    evidence: configs/structural_indicators_verification.yaml:705
+    note: 충남·세종 결합표본을 충남으로 산출해 세종 단독값이 없다.
+
+  - rule_id: family_survey_boundary_non_survey
+    indicator_ids:
+      - household_chore_equal_participation
+      - childcare_equal_participation
+      - socioeconomic_status_perception
+    regions: all
+    years: [2016, 2017, 2018, 2019, 2024]
+    missing_cause: 조사 비실시 연도
+    cause_status: confirmed
+    imputation_policy: boundary_carry
+    block_imputation: false
+    analysis_included: true
+    evidence: configs/structural_indicators_verification.yaml:790
+    note: 2020·2023 관측 범위 밖의 비조사연도이며 본계열 boundary carry 후보이다.
+
+  - rule_id: family_survey_interior_non_survey
+    indicator_ids:
+      - household_chore_equal_participation
+      - childcare_equal_participation
+      - socioeconomic_status_perception
+    regions: all
+    years: [2021, 2022]
+    missing_cause: 조사 비실시 연도
+    cause_status: confirmed
+    imputation_policy: linear_interpolation
+    block_imputation: false
+    analysis_included: true
+    evidence: configs/structural_indicators_verification.yaml:790
+    note: 2020년과 2023년 실제 관측값 사이의 비조사연도이다.
