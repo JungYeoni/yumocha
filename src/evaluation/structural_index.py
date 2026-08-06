@@ -51,6 +51,7 @@ DEFAULT_STRUCTURAL_REGIONS = (
 DEFAULT_CPI_BASE_VALUE = 100.0
 REAL_COST_INDICATOR_IDS = frozenset(
     {
+        "housing_price",
         "renter_household_annual_housing_cost_hcc",
         "private_education_cost",
         "postpartum_center_fee",

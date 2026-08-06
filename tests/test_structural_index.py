@@ -20,7 +20,7 @@ from src.evaluation.structural_index import (
 )
 
 
-def test_deflate_structural_cost_indicators_excludes_housing_price():
+def test_deflate_structural_cost_indicators_includes_all_four_monetary_indicators():
     panel = pd.DataFrame(
         {
             "year": [2016, 2016, 2016, 2016],
@@ -37,11 +37,8 @@ def test_deflate_structural_cost_indicators_excludes_housing_price():
 
     result = deflate_structural_cost_indicators(panel, cpi)
 
-    target = result["indicator_id"].ne("housing_price")
-    assert np.allclose(result.loc[target, "value"], 100.0)
-    assert result.loc[target, "price_basis"].eq("real(2020=100)").all()
-    assert result.loc[~target, "value"].eq(95.718).all()
-    assert result.loc[~target, "price_basis"].eq("nominal").all()
+    assert np.allclose(result["value"], 100.0)
+    assert result["price_basis"].eq("real(2020=100)").all()
 
 
 def test_processed_panel_adapter_and_scenarios_allow_nationwide_only_missing():
