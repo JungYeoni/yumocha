@@ -8,6 +8,7 @@ from scripts.build_structural_index import compare_scenarios
 from src.evaluation.structural_index import (
     StructuralIndexResult,
     compute_structural_index,
+    deflate_structural_cost_indicators,
     load_structural_indicator_manifest,
     load_structural_index_weights,
     standardize_structural_indicators,
@@ -17,6 +18,30 @@ from src.evaluation.structural_index import (
     prepare_processed_structural_panel,
     run_structural_index_scenarios,
 )
+
+
+def test_deflate_structural_cost_indicators_excludes_housing_price():
+    panel = pd.DataFrame(
+        {
+            "year": [2016, 2016, 2016, 2016],
+            "indicator_id": [
+                "renter_household_annual_housing_cost_hcc",
+                "private_education_cost",
+                "postpartum_center_fee",
+                "housing_price",
+            ],
+            "value": [95.718, 95.718, 95.718, 95.718],
+        }
+    )
+    cpi = pd.DataFrame({"연도": [2016], "소비자물가지수": [95.718], "기준연도": ["2020=100"]})
+
+    result = deflate_structural_cost_indicators(panel, cpi)
+
+    target = result["indicator_id"].ne("housing_price")
+    assert np.allclose(result.loc[target, "value"], 100.0)
+    assert result.loc[target, "price_basis"].eq("real(2020=100)").all()
+    assert result.loc[~target, "value"].eq(95.718).all()
+    assert result.loc[~target, "price_basis"].eq("nominal").all()
 
 
 def test_processed_panel_adapter_and_scenarios_allow_nationwide_only_missing():

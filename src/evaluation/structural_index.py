@@ -48,6 +48,14 @@ DEFAULT_STRUCTURAL_REGIONS = (
     "경남",
     "제주",
 )
+DEFAULT_CPI_BASE_VALUE = 100.0
+REAL_COST_INDICATOR_IDS = frozenset(
+    {
+        "renter_household_annual_housing_cost_hcc",
+        "private_education_cost",
+        "postpartum_center_fee",
+    }
+)
 
 
 @dataclass
@@ -236,6 +244,49 @@ def prepare_processed_structural_panel(
             *[column for column in optional if column in result.columns],
         ]
     ]
+
+
+def deflate_structural_cost_indicators(
+    df: pd.DataFrame,
+    cpi: pd.DataFrame,
+    *,
+    indicator_ids: Iterable[str] = REAL_COST_INDICATOR_IDS,
+    base_value: float = DEFAULT_CPI_BASE_VALUE,
+) -> pd.DataFrame:
+    """선택한 비용지표를 전국 연평균 CPI 기준 불변가격으로 변환한다."""
+    require_columns(df, ["year", "indicator_id", "value"], source_name="비용지표 실질화 입력")
+    require_columns(cpi, ["연도", "소비자물가지수", "기준연도"], source_name="CPI lookup")
+    if cpi["연도"].duplicated().any():
+        duplicates = sorted(cpi.loc[cpi["연도"].duplicated(keep=False), "연도"].unique())
+        raise ValueError(f"CPI lookup에 중복 연도가 있습니다: {duplicates}")
+
+    cpi_slim = cpi[["연도", "소비자물가지수", "기준연도"]].rename(
+        columns={
+            "연도": "year",
+            "소비자물가지수": "cpi_index",
+            "기준연도": "cpi_base_year",
+        }
+    )
+    cpi_slim["cpi_index"] = pd.to_numeric(cpi_slim["cpi_index"], errors="raise")
+    if cpi_slim["cpi_index"].isna().any() or (cpi_slim["cpi_index"] <= 0).any():
+        raise ValueError("CPI lookup의 소비자물가지수는 결측 없이 양수여야 합니다.")
+
+    result = df.merge(cpi_slim, on="year", how="left", validate="many_to_one")
+    target = result["indicator_id"].astype(str).isin(set(indicator_ids))
+    if result.loc[target, "cpi_index"].isna().any():
+        years = sorted(result.loc[target & result["cpi_index"].isna(), "year"].unique())
+        raise ValueError(f"비용지표 실질화에 필요한 CPI 연도가 없습니다: {years}")
+
+    result["nominal_value"] = result["value"]
+    result["price_basis"] = "nominal"
+    result.loc[target, "value"] = (
+        result.loc[target, "nominal_value"] * base_value / result.loc[target, "cpi_index"]
+    )
+    result.loc[target, "price_basis"] = result.loc[target, "cpi_base_year"].map(
+        lambda value: f"real({value})"
+    )
+    result.loc[~target, ["cpi_index", "cpi_base_year"]] = pd.NA
+    return result
 
 
 def validate_structural_index_input(
@@ -514,6 +565,10 @@ def standardize_structural_indicators(
                 "is_imputed",
                 "processing_strategy",
                 "missing_type",
+                "nominal_value",
+                "cpi_index",
+                "cpi_base_year",
+                "price_basis",
             ):
                 if column in row.index:
                     record[column] = row[column]
@@ -753,6 +808,7 @@ __all__ = [
     "validate_structural_index_weights",
     "prepare_structural_index_input",
     "prepare_processed_structural_panel",
+    "deflate_structural_cost_indicators",
     "validate_structural_index_input",
     "standardize_structural_indicators",
     "compute_structural_index",

@@ -10,6 +10,8 @@ import pandas as pd
 from src.evaluation.structural_index import (
     DEFAULT_STRUCTURAL_REGIONS,
     DEFAULT_STRUCTURAL_YEARS,
+    REAL_COST_INDICATOR_IDS,
+    deflate_structural_cost_indicators,
     load_structural_index_weights,
     load_structural_indicator_manifest,
     prepare_processed_structural_panel,
@@ -21,6 +23,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT = REPO_ROOT / "data/processed/구조환경지표_28개_결측처리후_본계열패널.csv"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "data/processed/structural_index"
 DEFAULT_REPORT = REPO_ROOT / "reports/methodology/20260806_구조환경지수_실제패널_산출_QA.md"
+DEFAULT_CPI = REPO_ROOT / "data/lookup/연도별_소비자물가지수.csv"
 
 
 def compare_scenarios(results: dict) -> pd.DataFrame:
@@ -51,7 +54,12 @@ def compare_scenarios(results: dict) -> pd.DataFrame:
     return comparison.sort_values(["year", "region"]).reset_index(drop=True)
 
 
-def build_report(results: dict, comparison: pd.DataFrame, input_rows: int) -> str:
+def build_report(
+    results: dict,
+    comparison: pd.DataFrame,
+    nominal_results: dict,
+    input_rows: int,
+) -> str:
     yearly_stats = comparison.groupby("year", sort=True).apply(
         lambda group: pd.Series(
             {
@@ -72,6 +80,8 @@ def build_report(results: dict, comparison: pd.DataFrame, input_rows: int) -> st
         "- 분석 격자: 17개 시도 × 2016–2024년 × 28개 지표 = 4,284행",
         "- 전국 행은 표준화·지수 산출에서 제외",
         "- 표준화 시나리오: pooled Min-Max, 연도별(yearly) Min-Max",
+        "- 실질화: 임차가구 연간 주거비·사교육비·산후조리원 이용요금에 전국 연평균 CPI(2020=100) 적용",
+        "- 현재 주택가격은 팀 논의 전까지 명목값 유지",
         "",
         "## 산출 QA",
         "",
@@ -90,6 +100,16 @@ def build_report(results: dict, comparison: pd.DataFrame, input_rows: int) -> st
             "",
             "모든 시나리오에서 지역·연도별 28개 지표가 완비되고 최종지수 153개가 산출됐다.",
             "전국 근로시간 9개 결측은 전국 행 자체가 분석 대상이 아니므로 결과에 유입되지 않는다.",
+            "",
+            "## 비용지표 CPI 실질화 영향",
+            "",
+            f"- 실질화 대상 ID: {', '.join(sorted(REAL_COST_INDICATOR_IDS))}",
+            "- 계산식: 실질금액(2020년 가격) = 명목금액 × 100 / 해당 연도 CPI",
+            f"- pooled 최종지수 평균 절대 변화: "
+            f"{(results['pooled'].final_index['final_index'] - nominal_results['pooled'].final_index['final_index']).abs().mean():.4f}점",
+            f"- pooled 최종지수 최대 절대 변화: "
+            f"{(results['pooled'].final_index['final_index'] - nominal_results['pooled'].final_index['final_index']).abs().max():.4f}점",
+            "- 현재 주택가격은 자산가격 성격 때문에 명목 유지·CPI 실질화·소득 대비 가격 중 팀 결정이 필요해 이번 적용에서 제외",
             "",
             "## pooled–yearly 민감도 비교",
             "",
@@ -136,6 +156,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
+    parser.add_argument("--cpi", type=Path, default=DEFAULT_CPI)
     return parser.parse_args()
 
 
@@ -143,10 +164,13 @@ def main() -> None:
     args = parse_args()
     raw = pd.read_csv(args.input, encoding="utf-8-sig")
     panel = prepare_processed_structural_panel(raw)
+    cpi = pd.read_csv(args.cpi, encoding="utf-8-sig")
     manifest = load_structural_indicator_manifest(REPO_ROOT)
     weights = load_structural_index_weights(REPO_ROOT)
     validate_structural_index_weights(weights, manifest)
-    results = run_structural_index_scenarios(panel, weights)
+    nominal_results = run_structural_index_scenarios(panel, weights)
+    real_panel = deflate_structural_cost_indicators(panel, cpi)
+    results = run_structural_index_scenarios(real_panel, weights)
     comparison = compare_scenarios(results)
 
     expected_indicator_rows = (
@@ -176,7 +200,9 @@ def main() -> None:
         index=False,
         encoding="utf-8-sig",
     )
-    args.report.write_text(build_report(results, comparison, len(raw)), encoding="utf-8")
+    args.report.write_text(
+        build_report(results, comparison, nominal_results, len(raw)), encoding="utf-8"
+    )
     print(f"구조환경지수 산출 완료: {args.output_dir}")
     print(f"QA 보고서: {args.report}")
 
