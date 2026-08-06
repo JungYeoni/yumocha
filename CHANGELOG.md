@@ -72,6 +72,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([5cd49cc](https://github.com/JungYeoni/da-template/commit/5cd49cc4e13d9f4207d851867e9502b086e04267))
 - CHANGELOG 자동 업데이트 [skip ci] ([54f6261](https://github.com/JungYeoni/da-template/commit/54f62614e62fe1651bb8fa842ac0838a7e87a370))
 - 가족친화 인증기업 전국 통계 "누계" 정의 검증 기록 (#70) ([46952bf](https://github.com/JungYeoni/da-template/commit/46952bf609641fc817b7d0b8b246e42b873e390f))
 - 가족친화 지역별 51건 보간 방법 제안 (#70) ([3708564](https://github.com/JungYeoni/da-template/commit/37085644c0e2e317ff045f4e98b825a658a7d46c))
@@ -193,6 +194,7 @@
 
 ### 버그 수정
 
+- 추세 시각화 리뷰 의견 반영 (#63) ([8ceb7cc](https://github.com/JungYeoni/da-template/commit/8ceb7cca2518e3a528b2489e9eb2ab40f225a1bb))
 - 2차 코드리뷰 반영 — 관측상태 전파 3번째 함수, 문서 표현·모호성 정리 (#70) ([2322659](https://github.com/JungYeoni/da-template/commit/232265998b0a0257b1267e4cc5f11e761278d876))
 - PR #89 코드리뷰 남은 항목 반영 — 정책 재생성 크래시, 방어 검증 보강 (#70) ([bde4ea4](https://github.com/JungYeoni/da-template/commit/bde4ea456eb1c9ce518a86644f2fd459f55332a4))
 - PR #89 코드리뷰 반영 — 관측상태 전파 누락, 빈 패널감사표 KeyError (#70) ([1bfb6ad](https://github.com/JungYeoni/da-template/commit/1bfb6ad6b7cb6f0ac3290334a667a64929a18cd0))
@@ -278,6 +280,7 @@
 
 ### 새 기능
 
+- 28개 구조환경지표 추세 시각화 반영 (#63) ([bc5e994](https://github.com/JungYeoni/da-template/commit/bc5e994956cdde2d01bc0bb6176c1016ad458dd5))
 - Deflate selected cost indicators with CPI (#82) ([5bcd579](https://github.com/JungYeoni/da-template/commit/5bcd5796320ac32502701801b3f34385b2acaeb6))
 - Compare structural index scenarios (#82) ([2305b04](https://github.com/JungYeoni/da-template/commit/2305b046d01c874453b1acb19e040c33c2b780eb))
 - Complete structural index panel calculation (#82) ([1462d29](https://github.com/JungYeoni/da-template/commit/1462d29a9f4cd3351b8023e87814a49488ad4937))
