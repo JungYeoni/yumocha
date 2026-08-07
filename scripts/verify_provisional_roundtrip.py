@@ -42,7 +42,9 @@ def compare_frame_to_saved_csv(memory: pd.DataFrame, csv_path: Path) -> dict[str
     """메모리상 DataFrame과, 그걸 저장한 뒤 다시 읽은 CSV를 셀 단위로 대조한다."""
     if not csv_path.is_file():
         raise FileNotFoundError(f"저장된 산출물이 없습니다: {csv_path}")
-    saved = pd.read_csv(csv_path)
+    # run_provisional_pipeline.py는 utf-8-sig로 저장한다(BOM 포함). pandas가 BOM을
+    # 자동으로 인식해 벗겨내긴 하지만, 저장 측과 같은 인코딩을 명시해 계약을 맞춘다.
+    saved = pd.read_csv(csv_path, encoding="utf-8-sig")
 
     shape_match = memory.shape == saved.shape
     column_match = list(memory.columns) == list(saved.columns)
