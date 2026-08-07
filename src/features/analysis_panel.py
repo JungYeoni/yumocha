@@ -526,6 +526,7 @@ def add_fiscal_index_features(
     cpi_col: str = "소비자물가지수",
     population_col: str = "20_39세_인구_명",
     cpi_base_value: float = 100.0,
+    real_price_label: str = "2020년가격",
 ) -> pd.DataFrame:
     """계획예산을 실질화하고 재정대응지수와 전년 변화를 생성한다.
 
@@ -535,6 +536,12 @@ def add_fiscal_index_features(
 
     지역별 전년 변화가 실제 t-1 비교가 되도록 지역×연도 키 중복과 연도
     연속성을 검증한다. CPI와 인구는 양수, 예산은 0 이상이어야 한다.
+
+    ``real_price_label``은 산출 컬럼명(``실질계획예산_{label}_백만원``)에 그대로
+    들어간다. 호출자가 넘긴 CPI가 실제로 어느 연도 가격 기준인지와 반드시
+    일치해야 한다 — 이 함수는 CPI 파일의 실제 기준연도를 검증하지 않으므로
+    (그건 호출자가 CPI를 로드할 때 이미 확인했다고 가정), 라벨과 CPI가 어긋나면
+    계산은 맞아도 컬럼명이 거짓 정보를 표시하게 된다.
     """
 
     required = {*PANEL_KEY, budget_col, cpi_col, population_col}
@@ -564,11 +571,10 @@ def add_fiscal_index_features(
         samples = result.loc[population.le(0), PANEL_KEY + [population_col]].head(10)
         raise ValueError(f"대상인구는 0보다 커야 합니다: {samples.to_dict(orient='records')}")
 
-    result["실질계획예산_2020년가격_백만원"] = budget * cpi_base_value / cpi
-    result["log1p_실질계획예산"] = np.log1p(result["실질계획예산_2020년가격_백만원"])
-    result["20_39세_1인당_실질예산_원"] = (
-        result["실질계획예산_2020년가격_백만원"] * 1_000_000 / population
-    )
+    real_budget_col = f"실질계획예산_{real_price_label}_백만원"
+    result[real_budget_col] = budget * cpi_base_value / cpi
+    result["log1p_실질계획예산"] = np.log1p(result[real_budget_col])
+    result["20_39세_1인당_실질예산_원"] = result[real_budget_col] * 1_000_000 / population
     result["log1p_20_39세_1인당_실질예산"] = np.log1p(result["20_39세_1인당_실질예산_원"])
     result["총액기준_재정대응지수_z"] = _pooled_z_score(
         result["log1p_실질계획예산"],
@@ -587,10 +593,8 @@ def add_fiscal_index_features(
     )
 
     grouped = result.groupby("지역", sort=False)
-    result["실질예산_전년증감액_백만원"] = grouped["실질계획예산_2020년가격_백만원"].diff()
-    result["실질예산_전년증감률"] = grouped["실질계획예산_2020년가격_백만원"].pct_change(
-        fill_method=None
-    )
+    result["실질예산_전년증감액_백만원"] = grouped[real_budget_col].diff()
+    result["실질예산_전년증감률"] = grouped[real_budget_col].pct_change(fill_method=None)
     result["log실질예산_전년변화"] = grouped["log1p_실질계획예산"].diff()
     result["log1인당실질예산_전년변화"] = grouped["log1p_20_39세_1인당_실질예산"].diff()
 

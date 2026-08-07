@@ -405,6 +405,32 @@ def test_add_fiscal_index_features_calculates_real_per_capita_and_scores():
     assert result.groupby("지역")["실질예산_전년증감액_백만원"].first().notna().all()
 
 
+def test_add_fiscal_index_features_names_real_column_after_given_price_label():
+    """실질계획예산 컬럼명이 실제 넘긴 CPI 기준연도와 일치해야 한다.
+
+    2024=100 CPI를 넣고도 컬럼명이 "2020년가격"으로 하드코딩돼 있으면
+    계산은 맞아도 이름이 거짓 정보를 표시하게 된다(#62에서 CPI를
+    2024=100으로 바꾸며 발견).
+    """
+    panel = pd.DataFrame(
+        {
+            "지역": ["서울", "서울"],
+            "연도": [2020, 2021],
+            "당해계획예산_백만원": [100.0, 120.0],
+            "소비자물가지수": [100.0, 105.0],
+            "20_39세_인구_명": [10_000, 9_000],
+        }
+    )
+
+    result = add_fiscal_index_features(panel, real_price_label="2024년가격")
+
+    assert "실질계획예산_2024년가격_백만원" in result.columns
+    assert "실질계획예산_2020년가격_백만원" not in result.columns
+    assert result.loc[result["연도"].eq(2020), "실질계획예산_2024년가격_백만원"].iloc[0] == (
+        pytest.approx(100.0)
+    )
+
+
 def test_add_total_expenditure_ratio_requires_complete_one_to_one_match():
     panel = pd.DataFrame(
         {
