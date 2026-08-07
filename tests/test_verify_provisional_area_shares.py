@@ -64,3 +64,22 @@ def test_check_share_ranges_flags_out_of_range_share():
     assert row["판정"] == "FAIL"
     # 총액이 100인데 -20(구성비 -0.2)과 120(구성비 1.2) 둘 다 0~1 범위를 벗어난다.
     assert row["실제값"] == 2
+
+
+def test_check_share_ranges_flags_non_finite_share_for_zero_total():
+    """총액이 0인 지역·연도는 0/0 나눗셈으로 비유한값(NaN)이 나온다.
+
+    src/provisional/aggregator.py의 _fill_empty_combinations은 예산 0인 행을
+    명시적으로 만들 수 있으므로(어떤 지역이 특정 연도에 실제로 예산을 하나도
+    안 썼다면), 지역·연도 총액 자체가 0인 상황이 실제로 발생할 수 있다.
+    """
+    panel = pd.DataFrame(
+        [
+            {"지역": "서울", "연도": 2021, "대영역": "A", "당해계획예산_백만원_provisional": 0.0},
+            {"지역": "서울", "연도": 2021, "대영역": "B", "당해계획예산_백만원_provisional": 0.0},
+        ]
+    )
+    shares = compute_shares(panel, category_column="대영역")
+    qa = check_share_ranges(shares, category_column="대영역")
+    row = qa.loc[qa["검사항목"].str.contains("비유한값")].iloc[0]
+    assert row["판정"] == "FAIL"

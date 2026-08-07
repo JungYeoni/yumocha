@@ -51,3 +51,17 @@ def test_rebase_cpi_rejects_missing_target_year():
     source = source.loc[source["연도"].ne(2024)]
     with pytest.raises(ValueError, match="목표 기준연도"):
         rebase_cpi(source, target_base_year=2024)
+
+
+def test_rebase_cpi_rejects_duplicate_years():
+    source = pd.concat([_sample_source(), _sample_source().iloc[[0]]], ignore_index=True)
+    with pytest.raises(ValueError, match="연도가 중복"):
+        rebase_cpi(source, target_base_year=2024)
+
+
+def test_rebase_cpi_rejects_non_numeric_index():
+    source = _sample_source()
+    source["소비자물가지수"] = source["소비자물가지수"].astype(object)
+    source.loc[source["연도"].eq(2021), "소비자물가지수"] = "미정"
+    with pytest.raises(ValueError):
+        rebase_cpi(source, target_base_year=2024)

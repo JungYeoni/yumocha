@@ -114,6 +114,13 @@ def validate_schema_and_keys(review: pd.DataFrame, qa_records: list[dict[str, ob
     if missing_columns:
         raise ValueError(f"검토 워크북 필수 열 누락: {missing_columns}")
 
+    budget_numeric = pd.to_numeric(review["당해예산"], errors="coerce")
+    invalid_budget = review["당해예산"].notna() & budget_numeric.isna()
+    if invalid_budget.any():
+        samples = review.loc[invalid_budget, "당해예산"].astype(str).unique()[:5].tolist()
+        raise ValueError(f"검토 워크북 당해예산에 숫자로 변환할 수 없는 값이 있습니다: {samples}")
+    review["당해예산"] = budget_numeric
+
     _add_qa(
         qa_records,
         "§A 입력검증",

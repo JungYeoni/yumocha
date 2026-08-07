@@ -57,8 +57,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--cpi-encoding", default="utf-8-sig")
     parser.add_argument("--cpi-year-column", default="연도")
     parser.add_argument("--cpi-index-column", default="소비자물가지수")
-    parser.add_argument("--cpi-unit", default="2020=100")
-    parser.add_argument("--cpi-base-year", type=int, default=2020)
+    parser.add_argument("--cpi-unit", default="2024=100")
+    parser.add_argument("--cpi-base-year", type=int, default=2024)
     parser.add_argument(
         "--qa-files",
         type=Path,

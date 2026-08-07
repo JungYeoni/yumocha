@@ -38,10 +38,14 @@ def rebase_cpi(source: pd.DataFrame, *, target_base_year: int) -> pd.DataFrame:
     if source_units != {expected_source_unit}:
         raise ValueError(f"CPI 원본 기준연도 표기가 예상과 다릅니다: {source_units}")
 
+    if source["연도"].duplicated().any():
+        duplicated = sorted(source.loc[source["연도"].duplicated(), "연도"].unique())
+        raise ValueError(f"CPI 원본 연도가 중복됩니다: {duplicated}")
     if target_base_year not in set(source["연도"]):
         raise ValueError(f"CPI 원본에 목표 기준연도 {target_base_year}가 없습니다.")
 
     frame = source.copy()
+    frame["소비자물가지수"] = pd.to_numeric(frame["소비자물가지수"], errors="raise")
     base_index = float(frame.loc[frame["연도"].eq(target_base_year), "소비자물가지수"].iloc[0])
     frame["소비자물가지수"] = (frame["소비자물가지수"] / base_index * 100).round(6)
     frame["기준연도"] = f"{target_base_year}=100"

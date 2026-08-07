@@ -339,7 +339,12 @@ def validate_budget_totals_against_detail(
     if current.empty:
         raise ValueError("역대조할 당해예산 세부사업 행이 없습니다.")
     current["연도"] = pd.to_numeric(current["연도"], errors="raise").astype(int)
-    current["예산액"] = pd.to_numeric(current["예산액"], errors="coerce")
+    numeric = pd.to_numeric(current["예산액"], errors="coerce")
+    invalid = current["예산액"].notna() & numeric.isna()
+    if invalid.any():
+        samples = current.loc[invalid, "예산액"].astype(str).unique()[:5].tolist()
+        raise ValueError(f"역대조 예산액 숫자 변환 실패: {samples}")
+    current["예산액"] = numeric
     source_totals = (
         current.groupby(PANEL_KEY, as_index=False)["예산액"]
         .sum(min_count=1)

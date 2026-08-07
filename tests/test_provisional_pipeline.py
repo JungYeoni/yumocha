@@ -256,6 +256,25 @@ def test_cpi_real_budget_and_group_sorted_yoy_are_numerically_checked(
     assert len(cpi_data.metadata["sha256"]) == 64
 
 
+def test_apply_cpi_adjustment_normalizes_string_indexed_cpi_series() -> None:
+    """read_cpi()를 거치지 않고 apply_cpi_adjustment를 직접 호출해도 안전해야 한다.
+
+    CPI Series의 인덱스가 문자열("2020")이면 정수 연도(2020)와 매칭이 안 돼
+    result["연도"].map(cpi)가 조용히 전부 NaN이 될 수 있다.
+    """
+    cpi = pd.Series({"2019": 50.0, "2020": 100.0}, name="소비자물가지수")
+    panel = pd.DataFrame(
+        {
+            "지역": ["서울", "서울"],
+            "연도": [2019, 2020],
+            "당해계획예산_백만원": [100.0, 100.0],
+        }
+    )
+    adjusted = apply_cpi_adjustment(panel, cpi, base_year=2020)
+    assert adjusted["CPI_지수"].notna().all()
+    assert adjusted[REAL_BUDGET_COLUMN].tolist() == pytest.approx([200.0, 100.0])
+
+
 def test_label_aggregation_requires_exact_5_and_12_category_grids() -> None:
     major_labels = [f"대영역{i}" for i in range(5)]
     sub_labels = [f"세부영역{i}" for i in range(12)]
@@ -400,3 +419,18 @@ def test_manifest_separates_input_lineage_from_outputs(tmp_path: Path) -> None:
     for section in ("inputs", "outputs"):
         record = manifest[section][0]
         assert {"path", "filename", "size", "sha256", "schema", "unit"} <= set(record)
+
+
+def test_describe_file_rejects_metadata_that_collides_with_reserved_keys(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source.xlsx"
+    source.write_bytes(b"source")
+    with pytest.raises(ValueError, match="계보 예약 키"):
+        describe_file(
+            source,
+            role="annual_budget_workbook",
+            schema=["지역", "예산"],
+            unit="백만원",
+            sha256="다른 값으로 덮어쓰려는 시도",
+        )

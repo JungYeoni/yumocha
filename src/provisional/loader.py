@@ -452,7 +452,7 @@ def _extract_leaf_rows(frame: pd.DataFrame, year: int) -> pd.DataFrame:
     if year == 2022:
         continuation = frame["지역"].eq("서울") & frame["원본행"].eq(28)
         frame.loc[continuation, "사업행구분"] = "헤더반복"
-        labeled = frame.groupby("지역", group_keys=False).apply(assign_labels)
+        labeled = frame.groupby("지역", group_keys=False).apply(assign_labels, include_groups=False)
         labeled["지역"] = frame.loc[labeled.index, "지역"]
         structure_invalid = (
             labeled["대분류"].isna()

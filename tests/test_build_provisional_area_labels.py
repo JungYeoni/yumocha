@@ -56,6 +56,15 @@ def test_validate_schema_and_keys_flags_duplicate_keys():
     assert row["실제값"] == 1
 
 
+def test_validate_schema_and_keys_rejects_non_numeric_budget():
+    row = _confirmed_row(2021, "서울", 1)
+    row["당해예산"] = "미정"
+    review = _sample_review([row])
+    qa_records: list[dict[str, object]] = []
+    with pytest.raises(ValueError, match="당해예산에 숫자로 변환할 수 없는 값"):
+        validate_schema_and_keys(review, qa_records)
+
+
 def test_validate_schema_and_keys_flags_unknown_region_and_taxonomy():
     row = _confirmed_row(2021, "부산", 1)
     row["지역"] = "가상지역"

@@ -111,6 +111,14 @@ def apply_cpi_adjustment(
         raise KeyError(f"panel 필수 컬럼 누락: {missing}")
     if panel.duplicated([*group_columns, "연도"]).any():
         raise ValueError("CPI 적용 패널의 그룹×연도 키가 중복됩니다.")
+
+    # read_cpi()가 늘 정수 인덱스로 Series를 만들어주지만, 이 함수를 직접 호출하는
+    # 경로(테스트 등)까지 보호하려면 여기서도 정규화해야 한다 — 그렇지 않으면
+    # 인덱스가 문자열일 때 이후 result["연도"].map(cpi)가 전부 매칭 실패해 조용히
+    # NaN이 될 수 있다.
+    cpi = cpi.copy()
+    cpi.index = pd.to_numeric(cpi.index, errors="raise").astype(int)
+
     if int(base_year) not in cpi.index:
         raise ValueError(f"CPI 기준연도 {base_year}가 없습니다.")
 

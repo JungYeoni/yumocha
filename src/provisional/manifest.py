@@ -39,6 +39,9 @@ def describe_file(
         "schema": list(schema) if not isinstance(schema, Mapping) else dict(schema),
         "unit": unit,
     }
+    conflicts = sorted(set(metadata) & set(description))
+    if conflicts:
+        raise ValueError(f"계보 예약 키를 덮어쓸 수 없습니다: {conflicts}")
     description.update(metadata)
     return description
 
