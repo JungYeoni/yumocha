@@ -282,9 +282,125 @@ def plot_budget_region_small_multiples(
     return fig
 
 
+def plot_fiscal_response_overview(fiscal_response_df: pd.DataFrame) -> plt.Figure:
+    """세부영역별 인구1인당 실질예산액(F_it)의 연도별 추세·분포를 로그축으로 요약한다.
+
+    F_it은 세부영역 간 규모 차이가 1만 배 이상이라(#62 로그변환 판단 근거) 모든
+    패널을 로그축으로 그린다.
+    """
+
+    data = fiscal_response_df.copy()
+    fig, axes = plt.subplots(2, 2, figsize=(16, 11))
+
+    ax = axes[0, 0]
+    shade_basic_plan_periods(ax)
+    summary = data.groupby("연도")["인구1인당_실질예산_원"].agg(
+        중앙값="median",
+        q1=lambda values: values.quantile(0.25),
+        q3=lambda values: values.quantile(0.75),
+    )
+    ax.plot(
+        summary.index,
+        summary["중앙값"],
+        marker="o",
+        color=PALETTE[0],
+        linewidth=2,
+        label="전체 세부영역 중앙값",
+    )
+    ax.fill_between(
+        summary.index, summary["q1"], summary["q3"], color=PALETTE[0], alpha=0.18, label="IQR"
+    )
+    ax.set_yscale("log")
+    ax.set_title("연도별 전국 추세(로그축)")
+    ax.set_ylabel("인구1인당 실질예산(원, 로그축)")
+    ax.set_xticks(sorted(data["연도"].unique()))
+    ax.legend(fontsize=9)
+
+    sns.boxplot(
+        data=data, x="연도", y="인구1인당_실질예산_원", color=PALETTE[0], fliersize=2, ax=axes[0, 1]
+    )
+    axes[0, 1].set_yscale("log")
+    axes[0, 1].set_title("연도별 분포(전체 세부영역·지역, 로그축)")
+    axes[0, 1].set_ylabel("인구1인당 실질예산(원, 로그축)")
+    axes[0, 1].tick_params(axis="x", rotation=45)
+
+    subarea_order = (
+        data.groupby("세부영역")["인구1인당_실질예산_원"].median().sort_values().index.tolist()
+    )
+    sns.boxplot(
+        data=data,
+        x="인구1인당_실질예산_원",
+        y="세부영역",
+        order=subarea_order,
+        color=PALETTE[0],
+        fliersize=2,
+        ax=axes[1, 0],
+    )
+    axes[1, 0].set_xscale("log")
+    axes[1, 0].set_title("세부영역별 분포(로그축) — 규모 차이가 로그변환 근거")
+    axes[1, 0].set_xlabel("인구1인당 실질예산(원, 로그축)")
+
+    region_order = (
+        data.groupby("지역")["인구1인당_실질예산_원"].median().sort_values().index.tolist()
+    )
+    sns.boxplot(
+        data=data,
+        x="인구1인당_실질예산_원",
+        y="지역",
+        order=region_order,
+        color=PALETTE[1],
+        fliersize=2,
+        ax=axes[1, 1],
+    )
+    axes[1, 1].set_xscale("log")
+    axes[1, 1].set_title("지역별 분포(전체 세부영역·연도, 로그축)")
+    axes[1, 1].set_xlabel("인구1인당 실질예산(원, 로그축)")
+
+    fig.suptitle("2016~2024년 세부영역별 인구1인당 실질예산액(F_it) EDA", fontsize=16)
+    fig.tight_layout(h_pad=4.0, w_pad=3.0)
+    return fig
+
+
+def plot_fiscal_response_subarea_small_multiples(
+    fiscal_response_df: pd.DataFrame,
+    *,
+    subarea_order: list[str],
+) -> plt.Figure:
+    """세부영역별로 연도 추세(17개 시도 중앙값+IQR)를 로그축 small multiples로 표시한다.
+
+    세부영역마다 규모(y축 범위)가 크게 달라 축은 공유하지 않는다(sharey=False).
+    """
+
+    n_cols = 3
+    n_rows = math.ceil(len(subarea_order) / n_cols)
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 3.2 * n_rows), sharex=True)
+    axes = axes.flatten()
+
+    for ax, subarea in zip(axes, subarea_order, strict=False):
+        subarea_data = fiscal_response_df.loc[fiscal_response_df["세부영역"].eq(subarea)]
+        summary = subarea_data.groupby("연도")["인구1인당_실질예산_원"].agg(
+            중앙값="median",
+            q1=lambda values: values.quantile(0.25),
+            q3=lambda values: values.quantile(0.75),
+        )
+        shade_basic_plan_periods(ax)
+        ax.plot(summary.index, summary["중앙값"], marker="o", markersize=3, color=PALETTE[0])
+        ax.fill_between(summary.index, summary["q1"], summary["q3"], color=PALETTE[0], alpha=0.18)
+        ax.set_yscale("log")
+        ax.set_title(subarea, fontsize=10)
+
+    for ax in axes[len(subarea_order) :]:
+        ax.set_visible(False)
+    fig.suptitle("세부영역별 인구1인당 실질예산액 추세(17개 시도 중앙값·IQR, 로그축)", fontsize=16)
+    fig.tight_layout()
+    return fig
+
+
 __all__ = [
     "plot_budget_overview",
     "plot_budget_region_small_multiples",
+    "plot_fiscal_response_overview",
+    "plot_fiscal_response_subarea_small_multiples",
     "plot_region_small_multiples",
     "plot_structural_indicator_overview",
     "shade_basic_plan_periods",
