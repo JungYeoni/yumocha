@@ -39,6 +39,7 @@
 
 ### 기타
 
+- #62 노트북 재실행 — CPI 2024=100·#81 최종패널·컬럼명 수정 반영 (#62) ([152fcdb](https://github.com/JungYeoni/da-template/commit/152fcdba8ed5d7b79505d69402a1f12326a7825f))
 - 주거실태조사·가족실태조사 노트북 커널 재시작 전체 실행 검증 (#44) (#59) ([f9f6cd7](https://github.com/JungYeoni/da-template/commit/f9f6cd76c334b4c29e18fa84ebceb87216aeb4e6))
 - 로컬 라벨 검토 데이터 제외 (#72) ([31ed4bf](https://github.com/JungYeoni/da-template/commit/31ed4bfd5072c19992c75cbb7f0686fc8a44c453))
 - Interim 출력 경로 정리 및 지표체계·방향성 확정 반영 (#38) ([a77981e](https://github.com/JungYeoni/da-template/commit/a77981eb5b1a1bff2efc0288fc5ae462b74dfd50))
@@ -55,7 +56,9 @@
 ### 리팩터링
 
 - 제주 전용 종합지수 그래프 제거 (#91) ([db9065b](https://github.com/JungYeoni/da-template/commit/db9065b1bd312ea4eaaace28273474930b8e70bf))
+- 총세출 결합 노트북 공통 유틸 적용 (#62) ([f209944](https://github.com/JungYeoni/da-template/commit/f2099446cebaee8292bf74018dd609ba23339f30))
 - 학습·예측 산출 파일명에서 연도 범위 제거 (#77) ([bba7eab](https://github.com/JungYeoni/da-template/commit/bba7eab3ba1d0a4dc3ee4a198a59cd5481dd4213))
+- 재정대응 분석 노트북 공통 유틸 적용 (#62) ([1b8a7c4](https://github.com/JungYeoni/da-template/commit/1b8a7c49fa4ca34156b1ee00db20090f3243c736))
 - TF-IDF 분류 대상 경로 명확화 (#60) ([9c36e7c](https://github.com/JungYeoni/da-template/commit/9c36e7c29e068a4768dfe4c3f280558eab794572))
 - 구조환경지표 시각화 산출물 폴더 분리 (#45) ([322b357](https://github.com/JungYeoni/da-template/commit/322b3576fe993531d562de70ecc7438db1319207))
 - Reports 디렉터리 구조 정리 (#33) ([4b300ee](https://github.com/JungYeoni/da-template/commit/4b300eeb2345dca805c42549a612eb980d73f85b))
@@ -74,6 +77,11 @@
 
 ### 문서
 
+- 세부영역별 재정대응지수 구축·재정반응성(모형 A) 결과 보고서 작성 (#62) ([4d99382](https://github.com/JungYeoni/da-template/commit/4d9938233f5d2c095c60732f3397261378a812eb))
+- #62 재현 노트북을 세부영역별 파이프라인으로 대폭 교체 ([a991e7d](https://github.com/JungYeoni/da-template/commit/a991e7dbef8fc559b8542214feaca08dbf00f4c6))
+- 다중공선성 진단 보고서에 "가사수행 격차×사회적 가치관" 해석 추가 (#62) ([ba32a61](https://github.com/JungYeoni/da-template/commit/ba32a61db4d52d4ea6b47399ffab2cd5c4a9e874))
+- 다중공선성 진단 보고서에 pooled/within/고정효과잔차 용어 설명 추가 (#62) ([ef8fac8](https://github.com/JungYeoni/da-template/commit/ef8fac8f172f85c7f638a491790571109ab0c534))
+- CHANGELOG 자동 업데이트 [skip ci] ([119ad00](https://github.com/JungYeoni/da-template/commit/119ad003bc4c87213faa7ba7b4fc98a9e721cab3))
 - 구조환경지수 종합지수 시각화 산출물을 CPI 2024=100 기준으로 재생성 (#96) ([bcb713b](https://github.com/JungYeoni/da-template/commit/bcb713b9f3934ddc07fb29df3240e3d39a4a698d))
 - 구조환경지수 실제패널 QA 보고서를 CPI 2024=100 기준으로 재생성 (#96) ([e40b92c](https://github.com/JungYeoni/da-template/commit/e40b92cc13399c9045b5ecf4a704a631fd6491d4))
 - CHANGELOG 자동 업데이트 [skip ci] ([843116e](https://github.com/JungYeoni/da-template/commit/843116e7bd118f9d862e81659346f0c738c21c96))
@@ -86,6 +94,7 @@
 - 가족친화 인증기업 전국 통계 "누계" 정의 검증 기록 (#70) ([46952bf](https://github.com/JungYeoni/da-template/commit/46952bf609641fc817b7d0b8b246e42b873e390f))
 - 가족친화 지역별 51건 보간 방법 제안 (#70) ([3708564](https://github.com/JungYeoni/da-template/commit/37085644c0e2e317ff045f4e98b825a658a7d46c))
 - Record full test verification for #70 handoff ([062cd70](https://github.com/JungYeoni/da-template/commit/062cd70544e30bd185d8f245b5592e0514d1239b))
+- 세부지표 대응예산 폐기 결정 반영 (#62) ([8434b85](https://github.com/JungYeoni/da-template/commit/8434b8507320c6839589a1501ff4ae66291ce2a0))
 - CHANGELOG 자동 업데이트 [skip ci] ([84ad3e7](https://github.com/JungYeoni/da-template/commit/84ad3e7aa161075179aa44da59d6fee790d80f51))
 - 총세출 분모 패널 최종보고서 작성 (#69) ([101d902](https://github.com/JungYeoni/da-template/commit/101d9024bc35c6f595659d5abfbf8682fff9d8ad))
 - 총세출 분모 패널 데이터 사전 작성 (#69) ([74bbffd](https://github.com/JungYeoni/da-template/commit/74bbffdffc7dd9b366c52907faa3863bc0891fb8))
@@ -116,6 +125,7 @@
 - 2019 LLM 의미보존 후보 검토 (#72) ([5bc8db8](https://github.com/JungYeoni/da-template/commit/5bc8db86864a8c916ab8748f9f57742a6e11debb))
 - 2022 LLM 의미보존 후보 검토 (#72) ([c3e93ba](https://github.com/JungYeoni/da-template/commit/c3e93bae3ffa52a3e5712dd02183dd09a0e8d573))
 - 2017 LLM 의미보존 후보 검토 (#72) ([ac323fa](https://github.com/JungYeoni/da-template/commit/ac323fa32c4ee2020efc2ee91e703cf3b05dde80))
+- AHP 가중치 확정 결과로 회귀설계 리포트 갱신 (#62) ([0321d2e](https://github.com/JungYeoni/da-template/commit/0321d2e6a51791102256f6e9e232ac5d81a91333))
 - CHANGELOG 자동 업데이트 [skip ci] ([94e91a1](https://github.com/JungYeoni/da-template/commit/94e91a1eb50b27a0a11ad0ffd3d4e1937b0214a2))
 - PR 리뷰 재현성 정보 보완 (#67) ([8c8d5b5](https://github.com/JungYeoni/da-template/commit/8c8d5b52287ce0ecc61ef77c90ac3e32b1d565fd))
 - CHANGELOG 자동 업데이트 [skip ci] ([3c869d5](https://github.com/JungYeoni/da-template/commit/3c869d572b8bec969f38165e4ade07a9bafbd334))
@@ -203,6 +213,8 @@
 
 ### 버그 수정
 
+- PR #99 CodeRabbit Major/Minor 지적사항 반영 (#62) ([f98d36a](https://github.com/JungYeoni/da-template/commit/f98d36a81594e3cee18bd7411fdf9feaa5faf94b))
+- #62 재정 기초패널을 #81 최종 산출물 기준으로 갱신, 실질예산 컬럼명 하드코딩 제거 (#62) ([cc5cab8](https://github.com/JungYeoni/da-template/commit/cc5cab81ac103c1516026fee67169a04048d4913))
 - PR #97 CodeRabbit 리뷰 반영 (#96) ([01e22e3](https://github.com/JungYeoni/da-template/commit/01e22e323d35e63b936259d12f9ede01e7a60490))
 - 구조환경지수 CPI 실질화 기준연도를 2024=100으로 통일 (#96) ([7a804af](https://github.com/JungYeoni/da-template/commit/7a804af475813a1e311a32b0e68fe6b23028dd66))
 - Verify_provisional_roundtrip.py CSV 읽기에 저장 인코딩(utf-8-sig) 명시 (#81) ([203f843](https://github.com/JungYeoni/da-template/commit/203f843a3a525aa8089b11efd9d33b1c7333a829))
@@ -253,6 +265,7 @@
 - 2024 LLM 의미보존 오류 선별 복구 (#72) ([37a5aa7](https://github.com/JungYeoni/da-template/commit/37a5aa7974259a80bea47570be208f67ed11e1e7))
 - 2023 빈 원문 LLM 환각 복구 (#72) ([30debd6](https://github.com/JungYeoni/da-template/commit/30debd69b96e2957fd7b6cfda331a2a9ea23c84d))
 - 2021 LLM 의미보존 오류 선별 복구 (#72) ([d611a82](https://github.com/JungYeoni/da-template/commit/d611a8203d358803d39584213fa535c7e18be38b))
+- 지수 산출 가중치 계열을 최종(결합)에서 AHP로 정정 (#62) ([0e132d1](https://github.com/JungYeoni/da-template/commit/0e132d19577fbd72fa8280394ff2e386a480f1d2))
 - 2016 LLM 체크포인트 오연결 방지 (#67) ([d951cec](https://github.com/JungYeoni/da-template/commit/d951cecec91c5cfd008fea0d705b48387de7797e))
 - TF-IDF 입력 검증 보강 (#60) ([0a5f25a](https://github.com/JungYeoni/da-template/commit/0a5f25ab43a76c84be34a4581bb95d3fff8b6a35))
 - 라벨 취합 원자료 키 검증 보강 (#51) ([8ae3900](https://github.com/JungYeoni/da-template/commit/8ae3900e15ea81ce16e971d32496cb11ad184cb2))
@@ -302,6 +315,14 @@
 
 ### 새 기능
 
+- 세부영역 재정대응(F_it) 분포·추세 시각화 추가 (#62) ([8718800](https://github.com/JungYeoni/da-template/commit/8718800b95d770f0e1a8953e930f57de1f098cbc))
+- 세부영역 재정대응 인구 분모 민감도 분석(전체인구 vs 20~39세) 추가 (#62) ([d2d7f8b](https://github.com/JungYeoni/da-template/commit/d2d7f8b8b66ddf5cc2b4f5f7474387f6ad13d47a))
+- #62 모형 A(재정반응성) 세부영역별 고정효과 회귀 추정 (#62) ([52851ac](https://github.com/JungYeoni/da-template/commit/52851ac6fe515c3baf7aa4c77e41162f3623b933))
+- 세부영역별 재정반응성 회귀표본(F_it, ΔTFR_i,t-1, S_i,t-1) 구축 (#62) ([f02d952](https://github.com/JungYeoni/da-template/commit/f02d95212d027fd15bc8402a21b39db71860797a))
+- 세부영역별 재정대응지수(z-score, 제주도 방식) 구축 (#62) ([c60ecb2](https://github.com/JungYeoni/da-template/commit/c60ecb20c30b1104abf0248e618f57650d69012c))
+- 세부영역별 인구1인당 실질예산액(재정대응 핵심 변수) 구축 (#62) ([11acd09](https://github.com/JungYeoni/da-template/commit/11acd0978d4eb512120cde2a13001b196c57dcc5))
+- 구조환경지수 다중공선성 진단 결과 시각화 추가 (#62) ([ff60e5c](https://github.com/JungYeoni/da-template/commit/ff60e5c3a3a26f0f33d8378e41302f84335abb94))
+- 구조환경지수 대영역·세부영역 다중공선성 진단 추가 (#62) ([689bed6](https://github.com/JungYeoni/da-template/commit/689bed63526ceda97e849cb7012ad3812bc93135))
 - CPI 2024년 기준 재기준화 + 대영역/세부영역 완전격자 0채움 (#81) ([ed61dfd](https://github.com/JungYeoni/da-template/commit/ed61dfd1a5f40ea0dd7cf8de866c7693770010a3))
 - 통합 영역분류 검토 워크북을 §81 파이프라인 라벨 입력으로 변환 (#81) ([a02b5c4](https://github.com/JungYeoni/da-template/commit/a02b5c4d08526432935342444161f22a09a4a7b5))
 - 종합지수 기여도 heatmap 추가 (#91) ([6d1f6d1](https://github.com/JungYeoni/da-template/commit/6d1f6d1b1cd26bb4017e5b5fc1e6e4919018b7d6))
@@ -323,6 +344,8 @@
 - Add family-friendly certification candidates for 2020-2021 (#70) ([429a324](https://github.com/JungYeoni/da-template/commit/429a324715dbb10f2a39b99450186d450b30701c))
 - Define structural missing-value policies (#70) ([9d8d0aa](https://github.com/JungYeoni/da-template/commit/9d8d0aa777a9cb820d2cc2a90c7cfe058f4362b9))
 - Implement structural index scoring (#82) ([be9e60e](https://github.com/JungYeoni/da-template/commit/be9e60e1cb5fcab7a28e384b7df6336c79a40f89))
+- 총세출 비율 재정반응성 모형 추가 (#62) ([172c43a](https://github.com/JungYeoni/da-template/commit/172c43ad5b3933257314d7f350334d29264ba8e1))
+- 총세출 대비 계획예산 비율 결합 유틸 추가 (#62) ([0bf32a4](https://github.com/JungYeoni/da-template/commit/0bf32a41682b307f76907778c03437cd7c206093))
 - 총세출 대비 계획예산 비율 패널 구축 (#69) ([5daee3d](https://github.com/JungYeoni/da-template/commit/5daee3de531f8bcc23edc121bc73b45cf0af5480))
 - 기금 포함 총세출 분모 대안 추가 (#69) ([f9cc700](https://github.com/JungYeoni/da-template/commit/f9cc7008f1c1c1c50510b62cacd753be5fcd4043))
 - 총세출 분모 민감도 대안 구축 (#69) ([721e694](https://github.com/JungYeoni/da-template/commit/721e694227dac19584dde4d3f6003f70d3d1a1b7))
@@ -341,6 +364,10 @@
 - 재정팀 전체연도 검토본 통합 (#72) ([56b8fbf](https://github.com/JungYeoni/da-template/commit/56b8fbf99fd56d1783f700d3597a0e0b98e2179c))
 - LLM 정제변경 라벨 예산 영향표 생성 (#72) ([3736e4d](https://github.com/JungYeoni/da-template/commit/3736e4da26a7fee66534815a7a1439e64eb8046c))
 - LLM 정제 의미보존 감사 기반 추가 (#72) ([3718b72](https://github.com/JungYeoni/da-template/commit/3718b72c3cf3dab0a7dd396ff22195e0d1858739))
+- 구조환경지표 AHP·엔트로피·최종 가중치 참조표 추가 (#62) ([c33bdac](https://github.com/JungYeoni/da-template/commit/c33bdac9637ed9c47914c1ffb9c305fead47b668))
+- 재정반응성 고정효과 기본모형 추가 (#62) ([18511eb](https://github.com/JungYeoni/da-template/commit/18511ebbcfdf4b021fc2320d21a2682c7d3cb4a2))
+- 재정대응지수 산출 유틸 추가 (#62) ([a35b05f](https://github.com/JungYeoni/da-template/commit/a35b05fc711a7dc25ff68f5923e9f8f58bb6ffb7))
+- 재정대응지수 기초패널 구축 #62 ([9cb3c32](https://github.com/JungYeoni/da-template/commit/9cb3c32601cb8612dff22e39af207c47cde33d49))
 - TF-IDF 예측 대상 데이터 통합 (#60) ([dcbfe19](https://github.com/JungYeoni/da-template/commit/dcbfe196dda3005203907c0cca4d81eb3a7ad4cd))
 - 2021년 영역분류 라벨 학습 데이터 취합 (#51) ([33a371e](https://github.com/JungYeoni/da-template/commit/33a371e5b7920a8730f9129d5c9e02a8360d19af))
 - 주거실태조사 주거지표 3종 산출 및 비교 (#49) ([3478c02](https://github.com/JungYeoni/da-template/commit/3478c02e7216789a72da6b32fda23ef2d13ffac1))
@@ -400,6 +427,7 @@
 
 ### 테스트
 
+- 지역별 20~39세 완전성·NaN 예산 거부 검증 테스트 추가 (#62) ([184a918](https://github.com/JungYeoni/da-template/commit/184a918508716f92cb5f8140690c2cf690ba4578))
 - #81 파이프라인 예산행 연결 감사 및 텍스트 정합성 버그 수정 (#81) ([30b7b9f](https://github.com/JungYeoni/da-template/commit/30b7b9fe655fcdadc21e16d6b4afb1bfdf15853e))
 - 저장 전후 값 대조 QA 추가 (#81 필수 QA 3번) ([cd8ec90](https://github.com/JungYeoni/da-template/commit/cd8ec903032b9ddb85d7932f841adeee824ab931))
 - 대영역·세부영역 구성비 범위 QA 추가 (#81 필수 QA 2번) ([18117dc](https://github.com/JungYeoni/da-template/commit/18117dcf20852e8e15623ec53564cec9c395d0e6))
