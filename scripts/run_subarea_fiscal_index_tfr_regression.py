@@ -1,4 +1,9 @@
-"""재정대응지수(z-score) 기반 세부영역별 TFR 회귀를 실행한다."""
+"""재정대응지수(z-score) 기반 세부영역별 TFR 회귀 민감도를 실행한다.
+
+기본모형(팀 결정, 예산액 F_i,t-1 기반)은 scripts/run_subarea_fiscal_tfr_regression.py다.
+이 스크립트는 지수(z-score) 단위로도 같은 결과가 재현되는지 확인하는 민감도
+체크이며, 결과를 기본모형 대신 쓰지 않는다.
+"""
 
 from __future__ import annotations
 
@@ -24,10 +29,10 @@ def main() -> None:
         raise FileNotFoundError(f"지수 회귀표본이 없습니다: {DEFAULT_SAMPLE}")
     sample = pd.read_csv(DEFAULT_SAMPLE)
     variants = {
-        "지수기반_기본모형(F_z,t-1)": run_subarea_models(
+        "지수기반_민감도(F_z,t-1)": run_subarea_models(
             sample, lag_column=LAG1_COLUMN, transform="identity"
         ),
-        "지수기반_강건성체크_2년시차(F_z,t-2)": run_subarea_models(
+        "지수기반_민감도_2년시차(F_z,t-2)": run_subarea_models(
             sample, lag_column=LAG2_COLUMN, transform="identity"
         ),
     }
