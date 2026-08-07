@@ -78,8 +78,17 @@ def compute_two_way_fe_residuals(wide: pd.DataFrame, *, columns: Sequence[str]) 
     """지역 고정효과와 연도 고정효과를 뺀 잔차를 계산한다(균형패널 전제, 반복 이차 demean).
 
     ``값 - 지역평균 - 연도평균 + 전체평균``은 균형패널에서 시도·연도 더미를
-    포함한 OLS(LSDV)의 잔차와 수학적으로 동일하다.
+    포함한 OLS(LSDV)의 잔차와 수학적으로 동일하다. 불균형 패널(일부
+    지역×연도 조합 누락)에서는 이 등식이 성립하지 않아 잘못된 상관계수를
+    낼 수 있으므로 계산 전에 균형패널인지 검증한다.
     """
+
+    expected_rows = wide["지역"].nunique() * wide["연도"].nunique()
+    if wide.duplicated(["지역", "연도"]).any() or len(wide) != expected_rows:
+        raise ValueError(
+            "지역+연도 고정효과 잔차는 균형패널을 전제한다 — 지역×연도 조합이 "
+            f"완전하지 않습니다(행 {len(wide)}개, 기대 {expected_rows}개)."
+        )
 
     residuals = wide[list(columns)].copy()
     for column in columns:
@@ -91,7 +100,7 @@ def compute_two_way_fe_residuals(wide: pd.DataFrame, *, columns: Sequence[str]) 
     return residuals
 
 
-def compute_vif(wide: pd.DataFrame, *, columns: Sequence[str]) -> pd.DataFrame:
+def compute_vif(wide: pd.DataFrame, *, columns: Sequence[str]) -> tuple[pd.DataFrame, float]:
     """변수 전체를 하나의 회귀 설계행렬로 놓고 VIF와 상관행렬 조건수를 계산한다."""
 
     design = wide[list(columns)].copy()

@@ -72,6 +72,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         load_budget_qa_panel,
         load_fertility_panel,
     )
+    from src.provisional.manifest import file_sha256
 
     args = parse_args(argv)
     if not args.budget_panel.is_file():
@@ -80,6 +81,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     region_mapping = pd.read_csv(args.mapping)
     regions = region_mapping["지역"].tolist()
 
+    # provisional_budget_panel.csv는 "잠정" 산출물이라 버전 고정 없이 파일 경로만
+    # 참조한다 — 나중에 재정팀 검토로 라벨/값이 바뀌어 파일이 교체돼도 이 스크립트는
+    # 알 방법이 없으므로, 최소한 지금 읽은 바이트의 해시를 남겨 추적 가능하게 한다.
+    budget_panel_sha256 = file_sha256(args.budget_panel)
     budget_panel = pd.read_csv(args.budget_panel)
 
     fertility_panel, nationwide_fertility = load_fertility_panel(
@@ -117,6 +122,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 "예산 결측 세부사업",
                 "음수 예산 세부사업",
                 "원자료 누락주의 지역연도",
+                "예산패널 입력 SHA-256",
             ],
             "값": [
                 len(base_panel),
@@ -128,6 +134,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 int(base_panel["예산결측_사업수"].sum()),
                 int(base_panel["음수예산_사업수"].sum()),
                 int(base_panel["원자료_누락주의"].notna().sum()),
+                budget_panel_sha256,
             ],
         }
     )

@@ -83,7 +83,14 @@ def build_regression_sample_for_denominator(
 
 
 def build_comparison_table(results_by_denominator: dict[str, pd.DataFrame]) -> pd.DataFrame:
-    """분모별 결과를 세부영역 기준으로 옆으로 붙여 계수·p값을 나란히 비교한다."""
+    """분모별 결과를 세부영역 기준으로 옆으로 붙여 계수·p값을 나란히 비교한다.
+
+    이 함수의 부호·유의성 일치 판정은 정확히 2개 분모를 비교하는 용도로만
+    만들어졌다 — 분모가 1개거나 3개 이상이면 뒤쪽 라벨이 조용히 무시되거나
+    IndexError가 나므로 미리 개수를 검증한다.
+    """
+    if len(results_by_denominator) != 2:
+        raise ValueError(f"정확히 2개 분모를 비교해야 합니다: {sorted(results_by_denominator)}")
     columns = ["모형", "계수", "p값"]
     wide = None
     for denominator, results in results_by_denominator.items():

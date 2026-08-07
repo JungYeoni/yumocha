@@ -3,12 +3,31 @@
 from __future__ import annotations
 
 import math
+import warnings
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
 from src.visualization.plots import PALETTE
+
+
+def _check_log_axis_values(series: pd.Series, *, label: str) -> None:
+    """로그축에 그릴 값의 음수·0을 확인한다.
+
+    matplotlib은 로그축에서 0 이하 값을 경고 없이 그냥 빼고 그린다 — 예산이
+    0인 실제 관측치가 그래프에서 조용히 사라질 수 있어 명시적으로 알린다.
+    음수는 예산 데이터에서 있을 수 없는 값이라 오류로 처리한다.
+    """
+
+    if series.lt(0).any():
+        raise ValueError(f"{label}에 음수 값이 있어 로그축으로 그릴 수 없습니다.")
+    zero_count = int(series.eq(0).sum())
+    if zero_count:
+        warnings.warn(
+            f"{label}에 0인 값이 {zero_count}건 있습니다 — 로그축에서는 표시되지 않습니다.",
+            stacklevel=2,
+        )
 
 
 def shade_basic_plan_periods(ax: plt.Axes) -> None:
@@ -290,6 +309,7 @@ def plot_fiscal_response_overview(fiscal_response_df: pd.DataFrame) -> plt.Figur
     """
 
     data = fiscal_response_df.copy()
+    _check_log_axis_values(data["인구1인당_실질예산_원"], label="인구1인당_실질예산_원")
     fig, axes = plt.subplots(2, 2, figsize=(16, 11))
 
     ax = axes[0, 0]
@@ -370,6 +390,10 @@ def plot_fiscal_response_subarea_small_multiples(
 
     세부영역마다 규모(y축 범위)가 크게 달라 축은 공유하지 않는다(sharey=False).
     """
+
+    _check_log_axis_values(
+        fiscal_response_df["인구1인당_실질예산_원"], label="인구1인당_실질예산_원"
+    )
 
     n_cols = 3
     n_rows = math.ceil(len(subarea_order) / n_cols)

@@ -621,6 +621,7 @@ def add_subarea_fiscal_index_features(
 
     required = {*PANEL_KEY, group_column, per_capita_budget_col}
     _require_columns(panel, required, label="세부영역 재정대응지수")
+    _require_finite_numeric(panel, [per_capita_budget_col], label="세부영역 재정대응지수")
 
     per_capita = pd.to_numeric(panel[per_capita_budget_col])
     if per_capita.lt(0).any():
@@ -700,6 +701,24 @@ def add_total_expenditure_ratio(
         samples = denominator.loc[missing_metadata, PANEL_KEY].head(10)
         raise ValueError(
             f"총세출 분모 메타데이터가 누락되었습니다: {samples.to_dict(orient='records')}"
+        )
+
+    # 값이 채워져 있다는 것만으로는 "당초예산·3개회계 순계" 범위인지 보장하지
+    # 못한다 — 추경 등 다른 범위가 섞여 들어와도 통과해 아래 하드코딩된
+    # 분모대안 라벨과 실제 데이터가 어긋날 수 있으므로 값 자체를 검증한다.
+    expected_stage = "당초예산"
+    expected_scope = "일반회계+기타특별회계+공기업특별회계"
+    unexpected_stage = denominator.loc[denominator["예산단계"].ne(expected_stage)]
+    if not unexpected_stage.empty:
+        samples = unexpected_stage[PANEL_KEY + ["예산단계"]].head(10)
+        raise ValueError(
+            f"총세출 분모 예산단계가 '{expected_stage}'가 아닙니다: {samples.to_dict(orient='records')}"
+        )
+    unexpected_scope = denominator.loc[denominator["포함회계"].ne(expected_scope)]
+    if not unexpected_scope.empty:
+        samples = unexpected_scope[PANEL_KEY + ["포함회계"]].head(10)
+        raise ValueError(
+            f"총세출 분모 포함회계가 '{expected_scope}'가 아닙니다: {samples.to_dict(orient='records')}"
         )
 
     denominator_subset = denominator[PANEL_KEY + sorted(denominator_columns - set(PANEL_KEY))]

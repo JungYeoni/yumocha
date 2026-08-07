@@ -53,8 +53,14 @@ def _extract_year_columns(columns: pd.Index) -> dict[object, int]:
         for column in columns
         if str(column).split()[0].isdigit() and int(str(column).split()[0]) in YEARS
     }
-    if len(year_columns) != len(YEARS):
-        raise ValueError(f"인구 원자료 연도 컬럼 불일치: {sorted(year_columns.values())}")
+    observed_years = set(year_columns.values())
+    # 개수만 비교하면 연도가 중복되고 다른 연도가 통째로 빠져도 개수가 우연히
+    # 맞아떨어질 수 있으므로, 실제 연도 집합과 컬럼 수(중복 없음)를 모두 검증한다.
+    if observed_years != set(YEARS) or len(year_columns) != len(YEARS):
+        raise ValueError(
+            f"인구 원자료 연도 컬럼 불일치: 관측된 연도={sorted(observed_years)}, "
+            f"매칭된 컬럼 수={len(year_columns)}(기대 {len(YEARS)})"
+        )
     return year_columns
 
 
@@ -118,6 +124,16 @@ def load_prime_age_population(population_path: Path, mapping_path: Path) -> pd.D
             f"20~39세 연령 라벨 불일치: 누락={sorted(PRIME_AGE_LABELS - observed_ages)}, "
             f"예상외={sorted(observed_ages - PRIME_AGE_LABELS)}"
         )
+    # 파일 전체에는 20개 연령이 다 있어도 특정 지역 하나만 일부 연령 행이
+    # 빠지면(예: 서울만 "39세" 없음) 그 지역만 19개 연령 합계로 과소계상된다.
+    # 전체 집합 검사만으로는 못 잡으므로 지역별로도 완전성을 검증한다.
+    ages_by_region = prime.groupby("행정구역(시군구)별")["연령별"].apply(set)
+    incomplete_regions = ages_by_region.loc[ages_by_region.ne(PRIME_AGE_LABELS)]
+    if not incomplete_regions.empty:
+        raise ValueError(
+            "20~39세 연령 라벨이 일부 지역에서 불완전합니다: "
+            f"{ {region: sorted(PRIME_AGE_LABELS - ages) for region, ages in incomplete_regions.items()} }"
+        )
     year_columns = _extract_year_columns(prime.columns)
     prime = prime.rename(columns={"행정구역(시군구)별": "지역명_전체"})
     prime = prime.loc[prime["지역명_전체"].ne("전국"), ["지역명_전체", *year_columns]]
@@ -176,10 +192,16 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    from src.provisional.manifest import file_sha256
+
     args = parse_args()
     if not args.sub_area_panel.is_file():
         raise FileNotFoundError(f"세부영역 예산 패널이 없습니다: {args.sub_area_panel}")
 
+    # provisional_sub_area_panel.csv는 "잠정" 산출물이라 버전 고정 없이 경로만
+    # 참조한다 — 나중에 재정팀 검토로 라벨/값이 바뀌어 파일이 교체돼도 이 스크립트는
+    # 알 방법이 없으므로, 최소한 지금 읽은 바이트의 해시를 출력해 추적 가능하게 한다.
+    sub_area_panel_sha256 = file_sha256(args.sub_area_panel)
     sub_area_panel = pd.read_csv(args.sub_area_panel)
     cpi = pd.read_csv(args.cpi_file, encoding="utf-8-sig")
     population = load_total_population(args.population, args.mapping)
@@ -194,6 +216,7 @@ def main() -> None:
     output_path = args.output_dir / "2016-2024_세부영역별_인구1인당_실질예산액.csv"
     result.to_csv(output_path, index=False, encoding="utf-8-sig")
 
+    print(f"세부영역 예산 패널 입력 SHA-256: {sub_area_panel_sha256}")
     print(f"저장: {output_path} ({len(result)}행)")
     print(
         result.groupby("세부영역", as_index=False)["인구1인당_실질예산_원"]

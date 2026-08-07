@@ -403,7 +403,11 @@ def test_add_fiscal_index_features_calculates_real_per_capita_and_scores():
     assert result["재정대응지수_z"].std(ddof=0) == pytest.approx(1.0)
     assert result["재정대응점수_0_100"].min() == pytest.approx(0.0)
     assert result["재정대응점수_0_100"].max() == pytest.approx(100.0)
-    assert result.groupby("지역")["실질예산_전년증감액_백만원"].first().notna().all()
+    # GroupBy.first()는 그룹 내 NaN을 건너뛰고 첫 "비결측" 값을 돌려주므로
+    # 첫 연도 결측 여부를 검증하려면 연도로 직접 확인해야 한다.
+    busan_2020 = result.query("지역 == '부산' and 연도 == 2020").iloc[0]
+    assert pd.isna(busan_2020["실질예산_전년증감액_백만원"])
+    assert pd.isna(seoul_2020["실질예산_전년증감액_백만원"])
 
 
 def test_add_fiscal_index_features_names_real_column_after_given_price_label():

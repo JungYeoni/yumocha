@@ -72,6 +72,17 @@ def build_lagged_structural_index(subcategory_scores: pd.DataFrame) -> pd.DataFr
     if panel.duplicated(["지역", "연도", "세부영역"]).any():
         raise ValueError("구조환경지수 패널 지역·연도·세부영역 키 중복")
 
+    # shift(1)은 연도가 연속이라는 전제로 동작한다 — 중간 연도가 빠지면 2년 이상
+    # 전 값을 "전년도"로 잘못 참조하므로, 시프트 전에 그룹별 연도 연속성을 검증한다.
+    # (절대 범위가 YEARS와 같아야 하는 건 아니고, 그룹 내부에 빈 연도만 없으면 된다.)
+    def _has_gap(values: pd.Series) -> bool:
+        return set(values) != set(range(int(values.min()), int(values.max()) + 1))
+
+    incomplete = panel.groupby(["지역", "세부영역"])["연도"].apply(_has_gap)
+    if incomplete.any():
+        missing_groups = incomplete.loc[incomplete].index.tolist()
+        raise ValueError(f"구조환경지수 패널 연도가 연속하지 않는 지역·세부영역: {missing_groups}")
+
     panel = panel.sort_values(["지역", "세부영역", "연도"])
     panel["구조환경지수_전년도"] = panel.groupby(["지역", "세부영역"], sort=False)[
         "subcategory_score"

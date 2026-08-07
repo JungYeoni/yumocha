@@ -151,15 +151,32 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    from src.provisional.manifest import file_sha256
+
     args = parse_args()
 
+    category_path = args.structural_index_dir / "structural_index_pooled_category_scores.csv"
+    subcategory_path = args.structural_index_dir / "structural_index_pooled_subcategory_scores.csv"
+
     rename_key = {"region": "지역", "year": "연도"}
-    category_scores = pd.read_csv(
-        args.structural_index_dir / "structural_index_pooled_category_scores.csv"
-    ).rename(columns=rename_key)
-    subcategory_scores = pd.read_csv(
-        args.structural_index_dir / "structural_index_pooled_subcategory_scores.csv"
-    ).rename(columns=rename_key)
+    category_scores = pd.read_csv(category_path).rename(columns=rename_key)
+    subcategory_scores = pd.read_csv(subcategory_path).rename(columns=rename_key)
+
+    def _is_balanced(df: pd.DataFrame, group_col: str) -> bool:
+        expected = df["지역"].nunique() * df["연도"].nunique() * df[group_col].nunique()
+        return len(df) == expected and not df.duplicated(["지역", "연도", group_col]).any()
+
+    reproducibility_note = (
+        "## 재현성 메타데이터\n\n"
+        "| 입력 파일 | SHA-256 | 행 수 | 지역×연도×그룹 균형패널 |\n"
+        "|---|---|---:|:---:|\n"
+        f"| `{category_path.name}` | `{file_sha256(category_path)[:16]}` | "
+        f"{len(category_scores)} | "
+        f"{'예' if _is_balanced(category_scores, 'category') else '아니오'} |\n"
+        f"| `{subcategory_path.name}` | `{file_sha256(subcategory_path)[:16]}` | "
+        f"{len(subcategory_scores)} | "
+        f"{'예' if _is_balanced(subcategory_scores, 'subcategory') else '아니오'} |\n\n"
+    )
 
     reports = []
     all_tables: dict[str, pd.DataFrame] = {}
@@ -207,8 +224,11 @@ def main() -> None:
         "분담해야 한다는 데 얼마나 동의하는지를 재는 **태도** 지표\n\n"
         "즉 두 세부영역이 부분적으로 같은 주제(가사분담 성평등)를 태도·행동 양쪽에서 재고 "
         "있어서, 공통 연도 추세를 걷어내도 지역·연도별로 같이 움직일 이유가 있는 것으로 "
-        "보인다 — 다른 9쌍(예: 산후조리 여건×돌봄여건)이 서로 무관한 주제인데 공통 연도 "
-        "추세로만 엮였던 것과는 성격이 다르다.\n\n"
+        "보인다 — 다른 9쌍(예: 산후조리 여건×돌봄여건)은 고정효과 잔차에서 상관이 낮아진 "
+        "것으로 보아 공통 연도 추세의 비중이 컸을 가능성이 높지만, 이 진단만으로 그게 "
+        "유일한 원인이라고 단정할 수는 없다(측정오차·지역별 비선형 추세 등 다른 설명도 "
+        "배제되지 않는다) — 반면 위 한 쌍은 고정효과 잔차에서도 상관이 오히려 커졌다는 "
+        "점에서 성격이 다르다.\n\n"
         '**한계**: "가사수행 격차"의 두 지표는 가족실태조사(비정기, 2020·2023년만 실측) '
         '기반이라 나머지 7개 연도는 #70 결측처리 정책으로 채운 값이다. "가사분담에 대한 '
         '성평등 인식"은 별도의 사회조사(2016·18·20·22·24, 5개 시점 실측)라 같은 결측보간을 '
@@ -222,6 +242,7 @@ def main() -> None:
         "방법론 메모(`20260803_..._정리.md` §3.3) 권장 진단 순서를 실제 데이터로 실행한 결과다. "
         "어떤 변수를 최종 회귀에 넣을지는 이 문서가 결정하지 않는다 — 이슈 #62 코멘트의 "
         "미해결 쟁점 2번(대영역별 분리 vs 전체 합산)에 참고자료로 쓴다.\n\n"
+        + reproducibility_note
         + terminology_note
         + "\n\n".join(reports)
         + "\n\n"
