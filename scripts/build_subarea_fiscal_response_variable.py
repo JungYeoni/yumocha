@@ -43,40 +43,33 @@ YEARS = list(range(2016, 2025))
 CPI_BASE_YEAR = 2024
 
 
-def load_total_population(population_path: Path, mapping_path: Path) -> pd.DataFrame:
-    """지역×연도 전체인구를 만든다(연령별='계', 항목='총인구수[명]', 전국 제외)."""
-    raw = pd.read_excel(population_path)
-    required = {"행정구역(시군구)별", "연령별", "항목"}
-    missing = required - set(raw.columns)
-    if missing:
-        raise KeyError(f"인구 원자료 필수 컬럼 누락: {sorted(missing)}")
+POPULATION_REQUIRED_COLUMNS = {"행정구역(시군구)별", "연령별", "항목"}
+PRIME_AGE_LABELS = {f"{age}세" for age in range(20, 40)}  # 20~39세, 팀 결정 3번의 참고 계열
 
-    total = raw.loc[raw["연령별"].eq("계") & raw["항목"].eq("총인구수[명]")].copy()
+
+def _extract_year_columns(columns: pd.Index) -> dict[object, int]:
     year_columns = {
         column: int(str(column).split()[0])
-        for column in total.columns
+        for column in columns
         if str(column).split()[0].isdigit() and int(str(column).split()[0]) in YEARS
     }
     if len(year_columns) != len(YEARS):
         raise ValueError(f"인구 원자료 연도 컬럼 불일치: {sorted(year_columns.values())}")
+    return year_columns
 
-    mapping = pd.read_csv(mapping_path)
-    total = total.rename(columns={"행정구역(시군구)별": "지역명_전체"})
-    total = total.loc[total["지역명_전체"].ne("전국"), ["지역명_전체", *year_columns]]
 
-    population = (
-        total.rename(columns=year_columns)
-        .melt(id_vars="지역명_전체", var_name="연도", value_name="전체인구_명")
-        .merge(
-            mapping[["지역", "지역명_전체"]],
-            on="지역명_전체",
-            how="left",
-            validate="many_to_one",
-        )[["지역", "연도", "전체인구_명"]]
-    )
+def _map_population_to_regions(
+    long_by_full_name: pd.DataFrame, mapping: pd.DataFrame, *, value_col: str
+) -> pd.DataFrame:
+    """``지역명_전체`` 기준 인구 long 데이터를 지역 축약명으로 매핑·검증한다."""
+    population = long_by_full_name.merge(
+        mapping[["지역", "지역명_전체"]], on="지역명_전체", how="left", validate="many_to_one"
+    )[["지역", "연도", value_col]]
     if population["지역"].isna().any():
         unmapped = sorted(
-            total.loc[~total["지역명_전체"].isin(mapping["지역명_전체"]), "지역명_전체"].unique()
+            long_by_full_name.loc[
+                ~long_by_full_name["지역명_전체"].isin(mapping["지역명_전체"]), "지역명_전체"
+            ].unique()
         )
         raise ValueError(f"지역명 매핑 실패: {unmapped}")
     expected_rows = mapping["지역"].nunique() * len(YEARS)
@@ -84,17 +77,74 @@ def load_total_population(population_path: Path, mapping_path: Path) -> pd.DataF
         raise ValueError(f"인구 패널 행 수 불일치: 기대={expected_rows}, 실제={len(population)}")
     if population.duplicated(["지역", "연도"]).any():
         raise ValueError("인구 패널 지역·연도 키 중복")
-    if population["전체인구_명"].le(0).any():
+    if population[value_col].le(0).any():
         raise ValueError("인구 패널에 0 이하 값이 있습니다.")
     return population.sort_values(["지역", "연도"]).reset_index(drop=True)
+
+
+def load_total_population(population_path: Path, mapping_path: Path) -> pd.DataFrame:
+    """지역×연도 전체인구를 만든다(연령별='계', 항목='총인구수[명]', 전국 제외)."""
+    raw = pd.read_excel(population_path)
+    missing = POPULATION_REQUIRED_COLUMNS - set(raw.columns)
+    if missing:
+        raise KeyError(f"인구 원자료 필수 컬럼 누락: {sorted(missing)}")
+
+    total = raw.loc[raw["연령별"].eq("계") & raw["항목"].eq("총인구수[명]")].copy()
+    year_columns = _extract_year_columns(total.columns)
+    total = total.rename(columns={"행정구역(시군구)별": "지역명_전체"})
+    total = total.loc[total["지역명_전체"].ne("전국"), ["지역명_전체", *year_columns]]
+    long = total.rename(columns=year_columns).melt(
+        id_vars="지역명_전체", var_name="연도", value_name="전체인구_명"
+    )
+
+    mapping = pd.read_csv(mapping_path)
+    return _map_population_to_regions(long, mapping, value_col="전체인구_명")
+
+
+def load_prime_age_population(population_path: Path, mapping_path: Path) -> pd.DataFrame:
+    """지역×연도 20~39세 인구를 만든다(단일연령 20개 합산, 전국 제외).
+
+    2026-08-07 팀 결정 3번: 주 기준은 전체인구 1인당이고, 이건 참고용 대안 계열이다.
+    """
+    raw = pd.read_excel(population_path)
+    missing = POPULATION_REQUIRED_COLUMNS - set(raw.columns)
+    if missing:
+        raise KeyError(f"인구 원자료 필수 컬럼 누락: {sorted(missing)}")
+
+    prime = raw.loc[raw["연령별"].isin(PRIME_AGE_LABELS) & raw["항목"].eq("총인구수[명]")].copy()
+    observed_ages = set(prime["연령별"].unique())
+    if observed_ages != PRIME_AGE_LABELS:
+        raise ValueError(
+            f"20~39세 연령 라벨 불일치: 누락={sorted(PRIME_AGE_LABELS - observed_ages)}, "
+            f"예상외={sorted(observed_ages - PRIME_AGE_LABELS)}"
+        )
+    year_columns = _extract_year_columns(prime.columns)
+    prime = prime.rename(columns={"행정구역(시군구)별": "지역명_전체"})
+    prime = prime.loc[prime["지역명_전체"].ne("전국"), ["지역명_전체", *year_columns]]
+    summed = (
+        prime.rename(columns=year_columns)
+        .groupby("지역명_전체", as_index=False)[list(year_columns.values())]
+        .sum()
+    )
+    long = summed.melt(id_vars="지역명_전체", var_name="연도", value_name="20_39세인구_명")
+
+    mapping = pd.read_csv(mapping_path)
+    return _map_population_to_regions(long, mapping, value_col="20_39세인구_명")
 
 
 def build_subarea_response_variable(
     sub_area_panel: pd.DataFrame,
     cpi: pd.DataFrame,
     population: pd.DataFrame,
+    *,
+    population_column: str = "전체인구_명",
 ) -> pd.DataFrame:
-    """세부영역별 실질예산·인구1인당 실질예산액을 계산한다."""
+    """세부영역별 실질예산·인구1인당 실질예산액을 계산한다.
+
+    ``population_column``으로 분모를 바꿔 낄 수 있다(전체인구/20~39세인구
+    민감도 분석용, compare_subarea_population_denominator_sensitivity.py 참고).
+    출력 컬럼명은 분모와 무관하게 항상 "인구1인당_실질예산_원"이다.
+    """
     from src.provisional.adjust import REAL_BUDGET_COLUMN, apply_cpi_adjustment
 
     adjusted = apply_cpi_adjustment(
@@ -106,10 +156,12 @@ def build_subarea_response_variable(
     )
 
     merged = adjusted.merge(population, on=["지역", "연도"], how="left", validate="many_to_one")
-    if merged["전체인구_명"].isna().any():
+    if merged[population_column].isna().any():
         raise ValueError("인구 결합 실패: 매칭 안 된 지역·연도가 있습니다.")
 
-    merged["인구1인당_실질예산_원"] = merged[REAL_BUDGET_COLUMN] * 1_000_000 / merged["전체인구_명"]
+    merged["인구1인당_실질예산_원"] = (
+        merged[REAL_BUDGET_COLUMN] * 1_000_000 / merged[population_column]
+    )
     return merged
 
 
