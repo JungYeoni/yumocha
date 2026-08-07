@@ -51,15 +51,20 @@ def run_subarea_models(
     *,
     lag_column: str,
     controls: list[str] | None = None,
+    group_col: str = "세부영역",
 ) -> pd.DataFrame:
-    """세부영역마다 별도로 TFR ~ log1p(F_i,t-k) [+ 통제변수] 고정효과 회귀를 추정한다."""
+    """그룹(기본: 세부영역)마다 별도로 TFR ~ log1p(F_i,t-k) [+ 통제변수] 고정효과 회귀를 추정한다.
+
+    group_col은 세부영역 대신 대영역 등 다른 그룹 단위로 동일한 회귀를 돌릴 때
+    쓴다(예: scripts/run_major_category_fiscal_tfr_regression.py).
+    """
     from src.modeling.fiscal_response import fit_two_way_fixed_effects, summarize_fixed_effects
 
     predictor = f"log1p_{lag_column}"
     dropna_columns = [lag_column, *(controls or [])]
 
     summaries: list[dict[str, object]] = []
-    for subarea, group in sample.groupby("세부영역", sort=False):
+    for group_label, group in sample.groupby(group_col, sort=False):
         usable = group.dropna(subset=dropna_columns).copy()
         usable[predictor] = np.log1p(usable[lag_column])
 
@@ -73,7 +78,7 @@ def run_subarea_models(
             summarize_fixed_effects(
                 model,
                 fitted_sample,
-                model_name=subarea,
+                model_name=group_label,
                 outcome=OUTCOME,
                 predictor=predictor,
                 excluded_quality_rows=False,
