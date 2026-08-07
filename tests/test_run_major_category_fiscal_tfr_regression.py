@@ -37,6 +37,16 @@ def test_build_major_category_mapping_uses_structural_taxonomy():
     assert len(mapping) == 11
 
 
+def test_build_major_category_mapping_rejects_conflicting_category():
+    scores = _structural_scores()
+    conflicting_row = scores.loc[scores["subcategory"].eq("고용여건")].copy()
+    conflicting_row["category"] = "가족·생활"
+    scores = pd.concat([scores, conflicting_row], ignore_index=True)
+
+    with pytest.raises(ValueError, match="여러 category에 매핑됩니다"):
+        build_major_category_mapping(scores)
+
+
 def test_aggregate_to_major_category_sums_lag_budget_within_category():
     category_map = {"1-1. 고용여건": "경제·고용·주거", "1-2. 주거안정성": "경제·고용·주거"}
     sample = pd.DataFrame(
@@ -75,6 +85,7 @@ def test_aggregate_to_major_category_propagates_missing_lag_as_group_missing():
     result = aggregate_to_major_category(sample, category_map)
 
     assert pd.isna(result.iloc[0]["인구1인당_실질예산_전년도"])
+    assert pd.isna(result.iloc[0]["인구1인당_실질예산_전전년도"])
 
 
 def test_aggregate_to_major_category_rejects_inconsistent_tfr_within_group():

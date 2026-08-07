@@ -56,12 +56,13 @@ def build_major_category_mapping(structural_scores: pd.DataFrame) -> dict[str, s
         FISCAL_TO_STRUCTURAL_SUBCATEGORY,
     )
 
-    subcategory_to_category = (
-        structural_scores[["subcategory", "category"]]
-        .drop_duplicates()
-        .set_index("subcategory")["category"]
-        .to_dict()
+    pairs = structural_scores[["subcategory", "category"]].drop_duplicates()
+    conflicting = sorted(
+        pairs.loc[pairs.duplicated("subcategory", keep=False), "subcategory"].unique()
     )
+    if conflicting:
+        raise ValueError(f"subcategory가 여러 category에 매핑됩니다: {conflicting}")
+    subcategory_to_category = pairs.set_index("subcategory")["category"].to_dict()
     missing = set(FISCAL_TO_STRUCTURAL_SUBCATEGORY.values()) - set(subcategory_to_category)
     if missing:
         raise ValueError(f"구조환경지수 category 정보가 없는 subcategory: {sorted(missing)}")

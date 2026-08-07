@@ -46,10 +46,19 @@ def build_sample(index_panel: pd.DataFrame, fiscal_sample: pd.DataFrame) -> pd.D
     if missing:
         raise KeyError(f"기존 회귀표본 필수 컬럼 누락: {sorted(missing)}")
     outcome = fiscal_sample[["지역", "연도", "세부영역", "합계출산율"]].copy()
-    result = outcome.merge(lags, on=["지역", "연도", "세부영역"], how="left", validate="one_to_one")
-    if len(result) != len(outcome) or result[[LAG1_COLUMN, LAG2_COLUMN]].isna().all(
-        axis=1
-    ).sum() == len(result):
+    result = outcome.merge(
+        lags,
+        on=["지역", "연도", "세부영역"],
+        how="left",
+        validate="one_to_one",
+        indicator=True,
+    )
+    unmatched = result.loc[result["_merge"].eq("left_only")]
+    if not unmatched.empty:
+        keys = unmatched[["지역", "연도", "세부영역"]].drop_duplicates().head(10).to_dict("records")
+        raise ValueError(f"재정대응지수 패널에 없는 지역·연도·세부영역 키가 있습니다: {keys}")
+    result = result.drop(columns="_merge")
+    if result[[LAG1_COLUMN, LAG2_COLUMN]].isna().all(axis=1).sum() == len(result):
         raise ValueError("재정대응지수 시차변수 결합에 실패했습니다.")
     return result
 
