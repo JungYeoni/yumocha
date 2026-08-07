@@ -74,6 +74,9 @@
 
 ### 문서
 
+- 구조환경지수 종합지수 시각화 산출물을 CPI 2024=100 기준으로 재생성 (#96) ([bcb713b](https://github.com/JungYeoni/da-template/commit/bcb713b9f3934ddc07fb29df3240e3d39a4a698d))
+- 구조환경지수 실제패널 QA 보고서를 CPI 2024=100 기준으로 재생성 (#96) ([e40b92c](https://github.com/JungYeoni/da-template/commit/e40b92cc13399c9045b5ecf4a704a631fd6491d4))
+- CHANGELOG 자동 업데이트 [skip ci] ([843116e](https://github.com/JungYeoni/da-template/commit/843116e7bd118f9d862e81659346f0c738c21c96))
 - 경북 2018 예산 보정 근거 문서화 — 소계 검증 불가 사실 확인 (#81) ([7b5c447](https://github.com/JungYeoni/da-template/commit/7b5c447b6389b4b98853180d3469695a74aa885f))
 - CHANGELOG 자동 업데이트 [skip ci] ([d703f23](https://github.com/JungYeoni/da-template/commit/d703f230af61242e7d657d9a7a4314c57b0392b2))
 - CHANGELOG 자동 업데이트 [skip ci] ([8d7995c](https://github.com/JungYeoni/da-template/commit/8d7995c0e809e87d7122e54639612476838fc628))
@@ -200,6 +203,8 @@
 
 ### 버그 수정
 
+- PR #97 CodeRabbit 리뷰 반영 (#96) ([01e22e3](https://github.com/JungYeoni/da-template/commit/01e22e323d35e63b936259d12f9ede01e7a60490))
+- 구조환경지수 CPI 실질화 기준연도를 2024=100으로 통일 (#96) ([7a804af](https://github.com/JungYeoni/da-template/commit/7a804af475813a1e311a32b0e68fe6b23028dd66))
 - Verify_provisional_roundtrip.py CSV 읽기에 저장 인코딩(utf-8-sig) 명시 (#81) ([203f843](https://github.com/JungYeoni/da-template/commit/203f843a3a525aa8089b11efd9d33b1c7333a829))
 - Verify_provisional_roundtrip.py 라벨 목록을 taxonomy 단일 출처에서 파생 (#81) ([bd62bf0](https://github.com/JungYeoni/da-template/commit/bd62bf04f84853dd3dcc854713b8225bf1d01041))
 - Validate_full_grid 키 비교 전 지역·연도·카테고리 타입 정규화 (#81) ([f0a032a](https://github.com/JungYeoni/da-template/commit/f0a032aa0095f4cf122dcd2f38e18f4d9129d1fc))
