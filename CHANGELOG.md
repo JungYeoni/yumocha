@@ -77,6 +77,9 @@
 
 ### 문서
 
+- 재정반응성의 역인과성 해석 명확화 (#102) ([edae711](https://github.com/JungYeoni/da-template/commit/edae711dec134abfadeacb7bc6eec3b58b0d8588))
+- TFR 회귀 결과와 대영역 보조분석 정리 (#98) ([9903e8b](https://github.com/JungYeoni/da-template/commit/9903e8bc16043f79e5618c5f40a91a69129ea8b6))
+- CHANGELOG 자동 업데이트 [skip ci] ([2b7c9dc](https://github.com/JungYeoni/da-template/commit/2b7c9dc726441ba64cfa435aae9111f826e810d8))
 - 구조환경지표 도시공원보급도 서울 2020 구조적단절 QA 문서 추가 ([0b3cd55](https://github.com/JungYeoni/da-template/commit/0b3cd559a037d08cd0cfd02514b855492a1d22df))
 - CHANGELOG 자동 업데이트 [skip ci] ([9e29a71](https://github.com/JungYeoni/da-template/commit/9e29a71ccfeb9fbcf4085867f2c80a1841afeaf5))
 - 세부영역별 재정대응지수 구축·재정반응성(모형 A) 결과 보고서 작성 (#62) ([4d99382](https://github.com/JungYeoni/da-template/commit/4d9938233f5d2c095c60732f3397261378a812eb))
@@ -215,6 +218,9 @@
 
 ### 버그 수정
 
+- CodeRabbit 리뷰의 분석 검증 보강 (#98) ([4f0c101](https://github.com/JungYeoni/da-template/commit/4f0c101f10a22cc64ec48212cc3120699ab85a9b))
+- CodeRabbit PR #104 리뷰 반영 (#98) ([b4e7d69](https://github.com/JungYeoni/da-template/commit/b4e7d69ff5380f90fbfb50f01cbb7f2badf1a9f3))
+- 보고서 기본/민감도 라벨을 팀 결정(예산액 기준)에 맞게 정정 (#98) ([b7ed3c5](https://github.com/JungYeoni/da-template/commit/b7ed3c59db6cc7590a6fd5b2763bbd5a6a6ec1c0))
 - PR #99 CodeRabbit Major/Minor 지적사항 반영 (#62) ([f98d36a](https://github.com/JungYeoni/da-template/commit/f98d36a81594e3cee18bd7411fdf9feaa5faf94b))
 - #62 재정 기초패널을 #81 최종 산출물 기준으로 갱신, 실질예산 컬럼명 하드코딩 제거 (#62) ([cc5cab8](https://github.com/JungYeoni/da-template/commit/cc5cab81ac103c1516026fee67169a04048d4913))
 - PR #97 CodeRabbit 리뷰 반영 (#96) ([01e22e3](https://github.com/JungYeoni/da-template/commit/01e22e323d35e63b936259d12f9ede01e7a60490))
@@ -317,6 +323,14 @@
 
 ### 새 기능
 
+- 돌봄예산 TFR 관계 검증 시각화 추가 (#98) ([d24d995](https://github.com/JungYeoni/da-template/commit/d24d9956cea95956da210db7efd2d81d68f05ba7))
+- 3개년 이동평균 재정대응예산 TFR 분석 추가 (#98) ([7fbfb1b](https://github.com/JungYeoni/da-template/commit/7fbfb1b6fd0a87757addbea009d5456edb1d84f6))
+- 구조환경과 후행예산 관계 시각화 추가 (#102) ([0795f1e](https://github.com/JungYeoni/da-template/commit/0795f1edba9608c7b48ac682e8b0ee1ec5676643))
+- 세부영역별 재정대응예산 추이 시각화 추가 (#102) ([1602aed](https://github.com/JungYeoni/da-template/commit/1602aed601b4e0557b44b0b6dcc39dbe245db156))
+- 구조환경과 재정대응예산의 시차별 반응성 분석 추가 (#102) ([8ec247e](https://github.com/JungYeoni/da-template/commit/8ec247eb60e843da38aaf92ca5079941d8c19627))
+- 재정대응지수 기반 TFR 분석 추가 (#98) ([4975cdb](https://github.com/JungYeoni/da-template/commit/4975cdbacb71c09eb38b63b6972dd6b865804593))
+- 대영역(4개) 단위 재정-TFR 탐색적 비교 추가 (#98) ([43570b9](https://github.com/JungYeoni/da-template/commit/43570b96acc02c641a34366d4bea27b1daa94c71))
+- 세부영역별 재정대응(F_i,t-1)-TFR 관련성 분석 모형 C 구축 (#98) ([e78f4bf](https://github.com/JungYeoni/da-template/commit/e78f4bfdd9b34965db3ae5809d5de773037c7cbd))
 - 세부영역 재정대응(F_it) 분포·추세 시각화 추가 (#62) ([8718800](https://github.com/JungYeoni/da-template/commit/8718800b95d770f0e1a8953e930f57de1f098cbc))
 - 세부영역 재정대응 인구 분모 민감도 분석(전체인구 vs 20~39세) 추가 (#62) ([d2d7f8b](https://github.com/JungYeoni/da-template/commit/d2d7f8b8b66ddf5cc2b4f5f7474387f6ad13d47a))
 - #62 모형 A(재정반응성) 세부영역별 고정효과 회귀 추정 (#62) ([52851ac](https://github.com/JungYeoni/da-template/commit/52851ac6fe515c3baf7aa4c77e41162f3623b933))
