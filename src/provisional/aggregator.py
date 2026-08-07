@@ -44,7 +44,15 @@ def validate_full_grid(
             for category in categories
         }
 
-    actual = set(map(tuple, panel[key_columns].itertuples(index=False, name=None)))
+    # 지역·연도(·카테고리) 열의 실제 dtype이 expected 쪽(str·int·str)과 다르면
+    # (예: 연도가 문자열) 하나도 안 겹쳐서 정상 데이터도 "전부 누락·전부 예상외"로
+    # 잘못 보고된다. 비교 전에 같은 타입으로 맞춘다.
+    normalized = panel[key_columns].copy()
+    normalized["지역"] = normalized["지역"].astype(str).str.strip()
+    normalized["연도"] = pd.to_numeric(normalized["연도"], errors="raise").astype(int)
+    if category_column is not None:
+        normalized[category_column] = normalized[category_column].astype(str).str.strip()
+    actual = set(map(tuple, normalized.itertuples(index=False, name=None)))
     missing = sorted(expected - actual)
     unexpected = sorted(actual - expected)
     if missing or unexpected:

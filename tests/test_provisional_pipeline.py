@@ -207,6 +207,16 @@ def test_duplicate_missing_negative_and_non_numeric_budgets_are_detected() -> No
         validate_full_grid(duplicated_panel, ["서울"], [2024])
 
 
+def test_validate_full_grid_normalizes_string_year_before_comparing() -> None:
+    """연도 열이 문자열이어도(예: CSV 재로드) expected_years(int)와 정상 매칭돼야 한다.
+
+    타입을 안 맞추고 비교하면 정상 데이터도 "전부 누락·전부 예상외"로 잘못
+    보고된다.
+    """
+    panel = pd.DataFrame({"지역": ["서울", "부산"], "연도": ["2024", "2024"]})
+    validate_full_grid(panel, ["서울", "부산"], [2024])
+
+
 def test_aggregate_before_after_mismatch_is_rejected() -> None:
     detail = _detail_grid()
     panel = build_current_budget_panel(
