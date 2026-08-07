@@ -65,7 +65,24 @@ def _fill_empty_combinations(
     fund any project in a category that year) means the sum over an empty set,
     which is 0 — not an invented or estimated value. ``사업수=0`` keeps this
     distinguishable from a real observation, so nothing is fabricated.
+
+    ``reindex``는 ``panel``에 있지만 기대 목록 밖인 지역·연도·카테고리 값을 조용히
+    버린다 — 완전격자를 만드는 정상 동작(원본에 없는 조합을 0으로 채움)과 겉보기엔
+    똑같아서, 실제 라벨 오타가 있어도 이후 ``validate_full_grid``가 못 잡는다(reindex가
+    이미 정확히 기대 그리드로 맞춰놨기 때문). 그래서 reindex 전에 명시적으로 막는다.
     """
+    unexpected_regions = sorted(set(panel["지역"]) - set(expected_regions))
+    if unexpected_regions:
+        raise ValueError(f"완전격자 채움 대상에 예상 밖 지역이 있습니다: {unexpected_regions}")
+    unexpected_years = sorted(set(panel["연도"]) - {int(year) for year in expected_years})
+    if unexpected_years:
+        raise ValueError(f"완전격자 채움 대상에 예상 밖 연도가 있습니다: {unexpected_years}")
+    unexpected_categories = sorted(set(panel[category_column]) - set(expected_categories))
+    if unexpected_categories:
+        raise ValueError(
+            f"완전격자 채움 대상에 예상 밖 {category_column}이 있습니다: {unexpected_categories}"
+        )
+
     full_index = pd.MultiIndex.from_product(
         [expected_regions, expected_years, expected_categories],
         names=["지역", "연도", category_column],

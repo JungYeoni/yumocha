@@ -334,6 +334,48 @@ def test_label_aggregation_zero_fills_combinations_with_no_detail_rows() -> None
     assert empty_row["예산결측_사업수"] == 0
 
 
+def test_label_aggregation_rejects_category_value_outside_expected_taxonomy() -> None:
+    """세부영역에 오타(taxonomy 밖 값)가 있으면 reindex가 그 행을 조용히 지우지 않고 에러가 나야 한다.
+
+    _fill_empty_combinations의 reindex는 기대 목록에 없는 값을 정상적인 "0채움" 대상과
+    구분하지 못한다 — 검증 없이 두면 오타난 세부사업의 실제 예산이 소리 없이 사라진다.
+    """
+    major_labels = [f"대영역{i}" for i in range(5)]
+    sub_labels = [f"세부영역{i}" for i in range(12)]
+    rows = [
+        {
+            "지역": region,
+            "연도": year,
+            "세부사업명": "사업-0",
+            "대영역": major_labels[0],
+            "세부영역": sub_labels[0],
+            "예산액": 1.0,
+        }
+        for region in STANDARD_REGIONS
+        for year in EXPECTED_YEARS
+    ]
+    rows.append(
+        {
+            "지역": "서울",
+            "연도": 2021,
+            "세부사업명": "오타사업",
+            "대영역": major_labels[0],
+            "세부영역": "세부영역0_오타",
+            "예산액": 999.0,
+        }
+    )
+    labeled = pd.DataFrame(rows)
+
+    with pytest.raises(ValueError, match="예상 밖 세부영역"):
+        aggregate_labels_to_panels(
+            labeled,
+            expected_regions=STANDARD_REGIONS,
+            expected_years=EXPECTED_YEARS,
+            expected_major_labels=major_labels,
+            expected_sub_labels=sub_labels,
+        )
+
+
 def test_manifest_separates_input_lineage_from_outputs(tmp_path: Path) -> None:
     source = tmp_path / "source.xlsx"
     output = tmp_path / "output.csv"
