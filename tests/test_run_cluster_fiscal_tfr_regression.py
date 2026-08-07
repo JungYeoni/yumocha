@@ -88,6 +88,31 @@ def test_unavailable_subgroup_uses_actual_subarea_observation_counts():
     assert counts == {"A": 2, "B": 1}
 
 
+def test_two_region_subgroup_returns_coefficients_without_inference():
+    rows = []
+    for region, offset in (("대전", 0.0), ("세종", 0.1)):
+        for year in range(2018, 2024):
+            budget = float((year - 2017) * 10 + offset)
+            rows.append(
+                {
+                    "지역": region,
+                    "연도": year,
+                    "세부영역": "A",
+                    "군집_3개": 2,
+                    "합계출산율_t+1": 0.8 + 0.01 * budget,
+                    "합계출산율_t+2": 0.7 + 0.01 * budget,
+                    "인구1인당_실질예산_3개년평균": budget,
+                }
+            )
+    result = run_subgroup_models(pd.DataFrame(rows), cluster_count=3)
+    exploratory = result.loc[result["군집"].eq(2)]
+    assert exploratory["계수"].notna().all()
+    assert exploratory["p값"].isna().all()
+    assert exploratory["추정가능"].all()
+    assert exploratory["추론가능"].eq(False).all()  # noqa: E712
+    assert exploratory["분석구분"].eq("2개 시도 계수만 탐색").all()
+
+
 def test_interaction_model_records_missing_cluster_diagnostic():
     sample = pd.DataFrame(
         {

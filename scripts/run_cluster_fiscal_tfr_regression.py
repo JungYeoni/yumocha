@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import statsmodels.api as sm
 from scipy import stats
 from statsmodels.stats.multitest import multipletests
 
@@ -59,6 +60,41 @@ def add_bh(table: pd.DataFrame, group_columns: list[str], p_column: str = "p값"
     return result
 
 
+def _fit_coefficient_only(
+    data: pd.DataFrame, *, outcome: str, predictor: str
+) -> tuple[float, int, int, int, float]:
+    """2개 시도 군집의 지역·연도 고정효과 계수만 산출한다.
+
+    독립 지역이 2개인 표본에서 시도 군집표준오차에 기반한 추론은 제공하지
+    않고, OLS 점추정치와 표본 정보만 반환한다.
+    """
+    fixed_effects = pd.get_dummies(
+        data[["지역", "연도"]].astype({"연도": "string"}),
+        columns=["지역", "연도"],
+        drop_first=True,
+        dtype=float,
+    )
+    design = pd.concat(
+        [
+            data[[predictor]].astype(float).reset_index(drop=True),
+            fixed_effects.reset_index(drop=True),
+        ],
+        axis=1,
+    )
+    design = sm.add_constant(design, has_constant="add")
+    rank = int(np.linalg.matrix_rank(design.to_numpy()))
+    if rank < design.shape[1] or len(data) <= design.shape[1]:
+        raise ValueError("2개 시도 탐색 모형의 설계행렬 또는 잔차 자유도가 부족합니다.")
+    model = sm.OLS(data[outcome].to_numpy(dtype=float), design).fit()
+    return (
+        float(model.params[predictor]),
+        int(model.nobs),
+        int(data["지역"].nunique()),
+        int(data["연도"].nunique()),
+        float(model.df_resid),
+    )
+
+
 def run_subgroup_models(sample: pd.DataFrame, cluster_count: int = 2) -> pd.DataFrame:
     """지정한 구조환경 군집에서 같은 세부영역별 모형을 각각 반복한다."""
     tables = []
@@ -70,6 +106,61 @@ def run_subgroup_models(sample: pd.DataFrame, cluster_count: int = 2) -> pd.Data
             subset["합계출산율"] = subset[outcome_column]
             subset = subset.dropna(subset=["합계출산율", BUDGET])
             region_count = subset["지역"].nunique()
+            if region_count == 2:
+                exploratory_rows = []
+                for subarea, group in subset.groupby("세부영역", sort=False):
+                    group = group.copy()
+                    group[PREDICTOR] = np.log1p(group[BUDGET])
+                    try:
+                        coefficient, observations, regions, years, residual_df = (
+                            _fit_coefficient_only(
+                                group,
+                                outcome="합계출산율",
+                                predictor=PREDICTOR,
+                            )
+                        )
+                        estimation_available = True
+                        analysis_type = "2개 시도 계수만 탐색"
+                        unavailable_reason = "독립 지역 2개로 p값·신뢰구간 추론 제외"
+                    except ValueError as error:
+                        coefficient = np.nan
+                        observations = len(group)
+                        regions = group["지역"].nunique()
+                        years = group["연도"].nunique()
+                        residual_df = np.nan
+                        estimation_available = False
+                        analysis_type = "추정 불가"
+                        unavailable_reason = str(error)
+                    exploratory_rows.append(
+                        {
+                            "모형": subarea,
+                            "종속변수": "합계출산율",
+                            "설명변수": PREDICTOR,
+                            "계수": coefficient,
+                            "군집표준오차": np.nan,
+                            "t값": np.nan,
+                            "p값": np.nan,
+                            "95%신뢰구간_하한": np.nan,
+                            "95%신뢰구간_상한": np.nan,
+                            "관측치": observations,
+                            "지역수": regions,
+                            "연도수": years,
+                            "잔차자유도": residual_df,
+                            "추론자유도": np.nan,
+                            "지역고정효과": True,
+                            "연도고정효과": True,
+                            "지역군집표준오차": False,
+                            "추정가능": estimation_available,
+                            "추론가능": False,
+                            "분석구분": analysis_type,
+                            "추정불가사유": unavailable_reason,
+                        }
+                    )
+                exploratory = pd.DataFrame(exploratory_rows)
+                exploratory.insert(0, "군집", cluster_id)
+                exploratory.insert(0, "시차", f"t+{lag}")
+                tables.append(exploratory)
+                continue
             if region_count < 3:
                 counts = subset.groupby("세부영역").size()
                 unavailable = pd.DataFrame({"모형": list(dict.fromkeys(sample["세부영역"]))})
