@@ -26,6 +26,7 @@
 
 - Preserve structural missing-policy implementation (#70) ([a35db4c](https://github.com/JungYeoni/da-template/commit/a35db4c647c33143895c2c932d2a5b8620fb3e7e))
 - Checkpoint #70 missing-data panel work ([bf3ae83](https://github.com/JungYeoni/da-template/commit/bf3ae83833604a4d23f5e73f74d1c46ed6a70729))
+- Scaffold provisional fiscal panel pipeline (#81) ([761c6f9](https://github.com/JungYeoni/da-template/commit/761c6f9ce12cca4eae36c6a41bfff6c57fc2e5f2))
 
 ### 검증
 
@@ -73,6 +74,8 @@
 
 ### 문서
 
+- 경북 2018 예산 보정 근거 문서화 — 소계 검증 불가 사실 확인 (#81) ([7b5c447](https://github.com/JungYeoni/da-template/commit/7b5c447b6389b4b98853180d3469695a74aa885f))
+- CHANGELOG 자동 업데이트 [skip ci] ([d703f23](https://github.com/JungYeoni/da-template/commit/d703f230af61242e7d657d9a7a4314c57b0392b2))
 - CHANGELOG 자동 업데이트 [skip ci] ([8d7995c](https://github.com/JungYeoni/da-template/commit/8d7995c0e809e87d7122e54639612476838fc628))
 - CHANGELOG 자동 업데이트 [skip ci] ([9bcae66](https://github.com/JungYeoni/da-template/commit/9bcae66c8e7dd3f2ba285ebd1bbc41a05c968bfd))
 - CHANGELOG 자동 업데이트 [skip ci] ([5cd49cc](https://github.com/JungYeoni/da-template/commit/5cd49cc4e13d9f4207d851867e9502b086e04267))
@@ -197,6 +200,13 @@
 
 ### 버그 수정
 
+- Verify_provisional_roundtrip.py CSV 읽기에 저장 인코딩(utf-8-sig) 명시 (#81) ([203f843](https://github.com/JungYeoni/da-template/commit/203f843a3a525aa8089b11efd9d33b1c7333a829))
+- Verify_provisional_roundtrip.py 라벨 목록을 taxonomy 단일 출처에서 파생 (#81) ([bd62bf0](https://github.com/JungYeoni/da-template/commit/bd62bf04f84853dd3dcc854713b8225bf1d01041))
+- Validate_full_grid 키 비교 전 지역·연도·카테고리 타입 정규화 (#81) ([f0a032a](https://github.com/JungYeoni/da-template/commit/f0a032aa0095f4cf122dcd2f38e18f4d9129d1fc))
+- PR #95 CodeRabbit 리뷰 나머지 실제 항목 반영 (#81) ([37891cd](https://github.com/JungYeoni/da-template/commit/37891cdd9b8c630c41d87ce3dba6cc440ffe3fd1))
+- 완전격자 채움 시 taxonomy 밖 지역·연도·카테고리 값을 명시적으로 거부 (#81) ([d73b98c](https://github.com/JungYeoni/da-template/commit/d73b98c44489126d51b8c49abee4e7587b771138))
+- 경북 2018 여성지도자 육성 예산 오탈자 -20 → 20 보정 (#81) ([2906e7c](https://github.com/JungYeoni/da-template/commit/2906e7cee41b16ac566a0013036eb7b334e05aca))
+- 검토상태 공백인 24건, 비고열 기준으로 확정 처리 (#81) ([5d81700](https://github.com/JungYeoni/da-template/commit/5d81700a4a7c684775a91a728372f931e06f1867))
 - AHP 지수 시각화 리뷰 반영 (#91) ([938bc2e](https://github.com/JungYeoni/da-template/commit/938bc2e0934cb1c4a779901f788519a6d86f61fe))
 - 종합지수 시각화 테스트 fixture 분리 (#91) ([a7e6834](https://github.com/JungYeoni/da-template/commit/a7e68345e1414955a9207560721d685e7c8d131c))
 - 대영역 기여도 색상 대비 개선 (#91) ([d201d7a](https://github.com/JungYeoni/da-template/commit/d201d7a8e6f7cbadad0b1be5ceec21e35c06f14f))
@@ -287,6 +297,8 @@
 
 ### 새 기능
 
+- CPI 2024년 기준 재기준화 + 대영역/세부영역 완전격자 0채움 (#81) ([ed61dfd](https://github.com/JungYeoni/da-template/commit/ed61dfd1a5f40ea0dd7cf8de866c7693770010a3))
+- 통합 영역분류 검토 워크북을 §81 파이프라인 라벨 입력으로 변환 (#81) ([a02b5c4](https://github.com/JungYeoni/da-template/commit/a02b5c4d08526432935342444161f22a09a4a7b5))
 - 종합지수 기여도 heatmap 추가 (#91) ([6d1f6d1](https://github.com/JungYeoni/da-template/commit/6d1f6d1b1cd26bb4017e5b5fc1e6e4919018b7d6))
 - AHP 구조환경지수 종합지수 시각화 반영 (#91) ([8f6882d](https://github.com/JungYeoni/da-template/commit/8f6882dbcc03591c3a23251e24552b4391d7beb6))
 - 공식 분석 산출물 선택적 추적 반영 (#90) ([c485e32](https://github.com/JungYeoni/da-template/commit/c485e322ff14e245b41dcc7130a6f49b3715c7fc))
@@ -305,13 +317,13 @@
 - Restore national family-friendly certification rate for 2016-2021 (#70) ([d82d7c2](https://github.com/JungYeoni/da-template/commit/d82d7c2fa94734029c08965da3a7d32b4f383148))
 - Add family-friendly certification candidates for 2020-2021 (#70) ([429a324](https://github.com/JungYeoni/da-template/commit/429a324715dbb10f2a39b99450186d450b30701c))
 - Define structural missing-value policies (#70) ([9d8d0aa](https://github.com/JungYeoni/da-template/commit/9d8d0aa777a9cb820d2cc2a90c7cfe058f4362b9))
+- Implement structural index scoring (#82) ([be9e60e](https://github.com/JungYeoni/da-template/commit/be9e60e1cb5fcab7a28e384b7df6336c79a40f89))
 - 총세출 대비 계획예산 비율 패널 구축 (#69) ([5daee3d](https://github.com/JungYeoni/da-template/commit/5daee3de531f8bcc23edc121bc73b45cf0af5480))
 - 기금 포함 총세출 분모 대안 추가 (#69) ([f9cc700](https://github.com/JungYeoni/da-template/commit/f9cc7008f1c1c1c50510b62cacd753be5fcd4043))
 - 총세출 분모 민감도 대안 구축 (#69) ([721e694](https://github.com/JungYeoni/da-template/commit/721e694227dac19584dde4d3f6003f70d3d1a1b7))
 - 시도별 총세출 분모 패널 생성 (#69) ([bed29ee](https://github.com/JungYeoni/da-template/commit/bed29ee640215b4321b0c8a8e6826dd17ab00082))
 - #70 구조환경지표 결측 처리 모듈 사전 구현 ([e89b7c0](https://github.com/JungYeoni/da-template/commit/e89b7c01b6eed041a23bac33fa75ebd181adfa04))
 - 구조환경지표 28개 보간 전 통합패널 구축 (#80) ([492e092](https://github.com/JungYeoni/da-template/commit/492e09269b9f6de1fdd1bafc4a48e258e5354f21))
-- Implement structural index scoring (#82) ([be9e60e](https://github.com/JungYeoni/da-template/commit/be9e60e1cb5fcab7a28e384b7df6336c79a40f89))
 - 검토 워크북에 실시간 진행현황 시트 추가 (#77) ([abd3009](https://github.com/JungYeoni/da-template/commit/abd30095b7af377aea4fd0cf2acd5373db87f8d7))
 - 2016-2020 예측과 2021-2024 확정 라벨을 예산·메모까지 합친 통합 검토 워크북 (#77) ([a032db9](https://github.com/JungYeoni/da-template/commit/a032db9b468029bf40c816b05cb4eb8f40ff8a9c))
 - 2016-2020 전용 TF-IDF 예측 대상 취합 스크립트 추가 (#77) ([d70fb6f](https://github.com/JungYeoni/da-template/commit/d70fb6f00dd5a88409cbd0979f139454c8c27410))
@@ -383,6 +395,10 @@
 
 ### 테스트
 
+- #81 파이프라인 예산행 연결 감사 및 텍스트 정합성 버그 수정 (#81) ([30b7b9f](https://github.com/JungYeoni/da-template/commit/30b7b9fe655fcdadc21e16d6b4afb1bfdf15853e))
+- 저장 전후 값 대조 QA 추가 (#81 필수 QA 3번) ([cd8ec90](https://github.com/JungYeoni/da-template/commit/cd8ec903032b9ddb85d7932f841adeee824ab931))
+- 대영역·세부영역 구성비 범위 QA 추가 (#81 필수 QA 2번) ([18117dc](https://github.com/JungYeoni/da-template/commit/18117dcf20852e8e15623ec53564cec9c395d0e6))
+- 대영역·세부영역 합계 대조 QA 추가 (#81 필수 QA 1번) ([c22c079](https://github.com/JungYeoni/da-template/commit/c22c0792499c0f403f4eba8212fe6b81beaf201d))
 - 가족실태조사 지표 3종 최종 재실행 (#50) ([0ae8ca7](https://github.com/JungYeoni/da-template/commit/0ae8ca78a671e34f9dfc90f2cdb976e1ea8c8214))
 - 가족실태조사 지표 3종 외부 기준값 검증 (#50) ([69b78bb](https://github.com/JungYeoni/da-template/commit/69b78bb4d690eb85331c04d0f4f9f5d407b5cfb7))
 - 리뷰 반영 후 청년층 정규직 근로자 비율 재실행 (#48) ([b0a50ae](https://github.com/JungYeoni/da-template/commit/b0a50ae062958ab2b0ffcca8cb0f4189ccd42528))
