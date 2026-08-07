@@ -66,6 +66,44 @@ def test_run_fiscal_response_models_builds_outcome_and_sensitivity_rows():
     assert np.isfinite(summary[["계수", "군집표준오차", "p값"]].to_numpy()).all()
 
 
+def test_fit_two_way_fixed_effects_with_controls_recovers_both_coefficients():
+    panel = _synthetic_panel()
+    rng = np.random.default_rng(42)
+    panel["통제변수"] = rng.normal(size=len(panel))
+    region_effect = panel["지역"].map({"서울": 0, "부산": 0.4, "대구": 0.8, "광주": 1.2})
+    year_effect = (panel["연도"] - 2018) * 0.2
+    panel["재정대응지수_z"] = (
+        2.0 * panel["직전1년_출산율하락도"] + 1.5 * panel["통제변수"] + region_effect + year_effect
+    )
+
+    model, sample = fit_two_way_fixed_effects(
+        panel,
+        outcome="재정대응지수_z",
+        predictor="직전1년_출산율하락도",
+        controls=["통제변수"],
+    )
+
+    predictor_index = model.model.exog_names.index("직전1년_출산율하락도")
+    control_index = model.model.exog_names.index("통제변수")
+    assert model.params.iloc[predictor_index] == pytest.approx(2.0, abs=0.03)
+    assert model.params.iloc[control_index] == pytest.approx(1.5, abs=0.03)
+    assert len(sample) == 24
+
+
+def test_fit_two_way_fixed_effects_rejects_missing_control_values():
+    panel = _synthetic_panel()
+    panel["통제변수"] = 1.0
+    panel.loc[0, "통제변수"] = np.nan
+
+    with pytest.raises(ValueError, match="결측 또는 비수치"):
+        fit_two_way_fixed_effects(
+            panel,
+            outcome="재정대응지수_z",
+            predictor="직전1년_출산율하락도",
+            controls=["통제변수"],
+        )
+
+
 def test_fit_two_way_fixed_effects_rejects_duplicate_and_missing_observations():
     panel = _synthetic_panel()
     duplicated = pd.concat([panel, panel.iloc[[0]]], ignore_index=True)

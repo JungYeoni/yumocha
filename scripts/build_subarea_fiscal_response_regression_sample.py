@@ -5,6 +5,8 @@
 - ΔTFR_i,t-1: 직전1년 출산율 하락도(전전년도 - 전년도 합계출산율,
   기존 add_fiscal_response_features 재사용)
 - S_i,t-1: 같은 세부영역의 전년도 구조환경지수(#82/#96 pooled 산출물, 1년 시차)
+- F_i,t-1, F_i,t-2: 같은 세부영역의 1년/2년 전 인구1인당 실질예산액
+  (#98 모형 C 기본 설명변수 및 2년 시차 강건성체크용)
 
 파이프라인 코드(src/features/analysis_panel.py)는 호출만 하고 수정하지 않는다.
 """
@@ -90,24 +92,63 @@ def build_lagged_structural_index(subcategory_scores: pd.DataFrame) -> pd.DataFr
     return panel[["지역", "연도", "세부영역", "구조환경지수_전년도"]]
 
 
+def build_lagged_fiscal_response(fiscal_response: pd.DataFrame) -> pd.DataFrame:
+    """세부영역별 인구1인당 실질예산액을 1년/2년 시차(F_i,t-1, F_i,t-2)로 만든다.
+
+    #98 모형 C(TFR_i,t ~ F_i,t-1)의 설명변수 및 F_i,t-2 강건성체크용.
+    """
+    panel = fiscal_response.loc[fiscal_response["세부영역"].ne("지표체계 외")].copy()
+    panel = panel[["지역", "연도", "세부영역", "인구1인당_실질예산_원"]]
+
+    if panel.duplicated(["지역", "연도", "세부영역"]).any():
+        raise ValueError("재정반응 패널 지역·연도·세부영역 키 중복")
+
+    # build_lagged_structural_index와 동일한 이유로 shift 전에 연도 연속성을 검증한다.
+    def _has_gap(values: pd.Series) -> bool:
+        return set(values) != set(range(int(values.min()), int(values.max()) + 1))
+
+    incomplete = panel.groupby(["지역", "세부영역"])["연도"].apply(_has_gap)
+    if incomplete.any():
+        missing_groups = incomplete.loc[incomplete].index.tolist()
+        raise ValueError(f"재정반응 패널 연도가 연속하지 않는 지역·세부영역: {missing_groups}")
+
+    panel = panel.sort_values(["지역", "세부영역", "연도"])
+    grouped = panel.groupby(["지역", "세부영역"], sort=False)["인구1인당_실질예산_원"]
+    panel["인구1인당_실질예산_전년도"] = grouped.shift(1)
+    panel["인구1인당_실질예산_전전년도"] = grouped.shift(2)
+    return panel[
+        ["지역", "연도", "세부영역", "인구1인당_실질예산_전년도", "인구1인당_실질예산_전전년도"]
+    ]
+
+
 def build_regression_sample(
     fiscal_response: pd.DataFrame,
     fertility_lagged: pd.DataFrame,
     structural_lagged: pd.DataFrame,
+    fiscal_lagged: pd.DataFrame,
 ) -> pd.DataFrame:
-    """F_it·ΔTFR_i,t-1·S_i,t-1을 지역·연도·세부영역 키로 결합한다."""
+    """F_it·ΔTFR_i,t-1·S_i,t-1·F_i,t-1·F_i,t-2를 지역·연도·세부영역 키로 결합한다."""
     fiscal = fiscal_response.loc[fiscal_response["세부영역"].ne("지표체계 외")].copy()
 
-    merged = fiscal.merge(
-        fertility_lagged[["지역", "연도", "직전1년_출산율하락도", "합계출산율"]],
-        on=["지역", "연도"],
-        how="left",
-        validate="many_to_one",
-    ).merge(
-        structural_lagged,
-        on=["지역", "연도", "세부영역"],
-        how="left",
-        validate="one_to_one",
+    merged = (
+        fiscal.merge(
+            fertility_lagged[["지역", "연도", "직전1년_출산율하락도", "합계출산율"]],
+            on=["지역", "연도"],
+            how="left",
+            validate="many_to_one",
+        )
+        .merge(
+            structural_lagged,
+            on=["지역", "연도", "세부영역"],
+            how="left",
+            validate="one_to_one",
+        )
+        .merge(
+            fiscal_lagged,
+            on=["지역", "연도", "세부영역"],
+            how="left",
+            validate="one_to_one",
+        )
     )
     return merged
 
@@ -143,8 +184,11 @@ def main() -> None:
 
     structural_scores = pd.read_csv(args.structural_subcategory_scores)
     structural_lagged = build_lagged_structural_index(structural_scores)
+    fiscal_lagged = build_lagged_fiscal_response(fiscal_response)
 
-    result = build_regression_sample(fiscal_response, fertility_lagged, structural_lagged)
+    result = build_regression_sample(
+        fiscal_response, fertility_lagged, structural_lagged, fiscal_lagged
+    )
 
     expected_rows = 17 * len(YEARS) * 11
     if len(result) != expected_rows:
@@ -157,9 +201,22 @@ def main() -> None:
     result.to_csv(output_path, index=False, encoding="utf-8-sig")
 
     usable = result.dropna(subset=["직전1년_출산율하락도", "구조환경지수_전년도"])
-    print(f"저장: {output_path} ({len(result)}행, 시차변수 완비 {len(usable)}행)")
+    usable_model_c = result.dropna(subset=["인구1인당_실질예산_전년도"])
     print(
-        result[["직전1년_출산율하락도", "구조환경지수_전년도", "인구1인당_실질예산_원"]]
+        f"저장: {output_path} ({len(result)}행, "
+        f"모형A 시차변수(ΔTFR+S) 완비 {len(usable)}행, "
+        f"모형C 시차변수(F_i,t-1) 완비 {len(usable_model_c)}행)"
+    )
+    print(
+        result[
+            [
+                "직전1년_출산율하락도",
+                "구조환경지수_전년도",
+                "인구1인당_실질예산_원",
+                "인구1인당_실질예산_전년도",
+                "인구1인당_실질예산_전전년도",
+            ]
+        ]
         .describe()
         .round(2)
         .to_string()
