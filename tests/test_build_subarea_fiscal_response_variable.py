@@ -92,6 +92,28 @@ def test_load_prime_age_population_rejects_missing_age_label(tmp_path: Path):
         load_prime_age_population(population_path, mapping_path)
 
 
+def test_load_prime_age_population_rejects_age_missing_for_single_region_only(
+    tmp_path: Path,
+):
+    """파일 전체엔 "39세"가 있어도(부산엔 있음) 서울만 빠지면 잡아야 한다."""
+    population_path = tmp_path / "population.xlsx"
+    mapping_path = tmp_path / "mapping.csv"
+    _write_population_workbook(population_path, prime_age_value=1_000)
+    _write_mapping(mapping_path)
+
+    raw = pd.read_excel(population_path)
+    drop_seoul_39 = (
+        raw["행정구역(시군구)별"].eq("서울특별시")
+        & raw["연령별"].eq("39세")
+        & raw["항목"].eq("총인구수[명]")
+    )
+    raw = raw.loc[~drop_seoul_39]
+    raw.to_excel(population_path, index=False)
+
+    with pytest.raises(ValueError, match="일부 지역에서 불완전"):
+        load_prime_age_population(population_path, mapping_path)
+
+
 def test_build_subarea_response_variable_computes_expected_per_capita_value():
     sub_area_panel = pd.DataFrame(
         {

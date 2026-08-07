@@ -479,6 +479,20 @@ def test_add_subarea_fiscal_index_features_rejects_negative_budget():
         add_subarea_fiscal_index_features(panel)
 
 
+def test_add_subarea_fiscal_index_features_rejects_missing_budget():
+    """NaN은 음수 검사를 통과해 지수·점수에 조용히 섞여들 수 있으므로 별도로 막는다."""
+    panel = pd.DataFrame(
+        {
+            "지역": ["A", "B"],
+            "연도": [2021, 2021],
+            "세부영역": ["X", "X"],
+            "인구1인당_실질예산_원": [float("nan"), 100.0],
+        }
+    )
+    with pytest.raises(ValueError, match="결측 또는 비수치"):
+        add_subarea_fiscal_index_features(panel)
+
+
 def test_add_total_expenditure_ratio_requires_complete_one_to_one_match():
     panel = pd.DataFrame(
         {
