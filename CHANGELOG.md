@@ -77,6 +77,8 @@
 
 ### 문서
 
+- 구조환경지표 도시공원보급도 서울 2020 구조적단절 QA 문서 추가 ([0b3cd55](https://github.com/JungYeoni/da-template/commit/0b3cd559a037d08cd0cfd02514b855492a1d22df))
+- CHANGELOG 자동 업데이트 [skip ci] ([9e29a71](https://github.com/JungYeoni/da-template/commit/9e29a71ccfeb9fbcf4085867f2c80a1841afeaf5))
 - 세부영역별 재정대응지수 구축·재정반응성(모형 A) 결과 보고서 작성 (#62) ([4d99382](https://github.com/JungYeoni/da-template/commit/4d9938233f5d2c095c60732f3397261378a812eb))
 - #62 재현 노트북을 세부영역별 파이프라인으로 대폭 교체 ([a991e7d](https://github.com/JungYeoni/da-template/commit/a991e7dbef8fc559b8542214feaca08dbf00f4c6))
 - 다중공선성 진단 보고서에 "가사수행 격차×사회적 가치관" 해석 추가 (#62) ([ba32a61](https://github.com/JungYeoni/da-template/commit/ba32a61db4d52d4ea6b47399ffab2cd5c4a9e874))
