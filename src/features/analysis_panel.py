@@ -53,6 +53,82 @@ def _validate_unique_panel(
         )
 
 
+def _normalize_expected_axes(
+    expected_regions: Sequence[str],
+    expected_years: Sequence[int],
+) -> tuple[list[str], list[int]]:
+    regions = [str(region).strip() for region in expected_regions]
+    years = [int(year) for year in expected_years]
+    if not regions or not years:
+        raise ValueError("expected_regions와 expected_years는 비어 있을 수 없습니다.")
+    if len(regions) != len(set(regions)):
+        raise ValueError("expected_regions에 중복이 있습니다.")
+    if len(years) != len(set(years)):
+        raise ValueError("expected_years에 중복이 있습니다.")
+    return regions, years
+
+
+def build_current_budget_panel(
+    detail: pd.DataFrame,
+    *,
+    expected_regions: Sequence[str],
+    expected_years: Sequence[int],
+) -> pd.DataFrame:
+    """정제된 세부사업 long 데이터에서 당해 계획예산 패널을 만든다.
+
+    파일 탐색과 Excel 구조 해석은 호출자 책임이다. 이 함수가 지역×연도
+    집계와 완전격자 검증의 단일 구현이며, 파일 기반 로더와 #81 잠정
+    workbook 로더가 함께 재사용한다.
+    """
+
+    _require_columns(detail, BUDGET_REQUIRED_COLUMNS, label="detail")
+    regions, years = _normalize_expected_axes(expected_regions, expected_years)
+
+    current = detail.loc[detail["예산구분"].eq("당해예산")].copy()
+    if current.empty:
+        raise ValueError("detail에 당해예산 행이 없습니다.")
+
+    current["연도"] = pd.to_numeric(current["연도"], errors="raise").astype(int)
+    current["지역"] = current["지역"].astype("string").str.strip()
+    numeric = pd.to_numeric(current["예산액"], errors="coerce")
+    invalid = current["예산액"].notna() & numeric.isna()
+    if invalid.any():
+        samples = current.loc[invalid, "예산액"].astype(str).unique()[:5].tolist()
+        raise ValueError(f"detail 예산액 숫자 변환 실패: {samples}")
+    current["예산액_숫자"] = numeric
+
+    if "예산_비수치" in current.columns:
+        current["예산_비수치"] = current["예산_비수치"].fillna(False).astype(bool)
+    else:
+        current["예산_비수치"] = False
+
+    panel = (
+        current.groupby(PANEL_KEY, as_index=False)
+        .agg(
+            당해계획예산_백만원=(
+                "예산액_숫자",
+                lambda values: values.sum(min_count=1),
+            ),
+            세부사업수=("세부사업명", "size"),
+            예산금액_존재_사업수=("예산액_숫자", "count"),
+            예산결측_사업수=("예산액_숫자", lambda values: int(values.isna().sum())),
+            예산비수치_사업수=("예산_비수치", "sum"),
+            음수예산_사업수=("예산액_숫자", lambda values: int((values < 0).sum())),
+        )
+        .sort_values(PANEL_KEY)
+        .reset_index(drop=True)
+    )
+    panel["연도"] = panel["연도"].astype(int)
+    panel["예산비수치_사업수"] = panel["예산비수치_사업수"].astype(int)
+    _validate_unique_panel(
+        panel,
+        expected_regions=regions,
+        expected_years=years,
+        label="계획예산 패널",
+    )
+    return panel
+
+
 def load_current_budget_panel(
     interim_dir: str | Path,
     *,
@@ -66,14 +142,15 @@ def load_current_budget_panel(
     지역×연도의 모든 세부사업 예산이 결측이면 합계도 결측으로 유지한다.
     """
 
+    regions, years = _normalize_expected_axes(expected_regions, expected_years)
     interim_dir = Path(interim_dir)
     frames: list[pd.DataFrame] = []
 
-    for year in expected_years:
+    for year in years:
         files = sorted(interim_dir.glob(f"*/{year}_*_세부사업_정제_long.csv"))
-        if len(files) != len(expected_regions):
+        if len(files) != len(regions):
             raise ValueError(
-                f"{year}년 long 파일 수 불일치: 기대={len(expected_regions)}, 실제={len(files)}"
+                f"{year}년 long 파일 수 불일치: 기대={len(regions)}, 실제={len(files)}"
             )
 
         file_regions: set[str] = set()
@@ -91,52 +168,27 @@ def load_current_budget_panel(
                     f"{path} 당해예산 연도 불일치: 파일연도={year}, 행연도={sorted(row_years)}"
                 )
 
-            regions = set(current["지역"].dropna().astype(str).str.strip())
-            if len(regions) != 1:
-                raise ValueError(f"{path} 지역값이 하나가 아닙니다: {sorted(regions)}")
-            region = next(iter(regions))
+            row_regions = set(current["지역"].dropna().astype(str).str.strip())
+            if len(row_regions) != 1:
+                raise ValueError(f"{path} 지역값이 하나가 아닙니다: {sorted(row_regions)}")
+            region = next(iter(row_regions))
             file_regions.add(region)
 
-            numeric = pd.to_numeric(current["예산액"], errors="coerce")
-            invalid = current["예산액"].notna() & numeric.isna()
-            if invalid.any():
-                samples = current.loc[invalid, "예산액"].astype(str).unique()[:5].tolist()
-                raise ValueError(f"{path} 예산액 숫자 변환 실패: {samples}")
-
-            current["예산액_숫자"] = numeric
             frames.append(current)
 
-        missing_regions = sorted(set(expected_regions) - file_regions)
-        unexpected_regions = sorted(file_regions - set(expected_regions))
+        missing_regions = sorted(set(regions) - file_regions)
+        unexpected_regions = sorted(file_regions - set(regions))
         if missing_regions or unexpected_regions:
             raise ValueError(
                 f"{year}년 파일 지역 불일치: 누락={missing_regions}, 예상외={unexpected_regions}"
             )
 
     detail = pd.concat(frames, ignore_index=True)
-    panel = (
-        detail.groupby(PANEL_KEY, as_index=False)
-        .agg(
-            당해계획예산_백만원=(
-                "예산액_숫자",
-                lambda values: values.sum(min_count=1),
-            ),
-            세부사업수=("세부사업명", "size"),
-            예산금액_존재_사업수=("예산액_숫자", "count"),
-            예산결측_사업수=("예산액_숫자", lambda values: int(values.isna().sum())),
-            음수예산_사업수=("예산액_숫자", lambda values: int((values < 0).sum())),
-        )
-        .sort_values(PANEL_KEY)
-        .reset_index(drop=True)
+    return build_current_budget_panel(
+        detail,
+        expected_regions=regions,
+        expected_years=years,
     )
-    panel["연도"] = panel["연도"].astype(int)
-    _validate_unique_panel(
-        panel,
-        expected_regions=expected_regions,
-        expected_years=expected_years,
-        label="계획예산 패널",
-    )
-    return panel
 
 
 def load_fertility_panel(
@@ -234,34 +286,14 @@ def load_fertility_panel(
     return panel, nationwide
 
 
-def validate_budget_totals_against_sources(
+def _compare_budget_totals(
     budget_panel: pd.DataFrame,
-    source_paths: Sequence[str | Path],
+    source_totals: pd.DataFrame,
 ) -> pd.DataFrame:
-    """패널 총액을 원본 long 파일의 당해예산 직접 합계와 역대조한다."""
-
     _require_columns(
         budget_panel,
         {"지역", "연도", "당해계획예산_백만원"},
         label="budget_panel",
-    )
-    source_frames: list[pd.DataFrame] = []
-    for source_path in source_paths:
-        path = Path(source_path)
-        source = pd.read_csv(path)
-        _require_columns(source, BUDGET_REQUIRED_COLUMNS, label=str(path))
-        current = source.loc[source["예산구분"].eq("당해예산"), PANEL_KEY + ["예산액"]].copy()
-        current["예산액"] = pd.to_numeric(current["예산액"], errors="coerce")
-        source_frames.append(current)
-
-    if not source_frames:
-        raise ValueError("역대조할 예산 원본 파일이 없습니다.")
-
-    source_totals = (
-        pd.concat(source_frames, ignore_index=True)
-        .groupby(PANEL_KEY, as_index=False)["예산액"]
-        .sum(min_count=1)
-        .rename(columns={"예산액": "원본당해예산합계_백만원"})
     )
     comparison = budget_panel[PANEL_KEY + ["당해계획예산_백만원"]].merge(
         source_totals,
@@ -294,6 +326,53 @@ def validate_budget_totals_against_sources(
             f"{comparison.loc[mismatched].to_dict(orient='records')[:10]}"
         )
     return comparison
+
+
+def validate_budget_totals_against_detail(
+    budget_panel: pd.DataFrame,
+    detail: pd.DataFrame,
+) -> pd.DataFrame:
+    """패널 총액을 메모리상의 세부사업 당해예산 합계와 역대조한다."""
+
+    _require_columns(detail, BUDGET_REQUIRED_COLUMNS, label="detail")
+    current = detail.loc[detail["예산구분"].eq("당해예산"), PANEL_KEY + ["예산액"]].copy()
+    if current.empty:
+        raise ValueError("역대조할 당해예산 세부사업 행이 없습니다.")
+    current["연도"] = pd.to_numeric(current["연도"], errors="raise").astype(int)
+    numeric = pd.to_numeric(current["예산액"], errors="coerce")
+    invalid = current["예산액"].notna() & numeric.isna()
+    if invalid.any():
+        samples = current.loc[invalid, "예산액"].astype(str).unique()[:5].tolist()
+        raise ValueError(f"역대조 예산액 숫자 변환 실패: {samples}")
+    current["예산액"] = numeric
+    source_totals = (
+        current.groupby(PANEL_KEY, as_index=False)["예산액"]
+        .sum(min_count=1)
+        .rename(columns={"예산액": "원본당해예산합계_백만원"})
+    )
+    return _compare_budget_totals(budget_panel, source_totals)
+
+
+def validate_budget_totals_against_sources(
+    budget_panel: pd.DataFrame,
+    source_paths: Sequence[str | Path],
+) -> pd.DataFrame:
+    """패널 총액을 원본 long 파일의 당해예산 직접 합계와 역대조한다."""
+
+    source_frames: list[pd.DataFrame] = []
+    for source_path in source_paths:
+        path = Path(source_path)
+        source = pd.read_csv(path)
+        _require_columns(source, BUDGET_REQUIRED_COLUMNS, label=str(path))
+        source_frames.append(source)
+
+    if not source_frames:
+        raise ValueError("역대조할 예산 원본 파일이 없습니다.")
+
+    return validate_budget_totals_against_detail(
+        budget_panel,
+        pd.concat(source_frames, ignore_index=True),
+    )
 
 
 def load_budget_qa_panel(
