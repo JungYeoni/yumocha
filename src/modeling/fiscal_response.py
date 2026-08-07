@@ -22,6 +22,7 @@ def fit_two_way_fixed_effects(
     *,
     outcome: str,
     predictor: str,
+    controls: Sequence[str] | None = None,
     region_col: str = "지역",
     year_col: str = "연도",
 ) -> tuple[RegressionResultsWrapper, pd.DataFrame]:
@@ -30,10 +31,12 @@ def fit_two_way_fixed_effects(
     결측 관측치는 암묵적으로 제거하지 않고 오류로 처리한다. 호출자가 분석
     표본을 명시적으로 확정한 뒤 전달해야 모형별 표본 차이를 추적할 수 있다.
     군집 수가 적은 점을 고려해 statsmodels의 유한표본 보정과 t분포 추론을
-    사용한다.
+    사용한다. controls는 강건성체크용 통제변수(예: S_i,t-1)를 추가할 때
+    쓰며, 생략하면 기존과 동일한 단변량 고정효과 모형이다.
     """
 
-    required = {outcome, predictor, region_col, year_col}
+    control_columns = list(controls) if controls is not None else []
+    required = {outcome, predictor, region_col, year_col, *control_columns}
     _require_columns(data, required)
     if data.empty:
         raise ValueError("고정효과 모형 분석 표본이 비어 있습니다.")
@@ -46,11 +49,12 @@ def fit_two_way_fixed_effects(
         )
         raise ValueError(f"고정효과 모형 지역×연도 키 중복: {duplicates}")
 
-    sample = data[[region_col, year_col, outcome, predictor]].copy()
-    for column in (outcome, predictor):
+    numeric_columns = [outcome, predictor, *control_columns]
+    sample = data[[region_col, year_col, *numeric_columns]].copy()
+    for column in numeric_columns:
         sample[column] = pd.to_numeric(sample[column], errors="coerce")
-    invalid = sample[[outcome, predictor]].isna().any(axis=1) | ~np.isfinite(
-        sample[[outcome, predictor]].to_numpy(dtype=float)
+    invalid = sample[numeric_columns].isna().any(axis=1) | ~np.isfinite(
+        sample[numeric_columns].to_numpy(dtype=float)
     ).all(axis=1)
     if invalid.any():
         rows = sample.loc[invalid].head(10).to_dict(orient="records")
@@ -64,6 +68,9 @@ def fit_two_way_fixed_effects(
         raise ValueError("연도 고정효과에는 연도가 2개 이상 필요합니다.")
     if sample[predictor].nunique() < 2:
         raise ValueError(f"설명변수 {predictor}에 변동이 없습니다.")
+    for column in control_columns:
+        if sample[column].nunique() < 2:
+            raise ValueError(f"통제변수 {column}에 변동이 없습니다.")
 
     fixed_effects = pd.get_dummies(
         sample[[region_col, year_col]].astype({year_col: "string"}),
@@ -73,7 +80,7 @@ def fit_two_way_fixed_effects(
     )
     design = pd.concat(
         [
-            sample[[predictor]].astype(float).reset_index(drop=True),
+            sample[[predictor, *control_columns]].astype(float).reset_index(drop=True),
             fixed_effects.reset_index(drop=True),
         ],
         axis=1,
