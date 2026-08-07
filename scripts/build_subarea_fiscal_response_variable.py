@@ -150,6 +150,17 @@ def main() -> None:
         .to_string(index=False)
     )
 
+    from src.features.analysis_panel import add_subarea_fiscal_index_features
+
+    # "지표체계 외"는 정책 영역이 아니라 잔여 범주라 지수 대상에서 뺀다
+    # (구조환경지수 standardize_structural_indicators도 같은 원칙).
+    indexable = result.loc[result["세부영역"].ne("지표체계 외")].copy()
+    index_result = add_subarea_fiscal_index_features(indexable)
+
+    index_output_path = args.output_dir / "2016-2024_세부영역별_재정대응지수.csv"
+    index_result.to_csv(index_output_path, index=False, encoding="utf-8-sig")
+    print(f"저장: {index_output_path} ({len(index_result)}행)")
+
 
 if __name__ == "__main__":
     main()

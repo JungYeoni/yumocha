@@ -8,6 +8,7 @@ import pytest
 from src.features.analysis_panel import (
     add_fiscal_index_features,
     add_fiscal_response_features,
+    add_subarea_fiscal_index_features,
     add_total_expenditure_ratio,
     build_budget_fertility_panel,
     load_budget_qa_panel,
@@ -429,6 +430,49 @@ def test_add_fiscal_index_features_names_real_column_after_given_price_label():
     assert result.loc[result["연도"].eq(2020), "실질계획예산_2024년가격_백만원"].iloc[0] == (
         pytest.approx(100.0)
     )
+
+
+def test_add_subarea_fiscal_index_features_standardizes_within_each_subarea_only():
+    """세부영역마다 예산 규모가 크게 달라서, 표준화가 그룹 안에서만 이뤄져야 한다.
+
+    두 세부영역에 완전히 같은 인구1인당 예산 값을 넣으면(스케일만 다름 —
+    log1p 이후엔 그룹별로 독립 계산되므로), 같은 지역·연도 행의 z-score·
+    0~100 점수가 두 그룹에서 동일하게 나와야 한다(교차 오염이 없다는 뜻).
+    """
+    panel = pd.DataFrame(
+        {
+            "지역": ["A", "B", "C", "A", "B", "C"],
+            "연도": [2021, 2021, 2021, 2021, 2021, 2021],
+            "세부영역": ["X", "X", "X", "Y", "Y", "Y"],
+            "인구1인당_실질예산_원": [100.0, 200.0, 300.0, 100.0, 200.0, 300.0],
+        }
+    )
+
+    result = add_subarea_fiscal_index_features(panel)
+
+    x_scores = result.loc[result["세부영역"].eq("X")].sort_values("지역")
+    y_scores = result.loc[result["세부영역"].eq("Y")].sort_values("지역")
+    assert x_scores["세부영역_재정대응지수_z"].tolist() == pytest.approx(
+        y_scores["세부영역_재정대응지수_z"].tolist()
+    )
+    scores = x_scores["세부영역_재정대응점수_0_100"].tolist()
+    assert scores[0] == pytest.approx(0.0, abs=1e-6)
+    assert scores[2] == pytest.approx(100.0, abs=1e-6)
+    assert 0.0 < scores[1] < 100.0
+    assert result["세부영역_재정대응지수_z"].notna().all()
+
+
+def test_add_subarea_fiscal_index_features_rejects_negative_budget():
+    panel = pd.DataFrame(
+        {
+            "지역": ["A", "B"],
+            "연도": [2021, 2021],
+            "세부영역": ["X", "X"],
+            "인구1인당_실질예산_원": [-1.0, 100.0],
+        }
+    )
+    with pytest.raises(ValueError, match="0 이상이어야"):
+        add_subarea_fiscal_index_features(panel)
 
 
 def test_add_total_expenditure_ratio_requires_complete_one_to_one_match():

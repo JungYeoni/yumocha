@@ -601,6 +601,53 @@ def add_fiscal_index_features(
     return result
 
 
+def add_subarea_fiscal_index_features(
+    panel: pd.DataFrame,
+    *,
+    group_column: str = "세부영역",
+    per_capita_budget_col: str = "인구1인당_실질예산_원",
+) -> pd.DataFrame:
+    """세부영역별로 log1p 후 pooled z-score·0~100 점수를 계산한다(제주도 방식).
+
+    구조환경지수(standardize_structural_indicators)와 같은 원리로, 표준화를
+    세부영역 그룹 안에서만 수행한다 — 세부영역마다 예산 규모 자릿수가 크게
+    달라서(예: 돌봄여건 vs 가사수행 격차) 전체를 한번에 표준화하면 규모가 큰
+    영역이 지배해버린다.
+
+    2026-08-07 팀 결정: 회귀분석에는 이 지수가 아니라 ``per_capita_budget_col``
+    원본값을 그대로 쓴다. 이 함수가 만드는 z-score·0~100 점수는 구조환경지수와
+    비교하거나 지역 간 상대적 위치를 보여주는 표시·시각화용이다.
+    """
+
+    required = {*PANEL_KEY, group_column, per_capita_budget_col}
+    _require_columns(panel, required, label="세부영역 재정대응지수")
+
+    per_capita = pd.to_numeric(panel[per_capita_budget_col])
+    if per_capita.lt(0).any():
+        samples = panel.loc[per_capita.lt(0), PANEL_KEY + [group_column, per_capita_budget_col]]
+        raise ValueError(
+            f"인구1인당 예산은 0 이상이어야 합니다: {samples.head(10).to_dict(orient='records')}"
+        )
+
+    result = panel.copy()
+    result["log1p_인구1인당_실질예산"] = np.log1p(per_capita)
+
+    z_score_col = "세부영역_재정대응지수_z"
+    score_col = "세부영역_재정대응점수_0_100"
+    result[z_score_col] = np.nan
+    result[score_col] = np.nan
+
+    for group_key, group in result.groupby(group_column, sort=False):
+        z = _pooled_z_score(group["log1p_인구1인당_실질예산"], label=f"{group_key} 재정대응지수")
+        z_range = z.max() - z.min()
+        if not np.isfinite(z_range) or z_range <= 0:
+            raise ValueError(f"{group_key} 재정대응점수 0~100 변환을 계산할 범위가 없습니다.")
+        result.loc[group.index, z_score_col] = z
+        result.loc[group.index, score_col] = 100 * (z - z.min()) / z_range
+
+    return result
+
+
 def add_total_expenditure_ratio(
     panel: pd.DataFrame,
     denominator: pd.DataFrame,
