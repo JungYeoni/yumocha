@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from scripts.consolidate_2021_area_labels import MAJOR_BY_SUBCATEGORY
 from scripts.run_provisional_pipeline import _load_labels
 from src.features.analysis_panel import (
     build_current_budget_panel,
@@ -28,21 +29,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "data" / "interim" / "provisional"
 QA_OUTPUT_PATH = REPO_ROOT / "reports" / "20260807_잠정재정패널_저장전후_대조_QA.csv"
 
-MAJOR_LABELS = ["1. 경제·고용·주거", "2. 가족·생활", "3. 보건·안전", "4. 사회·문화", "지표체계 외"]
-SUB_LABELS = [
-    "1-1. 고용여건",
-    "1-2. 주거안정성",
-    "1-3. 경제적 여건",
-    "2-1. 돌봄 여건",
-    "2-2. 여가 인프라",
-    "2-3. 가사수행 격차",
-    "3-1. 의료서비스 여건",
-    "3-2. 산후조리 여건",
-    "3-3. 아동안전 수준",
-    "4-1. 일·가정 양립 여건",
-    "4-2. 사회적 가치관",
-    "지표체계 외",
-]
+# run_provisional_pipeline.py의 --major-labels/--sub-labels는 호출자가 명시적으로
+# 넘겨야 한다(기본값이 없다 — 라벨 개수가 taxonomy와 다르면 즉시 실패시키기 위해).
+# 이 QA 스크립트가 재계산에 쓸 기본값은 그 taxonomy의 단일 출처인
+# MAJOR_BY_SUBCATEGORY에서 뽑는다 — 별도로 하드코딩하면 taxonomy가 바뀔 때 한쪽만
+# 갱신되고 다른 쪽이 낡은 채로 남아 QA가 오탐(정상 저장을 FAIL)을 낼 수 있다.
+SUB_LABELS = list(MAJOR_BY_SUBCATEGORY)
+MAJOR_LABELS = list(dict.fromkeys(MAJOR_BY_SUBCATEGORY.values()))
 
 
 def compare_frame_to_saved_csv(memory: pd.DataFrame, csv_path: Path) -> dict[str, object]:
