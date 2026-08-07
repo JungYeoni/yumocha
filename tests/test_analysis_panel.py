@@ -245,6 +245,40 @@ def test_validate_budget_totals_against_sources(tmp_path):
         validate_budget_totals_against_sources(panel, source_paths)
 
 
+def test_validate_budget_totals_against_sources_rejects_non_numeric_source_value(tmp_path):
+    """역대조 경로가 build_current_budget_panel과 같은 엄격한 숫자 변환 정책을 써야 한다.
+
+    coerce로 조용히 NaN을 만들면 sum(min_count=1)이 그 값을 건너뛰어서, 원본이
+    오염돼 있어도 역대조가 차이=0으로 통과해버린다.
+    """
+    region_dir = tmp_path / "서울"
+    region_dir.mkdir(parents=True, exist_ok=True)
+    source = region_dir / "2020_서울_세부사업_정제_long.csv"
+    pd.DataFrame(
+        [
+            {
+                "지역": "서울",
+                "연도": 2020,
+                "세부사업명": "사업0",
+                "예산구분": "당해예산",
+                "예산액": "미정",
+            },
+            {
+                "지역": "서울",
+                "연도": 2020,
+                "세부사업명": "사업1",
+                "예산구분": "당해예산",
+                "예산액": 10.0,
+            },
+        ]
+    ).to_csv(source, index=False)
+
+    panel = pd.DataFrame([{"지역": "서울", "연도": 2020, "당해계획예산_백만원": 10.0}])
+
+    with pytest.raises(ValueError, match="역대조 예산액 숫자 변환 실패"):
+        validate_budget_totals_against_sources(panel, [source])
+
+
 def test_load_budget_qa_panel_handles_error_rate_schema_variants(tmp_path):
     rows = {
         2020: pd.DataFrame(
