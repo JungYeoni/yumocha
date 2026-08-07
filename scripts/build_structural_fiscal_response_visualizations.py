@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
+from matplotlib.ticker import FuncFormatter
 
 from src.visualization.plots import YOMOCHA_WEB_COLORS, save_figure
 
@@ -20,7 +21,95 @@ DEFAULT_COMMON_T1 = DEFAULT_COMMON.with_name(f"{DEFAULT_COMMON.stem}_t+1.csv")
 DEFAULT_REGIONAL = (
     REPO_ROOT / "data/processed/analysis/2016-2024_세부영역별_시도별_구조환경_재정대응_반응계수.csv"
 )
+DEFAULT_FISCAL = REPO_ROOT / "data/processed/analysis/2016-2024_세부영역별_인구1인당_실질예산액.csv"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "result/구조환경_재정대응_반응성"
+
+
+def _format_won(value: float) -> str:
+    """축 눈금을 읽기 쉬운 원 단위로 표시한다."""
+
+    def compact(number: float) -> str:
+        return f"{number:.1f}".rstrip("0").rstrip(".")
+
+    absolute = abs(value)
+    if absolute >= 100_000_000:
+        return f"{compact(value / 100_000_000)}억"
+    if absolute >= 10_000:
+        return f"{compact(value / 10_000)}만"
+    if absolute >= 1_000:
+        return f"{compact(value / 1_000)}천"
+    return f"{value:.0f}"
+
+
+def plot_fiscal_budget_trends(fiscal: pd.DataFrame) -> plt.Figure:
+    """세부영역별 실질 1인당 예산의 연도별 지역 중앙값과 IQR을 그린다."""
+    required = {"연도", "세부영역", "지역", "인구1인당_실질예산_원"}
+    missing = sorted(required - set(fiscal.columns))
+    if missing:
+        raise KeyError(f"예산 추이 그래프 필수 컬럼 누락: {missing}")
+
+    plot = fiscal.loc[fiscal["세부영역"].ne("지표체계 외")].copy()
+    plot["인구1인당_실질예산_원"] = pd.to_numeric(plot["인구1인당_실질예산_원"], errors="coerce")
+    if plot["인구1인당_실질예산_원"].isna().any():
+        raise ValueError("예산 추이 자료에 비수치 또는 결측 예산이 있습니다.")
+    if plot["인구1인당_실질예산_원"].lt(0).any():
+        raise ValueError("예산 추이 자료에 음수 예산이 있습니다.")
+
+    summary = (
+        plot.groupby(["세부영역", "연도"], as_index=False)["인구1인당_실질예산_원"]
+        .agg(
+            중앙값="median",
+            하위25=lambda values: values.quantile(0.25),
+            상위75=lambda values: values.quantile(0.75),
+        )
+        .sort_values(["세부영역", "연도"])
+    )
+    subareas = sorted(summary["세부영역"].unique())
+    fig, axes = plt.subplots(4, 3, figsize=(15, 13), sharex=True)
+    axes_flat = axes.ravel()
+    line_color = "#0E7490"
+    fill_color = "#CFFAFE"
+
+    for ax, subarea in zip(axes_flat, subareas, strict=False):
+        group = summary.loc[summary["세부영역"].eq(subarea)]
+        years = group["연도"].to_numpy(dtype=int)
+        median = group["중앙값"].to_numpy(dtype=float)
+        lower = group["하위25"].to_numpy(dtype=float)
+        upper = group["상위75"].to_numpy(dtype=float)
+        ax.fill_between(years, lower, upper, color=fill_color, alpha=0.8, linewidth=0)
+        ax.plot(
+            years,
+            median,
+            color=line_color,
+            linewidth=2,
+            marker="o",
+            markersize=3.5,
+        )
+        ax.set_title(subarea, loc="left", fontsize=11)
+        ax.set_ylim(bottom=0)
+        ax.grid(axis="y", color="#E5E7EB", linewidth=0.7)
+        ax.grid(axis="x", visible=False)
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: _format_won(value)))
+        ax.tick_params(axis="both", labelsize=8)
+
+    for ax in axes_flat[len(subareas) :]:
+        ax.set_visible(False)
+    for ax in axes[-1, :]:
+        if ax.get_visible():
+            ax.set_xlabel("예산연도")
+
+    fig.suptitle("세부영역별 실질 1인당 재정대응예산 추이", y=0.985, fontsize=17)
+    fig.text(
+        0.5,
+        0.957,
+        "선=17개 시도 중앙값, 음영=지역 간 25~75% 범위·2024년 화폐가치·전체 주민등록인구 1인당",
+        ha="center",
+        fontsize=10,
+        color="#4B5563",
+    )
+    fig.text(0.015, 0.5, "실질 1인당 예산(원)", rotation=90, va="center", fontsize=11)
+    fig.tight_layout(rect=[0.025, 0.025, 1, 0.93])
+    return fig
 
 
 def plot_lag_comparison(common_t1: pd.DataFrame, common_t2: pd.DataFrame) -> plt.Figure:
@@ -166,19 +255,26 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--common", type=Path, default=DEFAULT_COMMON)
     parser.add_argument("--common-t1", type=Path, default=DEFAULT_COMMON_T1)
     parser.add_argument("--regional", type=Path, default=DEFAULT_REGIONAL)
+    parser.add_argument("--fiscal", type=Path, default=DEFAULT_FISCAL)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    if not args.common.is_file() or not args.common_t1.is_file() or not args.regional.is_file():
+    if (
+        not args.common.is_file()
+        or not args.common_t1.is_file()
+        or not args.regional.is_file()
+        or not args.fiscal.is_file()
+    ):
         raise FileNotFoundError("공통 또는 시도별 반응계수 산출물이 없습니다.")
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     common = pd.read_csv(args.common)
     common_t1 = pd.read_csv(args.common_t1)
     regional = pd.read_csv(args.regional)
+    fiscal = pd.read_csv(args.fiscal)
     comparison = common_t1[["모형", "계수", "p값", "FDR_q값", "FDR_0.05_유의"]].merge(
         common[["모형", "계수", "p값", "FDR_q값", "FDR_0.05_유의"]],
         on="모형",
@@ -194,12 +290,19 @@ def main() -> None:
     common_figure = plot_common_coefficients(common)
     regional_figure = plot_regional_coefficient_heatmap(regional)
     comparison_figure = plot_lag_comparison(common_t1, common)
+    budget_trend_figure = plot_fiscal_budget_trends(fiscal)
     save_figure(common_figure, args.output_dir / "세부영역별_공통_반응계수", formats=["png"])
     save_figure(regional_figure, args.output_dir / "시도별_반응계수_히트맵", formats=["png"])
     save_figure(comparison_figure, args.output_dir / "t+1_t+2_공통_반응계수_비교", formats=["png"])
+    save_figure(
+        budget_trend_figure,
+        args.output_dir / "세부영역별_실질1인당_예산_추이",
+        formats=["png"],
+    )
     plt.close(common_figure)
     plt.close(regional_figure)
     plt.close(comparison_figure)
+    plt.close(budget_trend_figure)
     print(f"저장: {args.output_dir}")
 
 
