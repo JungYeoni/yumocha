@@ -52,21 +52,28 @@ def run_subarea_models(
     lag_column: str,
     controls: list[str] | None = None,
     group_col: str = "세부영역",
+    transform: str = "log1p",
 ) -> pd.DataFrame:
-    """그룹(기본: 세부영역)마다 별도로 TFR ~ log1p(F_i,t-k) [+ 통제변수] 고정효과 회귀를 추정한다.
+    """그룹(기본: 세부영역)마다 TFR ~ 변환(F_i,t-k) [+ 통제변수]를 추정한다.
+
+    ``transform="log1p"``는 금액형 예산에, ``transform="identity"``는 이미
+    표준화된 재정대응지수(z-score)에 사용한다.
 
     group_col은 세부영역 대신 대영역 등 다른 그룹 단위로 동일한 회귀를 돌릴 때
     쓴다(예: scripts/run_major_category_fiscal_tfr_regression.py).
     """
     from src.modeling.fiscal_response import fit_two_way_fixed_effects, summarize_fixed_effects
 
-    predictor = f"log1p_{lag_column}"
+    if transform not in {"log1p", "identity"}:
+        raise ValueError(f"지원하지 않는 변환: {transform}")
+    predictor = f"log1p_{lag_column}" if transform == "log1p" else lag_column
     dropna_columns = [lag_column, *(controls or [])]
 
     summaries: list[dict[str, object]] = []
     for group_label, group in sample.groupby(group_col, sort=False):
         usable = group.dropna(subset=dropna_columns).copy()
-        usable[predictor] = np.log1p(usable[lag_column])
+        if transform == "log1p":
+            usable[predictor] = np.log1p(usable[lag_column])
 
         model, fitted_sample = fit_two_way_fixed_effects(
             usable,

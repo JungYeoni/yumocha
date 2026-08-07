@@ -67,6 +67,17 @@ def test_run_subarea_models_supports_two_year_lag_column():
     assert result.iloc[0]["설명변수"] == f"log1p_{LAG2_COLUMN}"
 
 
+def test_run_subarea_models_supports_standardized_index_without_log_transform():
+    rows = _synthetic_sample(1.2, "1-1. 고용여건")
+    sample = pd.DataFrame(rows)
+    sample[LAG1_COLUMN] = np.log1p(sample[LAG1_COLUMN])
+
+    result = run_subarea_models(sample, lag_column=LAG1_COLUMN, transform="identity")
+
+    assert result.iloc[0]["계수"] == pytest.approx(1.2, abs=0.03)
+    assert result.iloc[0]["설명변수"] == LAG1_COLUMN
+
+
 def test_run_subarea_models_drops_rows_with_missing_lag_predictor():
     rows = _synthetic_sample(2.0, "1-1. 고용여건")
     rows[0][LAG1_COLUMN] = None
