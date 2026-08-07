@@ -90,10 +90,9 @@ def plot_distribution(df: pd.DataFrame, cols: list[str], title: str = "분포") 
     return fig
 
 
-def plot_precomputed_correlation_heatmap(
-    corr: pd.DataFrame, title: str = "상관관계 히트맵"
-) -> plt.Figure:
-    """이미 계산된 상관행렬을 그대로 히트맵으로 그린다 — 하삼각만 표시."""
+def plot_correlation_heatmap(df: pd.DataFrame, title: str = "상관관계 히트맵") -> plt.Figure:
+    """상관관계 히트맵 — 하삼각만 표시."""
+    corr = df.select_dtypes(include=np.number).corr()
     mask = np.triu(np.ones_like(corr, dtype=bool))
     fig, ax = plt.subplots(figsize=(max(8, len(corr) * 0.8), max(6, len(corr) * 0.7)))
     sns.heatmap(
@@ -110,12 +109,6 @@ def plot_precomputed_correlation_heatmap(
     ax.set_title(title)
     plt.tight_layout()
     return fig
-
-
-def plot_correlation_heatmap(df: pd.DataFrame, title: str = "상관관계 히트맵") -> plt.Figure:
-    """상관관계 히트맵 — 하삼각만 표시."""
-    corr = df.select_dtypes(include=np.number).corr()
-    return plot_precomputed_correlation_heatmap(corr, title)
 
 
 def plot_residuals(y_true, y_pred, title: str = "잔차 진단") -> plt.Figure:
