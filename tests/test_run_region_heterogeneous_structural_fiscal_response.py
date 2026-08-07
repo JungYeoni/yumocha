@@ -74,6 +74,8 @@ def test_region_interaction_model_returns_each_region_slope():
     for region, coefficient in expected.items():
         estimated = result.loc[result["지역"].eq(region), "지역별_반응계수"].iloc[0]
         assert estimated == pytest.approx(coefficient, abs=0.03)
+    assert result[["군집표준오차", "p값", "FDR_q값"]].isna().all().all()
+    assert not result["지역군집표준오차"].any()
 
 
 def test_region_interaction_model_marks_rank_deficiency_without_forcing_coefficients():

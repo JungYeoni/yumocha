@@ -47,6 +47,14 @@ def test_build_major_category_mapping_rejects_conflicting_category():
         build_major_category_mapping(scores)
 
 
+def test_build_major_category_mapping_rejects_missing_category():
+    scores = _structural_scores()
+    scores.loc[scores["subcategory"].eq("고용여건"), "category"] = np.nan
+
+    with pytest.raises(ValueError, match="category가 없는 subcategory"):
+        build_major_category_mapping(scores)
+
+
 def test_aggregate_to_major_category_sums_lag_budget_within_category():
     category_map = {"1-1. 고용여건": "경제·고용·주거", "1-2. 주거안정성": "경제·고용·주거"}
     sample = pd.DataFrame(

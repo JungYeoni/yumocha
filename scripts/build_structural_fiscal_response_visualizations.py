@@ -175,6 +175,12 @@ def _two_way_residuals(
     values = pd.to_numeric(group[column], errors="coerce")
     if values.isna().any():
         raise ValueError(f"{column}에 비수치 또는 결측값이 있습니다.")
+    if group.duplicated([region_col, year_col]).any():
+        raise ValueError(f"{column}의 {region_col}·{year_col} 키가 중복됩니다.")
+    regions = group[region_col].nunique()
+    years = group[year_col].nunique()
+    if len(group) != regions * years:
+        raise ValueError(f"{column}의 이원 고정효과 제거에는 균형패널이 필요합니다.")
     return (
         values
         - values.groupby(group[region_col]).transform("mean")
@@ -202,6 +208,8 @@ def plot_fixed_effects_response_scatter(
             raise KeyError(f"{label} 필수 컬럼 누락: {missing}")
 
     coefficient_lookup = common.set_index("모형")
+    if not coefficient_lookup.index.is_unique:
+        raise ValueError("공통계수의 모형 값이 중복됩니다.")
     subareas = sorted(sample["세부영역"].unique())
     if set(subareas) != set(coefficient_lookup.index):
         raise ValueError("산점도 표본과 공통계수의 세부영역 구성이 다릅니다.")

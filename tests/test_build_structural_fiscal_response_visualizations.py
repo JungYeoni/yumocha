@@ -97,6 +97,39 @@ def test_plot_fixed_effects_response_scatter_draws_points_line_and_interval():
     plt.close(figure)
 
 
+def test_plot_fixed_effects_response_scatter_rejects_unbalanced_panel():
+    sample = _response_sample().drop(index=0)
+    common = pd.DataFrame(
+        {
+            "모형": ["1-1. 고용여건"],
+            "계수": [0.2],
+            "95%신뢰구간_하한": [0.1],
+            "95%신뢰구간_상한": [0.3],
+            "p값": [0.04],
+            "FDR_q값": [0.2],
+        }
+    )
+
+    with pytest.raises(ValueError, match="균형패널"):
+        plot_fixed_effects_response_scatter(sample, common)
+
+
+def test_plot_fixed_effects_response_scatter_rejects_duplicate_models():
+    common = pd.DataFrame(
+        {
+            "모형": ["1-1. 고용여건", "1-1. 고용여건"],
+            "계수": [0.2, 0.3],
+            "95%신뢰구간_하한": [0.1, 0.2],
+            "95%신뢰구간_상한": [0.3, 0.4],
+            "p값": [0.04, 0.05],
+            "FDR_q값": [0.2, 0.2],
+        }
+    )
+
+    with pytest.raises(ValueError, match="모형 값이 중복"):
+        plot_fixed_effects_response_scatter(_response_sample(), common)
+
+
 def test_t_plus_1_visualizations_use_matching_budget_columns():
     sample = _response_sample().rename(
         columns={

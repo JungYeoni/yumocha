@@ -12,7 +12,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
-from scipy import stats
 from statsmodels.stats.multitest import multipletests
 
 from scripts.build_subarea_structural_fiscal_response_sample import (
@@ -108,7 +107,7 @@ def _unidentified_rows(
             "설계행렬_계수": design_rank,
             "지역고정효과": True,
             "연도고정효과": True,
-            "지역군집표준오차": True,
+            "지역군집표준오차": False,
         }
         for region in regions
     ]
@@ -181,28 +180,15 @@ def fit_region_interaction_model(
             )
             continue
 
-        model = sm.OLS(usable[outcome].to_numpy(dtype=float), design).fit(
-            cov_type="cluster",
-            cov_kwds={"groups": usable[REGION_COL].to_numpy(), "use_correction": True},
-            use_t=True,
-        )
+        # 각 지역 기울기는 해당 지역이라는 단일 군집에서만 식별되므로 지역
+        # 군집분산으로 개별 기울기를 추론할 수 없다. 점추정만 산출한다.
+        model = sm.OLS(usable[outcome].to_numpy(dtype=float), design).fit()
         names = list(design.columns)
-        covariance = np.asarray(model.cov_params())
         parameters = np.asarray(model.params)
-        inference_df = float(getattr(model, "df_resid_inference", model.df_resid))
-        critical = float(stats.t.ppf(0.975, df=inference_df))
 
         for region in regions:
             parameter_index = names.index(slope_names[region])
             coefficient = float(parameters[parameter_index])
-            variance = float(covariance[parameter_index, parameter_index])
-            standard_error = float(np.sqrt(variance)) if variance > 0 else np.nan
-            t_value = coefficient / standard_error if np.isfinite(standard_error) else np.nan
-            p_value = (
-                float(2 * stats.t.sf(abs(t_value), df=inference_df))
-                if np.isfinite(t_value)
-                else np.nan
-            )
             results.append(
                 {
                     GROUP_COL: group_label,
@@ -213,11 +199,11 @@ def fit_region_interaction_model(
                     "추정제외사유": "",
                     "지역별_반응계수": coefficient,
                     "구조환경1점당_예산변화율_pct": float(np.expm1(coefficient) * 100),
-                    "군집표준오차": standard_error,
-                    "t값": t_value,
-                    "p값": p_value,
-                    "95%신뢰구간_하한": coefficient - critical * standard_error,
-                    "95%신뢰구간_상한": coefficient + critical * standard_error,
+                    "군집표준오차": np.nan,
+                    "t값": np.nan,
+                    "p값": np.nan,
+                    "95%신뢰구간_하한": np.nan,
+                    "95%신뢰구간_상한": np.nan,
                     "관측치": int(model.nobs),
                     "지역수": len(regions),
                     "연도수": len(years),
@@ -225,7 +211,7 @@ def fit_region_interaction_model(
                     "설계행렬_계수": design_rank,
                     "지역고정효과": True,
                     "연도고정효과": True,
-                    "지역군집표준오차": True,
+                    "지역군집표준오차": False,
                 }
             )
     result = pd.DataFrame(results)

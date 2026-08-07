@@ -26,6 +26,9 @@ def build_moving_average_sample(sample: pd.DataFrame) -> pd.DataFrame:
     panel = sample.sort_values([*KEYS, "연도"]).copy()
     if panel.duplicated([*KEYS, "연도"]).any():
         raise ValueError("지역·세부영역·연도 키 중복")
+    year_gaps = panel.groupby(KEYS, sort=False)["연도"].diff().dropna().ne(1)
+    if year_gaps.any():
+        raise ValueError("3개년 이동평균과 후행 TFR 생성에는 그룹별 연속 연도가 필요합니다.")
     grouped = panel.groupby(KEYS, sort=False)
     panel[MA3] = grouped[BUDGET].transform(lambda x: x.rolling(3, min_periods=3).mean())
     panel["합계출산율_t+1"] = grouped["합계출산율"].shift(-1)
@@ -59,7 +62,10 @@ def main() -> None:
         # 기존 동년 TFR 대신 후행 TFR을 종속변수로 사용한다.
         model_sample["합계출산율"] = sample[f"합계출산율_t+{lag}"]
         model_sample = model_sample.dropna(subset=["합계출산율", MA3])
-        result = add_bh_correction(run_subarea_models(model_sample, lag_column=MA3))
+        raw_result = run_subarea_models(model_sample, lag_column=MA3)
+        if len(raw_result) != 11 or raw_result["모형"].nunique() != 11:
+            raise ValueError("BH 보정에는 중복 없는 11개 세부영역 회귀 결과가 필요합니다.")
+        result = add_bh_correction(raw_result)
         result.insert(0, "모형버전", f"3개년평균_t+{lag}")
         tables.append(result)
     combined = pd.concat(tables, ignore_index=True)

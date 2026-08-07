@@ -29,3 +29,18 @@ def test_add_bh_correction_adds_adjusted_results():
     result = add_bh_correction(pd.DataFrame({"p값": [0.001, 0.2, 0.8]}))
     assert list(result.columns[-2:]) == ["FDR_q값", "FDR_0.05_유의"]
     assert bool(result.loc[0, "FDR_0.05_유의"])
+
+
+def test_build_moving_average_sample_rejects_year_gap():
+    sample = pd.DataFrame(
+        {
+            "지역": ["서울"] * 4,
+            "세부영역": ["돌봄"] * 4,
+            "연도": [2016, 2017, 2019, 2020],
+            "인구1인당_실질예산_원": [10, 20, 30, 40],
+            "합계출산율": [1.0, 1.1, 1.2, 1.3],
+        }
+    )
+
+    with pytest.raises(ValueError, match="연속 연도"):
+        build_moving_average_sample(sample)
