@@ -52,3 +52,19 @@ def test_build_cluster_trends_does_not_turn_missing_moving_average_into_zero() -
     assignments = pd.DataFrame({"region": ["가"], "군집_2개": [1]})
     result = build_cluster_trends(sample, assignments)
     assert result["연도"].tolist() == [2018]
+
+
+def test_build_cluster_trends_excludes_partial_subarea_budget() -> None:
+    sample = pd.DataFrame(
+        {
+            "지역": ["가", "가", "가", "가"],
+            "연도": [2020, 2020, 2021, 2021],
+            "세부영역": ["A", "B", "A", "B"],
+            "인구1인당_실질예산_3개년평균": [10.0, float("nan"), 30.0, 40.0],
+            "합계출산율": [1.0, 1.0, 0.9, 0.9],
+        }
+    )
+    assignments = pd.DataFrame({"region": ["가"], "군집_2개": [1]})
+    result = build_cluster_trends(sample, assignments)
+    assert result["연도"].tolist() == [2021]
+    assert result.loc[0, "실질_1인당_3개년평균예산"] == 70.0

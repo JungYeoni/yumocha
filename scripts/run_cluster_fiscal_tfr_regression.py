@@ -71,18 +71,15 @@ def run_subgroup_models(sample: pd.DataFrame, cluster_count: int = 2) -> pd.Data
             subset = subset.dropna(subset=["합계출산율", BUDGET])
             region_count = subset["지역"].nunique()
             if region_count < 3:
-                unavailable = pd.DataFrame(
-                    {
-                        "모형": list(dict.fromkeys(sample["세부영역"])),
-                        "계수": np.nan,
-                        "p값": np.nan,
-                        "관측치": len(subset) // sample["세부영역"].nunique(),
-                        "지역수": region_count,
-                        "연도수": subset["연도"].nunique(),
-                        "추정가능": False,
-                        "추정불가사유": "시도 군집표준오차 산출에 필요한 독립 지역 수 부족",
-                    }
-                )
+                counts = subset.groupby("세부영역").size()
+                unavailable = pd.DataFrame({"모형": list(dict.fromkeys(sample["세부영역"]))})
+                unavailable["계수"] = np.nan
+                unavailable["p값"] = np.nan
+                unavailable["관측치"] = unavailable["모형"].map(counts).fillna(0).astype(int)
+                unavailable["지역수"] = region_count
+                unavailable["연도수"] = subset["연도"].nunique()
+                unavailable["추정가능"] = False
+                unavailable["추정불가사유"] = "시도 군집표준오차 산출에 필요한 독립 지역 수 부족"
                 unavailable.insert(0, "군집", cluster_id)
                 unavailable.insert(0, "시차", f"t+{lag}")
                 tables.append(unavailable)
@@ -111,30 +108,11 @@ def _coefficient_contrast(
     standard_error = float(np.sqrt(max(variance, 0.0)))
     degrees = float(getattr(model, "df_resid_inference", model.df_resid))
     critical = float(stats.t.ppf(0.975, degrees))
-    p_value = float(2 * stats.t.sf(abs(coefficient / standard_error), degrees))
-    return (
-        coefficient,
-        standard_error,
-        p_value,
-        coefficient - critical * standard_error,
-        coefficient + critical * standard_error,
+    p_value = (
+        float(2 * stats.t.sf(abs(coefficient / standard_error), degrees))
+        if standard_error > 0
+        else float("nan")
     )
-
-
-def _linear_combination(model, first: str, second: str) -> tuple[float, float, float, float, float]:
-    names = list(model.model.exog_names)
-    first_index, second_index = names.index(first), names.index(second)
-    coefficient = float(model.params.iloc[first_index] + model.params.iloc[second_index])
-    covariance = np.asarray(model.cov_params())
-    variance = (
-        covariance[first_index, first_index]
-        + covariance[second_index, second_index]
-        + 2 * covariance[first_index, second_index]
-    )
-    standard_error = float(np.sqrt(variance))
-    degrees = float(getattr(model, "df_resid_inference", model.df_resid))
-    critical = float(stats.t.ppf(0.975, degrees))
-    p_value = float(2 * stats.t.sf(abs(coefficient / standard_error), degrees))
     return (
         coefficient,
         standard_error,
@@ -151,6 +129,20 @@ def run_interaction_models(sample: pd.DataFrame) -> pd.DataFrame:
         outcome = f"합계출산율_t+{lag}"
         for subarea, group in sample.groupby("세부영역", sort=False):
             usable = group.dropna(subset=[outcome, BUDGET]).copy()
+            if set(usable["군집_2개"].unique()) != {1, 2}:
+                rows.append(
+                    {
+                        "시차": f"t+{lag}",
+                        "세부영역": subarea,
+                        "군집간_차이_p값": np.nan,
+                        "추정가능": False,
+                        "추정불가사유": "세부영역 회귀표본에 2개 군집이 모두 존재하지 않음",
+                        "관측치": len(usable),
+                        "지역수": usable["지역"].nunique(),
+                        "연도수": usable["연도"].nunique(),
+                    }
+                )
+                continue
             usable[PREDICTOR] = np.log1p(usable[BUDGET])
             usable[INTERACTION] = usable[PREDICTOR] * usable["군집_2개"].eq(2).astype(int)
             model, fitted = fit_two_way_fixed_effects(
@@ -159,25 +151,20 @@ def run_interaction_models(sample: pd.DataFrame) -> pd.DataFrame:
                 predictor=PREDICTOR,
                 controls=[INTERACTION],
             )
-            names = list(model.model.exog_names)
-            beta_index, delta_index = names.index(PREDICTOR), names.index(INTERACTION)
-            covariance = np.asarray(model.cov_params())
-            degrees = float(getattr(model, "df_resid_inference", model.df_resid))
-            critical = float(stats.t.ppf(0.975, degrees))
-            beta1 = float(model.params.iloc[beta_index])
-            se1 = float(np.sqrt(covariance[beta_index, beta_index]))
-            delta = float(model.params.iloc[delta_index])
-            se_delta = float(np.sqrt(covariance[delta_index, delta_index]))
-            p_delta = float(2 * stats.t.sf(abs(delta / se_delta), degrees))
-            beta2, se2, p2, lower2, upper2 = _linear_combination(model, PREDICTOR, INTERACTION)
+            beta1, se1, p1, lower1, upper1 = _coefficient_contrast(model, {PREDICTOR: 1.0})
+            delta, se_delta, p_delta, _, _ = _coefficient_contrast(model, {INTERACTION: 1.0})
+            beta2, se2, p2, lower2, upper2 = _coefficient_contrast(
+                model, {PREDICTOR: 1.0, INTERACTION: 1.0}
+            )
             rows.append(
                 {
                     "시차": f"t+{lag}",
                     "세부영역": subarea,
                     "군집1_계수": beta1,
                     "군집1_군집표준오차": se1,
-                    "군집1_95%신뢰구간_하한": beta1 - critical * se1,
-                    "군집1_95%신뢰구간_상한": beta1 + critical * se1,
+                    "군집1_p값": p1,
+                    "군집1_95%신뢰구간_하한": lower1,
+                    "군집1_95%신뢰구간_상한": upper1,
                     "군집2_계수": beta2,
                     "군집2_군집표준오차": se2,
                     "군집2_p값": p2,
@@ -189,6 +176,8 @@ def run_interaction_models(sample: pd.DataFrame) -> pd.DataFrame:
                     "관측치": int(model.nobs),
                     "지역수": int(fitted["지역"].nunique()),
                     "연도수": int(fitted["연도"].nunique()),
+                    "추정가능": True,
+                    "추정불가사유": "",
                 }
             )
     return add_bh(pd.DataFrame(rows), ["시차"], p_column="군집간_차이_p값")
@@ -205,6 +194,34 @@ def run_three_cluster_interaction_models(
         outcome = f"합계출산율_t+{lag}"
         for subarea, group in sample.groupby("세부영역", sort=False):
             usable = group.dropna(subset=[outcome, BUDGET]).copy()
+            if set(usable["군집_3개"].unique()) != {1, 2, 3}:
+                reason = "세부영역 회귀표본에 3개 군집이 모두 존재하지 않음"
+                for cluster_id in (1, 2, 3):
+                    coefficient_rows.append(
+                        {
+                            "시차": f"t+{lag}",
+                            "세부영역": subarea,
+                            "군집": cluster_id,
+                            "p값": np.nan,
+                            "추정가능": False,
+                            "추정불가사유": reason,
+                            "관측치": len(usable),
+                            "지역수": usable["지역"].nunique(),
+                            "연도수": usable["연도"].nunique(),
+                        }
+                    )
+                for first, second in ((1, 2), (1, 3), (2, 3)):
+                    contrast_rows.append(
+                        {
+                            "시차": f"t+{lag}",
+                            "세부영역": subarea,
+                            "군집쌍": f"{second}-{first}",
+                            "p값": np.nan,
+                            "추정가능": False,
+                            "추정불가사유": reason,
+                        }
+                    )
+                continue
             usable[PREDICTOR] = np.log1p(usable[BUDGET])
             for cluster_id, interaction_name in interaction_names.items():
                 usable[interaction_name] = usable[PREDICTOR] * usable["군집_3개"].eq(
@@ -236,6 +253,8 @@ def run_three_cluster_interaction_models(
                         "관측치": int(model.nobs),
                         "지역수": int(fitted["지역"].nunique()),
                         "연도수": int(fitted["연도"].nunique()),
+                        "추정가능": True,
+                        "추정불가사유": "",
                     }
                 )
             for first, second in ((1, 2), (1, 3), (2, 3)):
@@ -253,6 +272,8 @@ def run_three_cluster_interaction_models(
                         "p값": p_value,
                         "95%신뢰구간_하한": lower,
                         "95%신뢰구간_상한": upper,
+                        "추정가능": True,
+                        "추정불가사유": "",
                     }
                 )
     coefficients = add_bh(pd.DataFrame(coefficient_rows), ["시차", "군집"])

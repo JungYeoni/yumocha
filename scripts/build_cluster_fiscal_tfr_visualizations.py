@@ -116,7 +116,11 @@ def build_cluster_trends(sample: pd.DataFrame, assignments: pd.DataFrame) -> pd.
     merged = sample.merge(mapping, on="지역", how="left", validate="many_to_one")
     if merged["군집_2개"].isna().any():
         raise ValueError("회귀표본에 군집 배정이 없는 지역이 있습니다.")
-    valid_budget = merged.dropna(subset=["인구1인당_실질예산_3개년평균"])
+    expected_subareas = sample["세부영역"].nunique()
+    observed_subareas = merged.groupby(["지역", "연도"])["인구1인당_실질예산_3개년평균"].transform(
+        "count"
+    )
+    valid_budget = merged.loc[observed_subareas.eq(expected_subareas)].copy()
     region_year = valid_budget.groupby(["지역", "연도", "군집_2개"], as_index=False).agg(
         실질_1인당_3개년평균예산=("인구1인당_실질예산_3개년평균", "sum"),
         합계출산율=("합계출산율", "first"),
