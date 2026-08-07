@@ -89,6 +89,98 @@ def test_deflate_structural_cost_indicators_rejects_invalid_cpi_metadata(
         deflate_structural_cost_indicators(panel, cpi, base_value=base_value)
 
 
+@pytest.mark.parametrize("method", ["pooled", "yearly"])
+def test_final_index_is_invariant_to_cpi_base_year_choice(method: str):
+    """CPI 기준연도(2020=100 vs 2024=100)를 바꿔도 최종 구조환경지수는 동일해야 한다.
+
+    실질값 = 명목값 × base_value / CPI_연도 이므로, 기준연도만 바뀌는 건 모든
+    연도의 실질값에 같은 상수(여기선 1.2)를 곱하는 것과 수학적으로 동치다.
+    최종 점수는 min-max(그룹 범위로 정규화)이므로 상수가 분자·분모에서 약분돼
+    결과가 똑같아야 한다(z-score는 진단용으로만 유지되며 최종 점수엔 안 쓰인다,
+    standardize_structural_indicators 참고) — 이슈 #96(구조환경지수 CPI 기준연도
+    통일)의 핵심 근거를 비용지표(housing_price)와 비대상지표(y)가 섞인 패널로,
+    pooled·yearly 두 표준화 시나리오 모두에서 직접 검증한다.
+    """
+    panel = pd.DataFrame(
+        [
+            {
+                "region": region,
+                "year": year,
+                "indicator_id": indicator_id,
+                "category": "cat",
+                "subcategory": "sub",
+                "direction": "positive",
+                "value": value,
+            }
+            for region, year, indicator_id, value in [
+                ("A", 2016, "housing_price", 100.0),
+                ("A", 2017, "housing_price", 110.0),
+                ("B", 2016, "housing_price", 200.0),
+                ("B", 2017, "housing_price", 220.0),
+                ("전국", 2016, "housing_price", 150.0),
+                ("전국", 2017, "housing_price", 165.0),
+                ("A", 2016, "y", 1.0),
+                ("A", 2017, "y", 2.0),
+                ("B", 2016, "y", 3.0),
+                ("B", 2017, "y", 4.0),
+                ("전국", 2016, "y", 2.0),
+                ("전국", 2017, "y", 3.0),
+            ]
+        ]
+    )
+    # cpi_2024는 cpi_2020에 상수 1.2를 곱한 것 — build_cpi_2024_base.py의 재기준화와
+    # 같은 종류의 변환(같은 연도간 비율 보존, 절대 수준만 바뀜).
+    cpi_2020 = pd.DataFrame(
+        {"연도": [2016, 2017], "소비자물가지수": [90.0, 95.0], "기준연도": ["2020=100", "2020=100"]}
+    )
+    cpi_2024 = pd.DataFrame(
+        {
+            "연도": [2016, 2017],
+            "소비자물가지수": [108.0, 114.0],
+            "기준연도": ["2024=100", "2024=100"],
+        }
+    )
+    weights = pd.DataFrame([{"id": "housing_price", "weight": 0.6}, {"id": "y", "weight": 0.4}])
+
+    def run(cpi: pd.DataFrame) -> tuple[pd.DataFrame, StructuralIndexResult]:
+        deflated = deflate_structural_cost_indicators(panel, cpi)
+        standardized = standardize_structural_indicators(
+            deflated,
+            method=method,
+            expected_regions=["A", "B"],
+            expected_years=[2016, 2017],
+            expected_indicator_ids=["housing_price", "y"],
+        )
+        return deflated, compute_structural_index(standardized, weights)
+
+    deflated_2020, result_2020 = run(cpi_2020)
+    deflated_2024, result_2024 = run(cpi_2024)
+
+    # 전제 확인: 실질값 자체는 실제로 달라져야 한다(안 달라지면 이 테스트가 아무것도
+    # 검증하지 못하는 것이므로).
+    housing = deflated_2020["indicator_id"].eq("housing_price")
+    assert not np.allclose(deflated_2020.loc[housing, "value"], deflated_2024.loc[housing, "value"])
+    assert np.allclose(
+        deflated_2020.loc[housing, "value"] / 1.2, deflated_2024.loc[housing, "value"]
+    )
+    non_cost = deflated_2020["indicator_id"].eq("y")
+    assert np.allclose(deflated_2020.loc[non_cost, "value"], deflated_2024.loc[non_cost, "value"])
+
+    # 핵심 주장: 최종지수·순위는 기준연도와 무관하게 동일해야 한다. validate로 두
+    # 결과의 (region, year) 키 집합이 정확히 1:1로 맞아떨어지는지도 함께 확인한다
+    # — 안 그러면 한쪽에 행이 빠지거나 중복돼도 merge가 조용히 그 행만 비교에서
+    # 빼버려 회귀를 놓칠 수 있다.
+    merged = result_2020.final_index.merge(
+        result_2024.final_index,
+        on=["region", "year"],
+        suffixes=("_2020", "_2024"),
+        validate="one_to_one",
+    )
+    assert len(merged) == len(result_2020.final_index) == len(result_2024.final_index)
+    assert np.allclose(merged["final_index_2020"], merged["final_index_2024"], atol=1e-9)
+    assert (merged["rank_2020"] == merged["rank_2024"]).all()
+
+
 def test_processed_panel_adapter_and_scenarios_allow_nationwide_only_missing():
     rows = []
     for region, values in (("A", (1.0, 10.0)), ("B", (3.0, 30.0)), ("전국", (None, 20.0))):
