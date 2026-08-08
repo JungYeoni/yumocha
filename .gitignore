@@ -64,6 +64,8 @@ reports/figures/*
 !reports/figures/budget_composition/**
 !reports/figures/final_analysis/
 !reports/figures/final_analysis/**
+!reports/figures/change_responsiveness/
+!reports/figures/change_responsiveness/**
 
 # 노트북 체크포인트
 .ipynb_checkpoints/
