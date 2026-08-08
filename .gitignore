@@ -55,7 +55,9 @@ mlruns/
 
 # 결과 / 산출물
 results/
-reports/figures/
+reports/figures/*
+!reports/figures/cluster_fiscal_tfr/
+!reports/figures/cluster_fiscal_tfr/**
 
 # 노트북 체크포인트
 .ipynb_checkpoints/
