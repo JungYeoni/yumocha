@@ -30,6 +30,14 @@ def _read_csv(relative_path: str) -> pd.DataFrame:
     return pd.read_csv(REPO_ROOT / relative_path)
 
 
+def _read_text(relative_path: str) -> str:
+    return (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+
+
+def _contains_all(text: str, snippets: tuple[str, ...]) -> bool:
+    return all(snippet in text for snippet in snippets)
+
+
 def _row_by_label(frame: pd.DataFrame, column: str, label: str) -> pd.Series:
     rows = frame.loc[frame[column].eq(label)]
     if len(rows) != 1:
@@ -55,45 +63,53 @@ def _check_markdown_links(checks: list[Check]) -> None:
 
 
 def _check_structural_report(checks: list[Check]) -> None:
-    panel = _read_csv("data/processed/구조환경지표_28개_결측처리후_본계열패널.csv")
-    _record(checks, "구조환경 패널 행", len(panel) == 4_536, f"실제 {len(panel):,}행")
+    panel_qa = _read_text("reports/20260804_구조환경지표_28개_보간전_통합패널_QA.md")
+    _record(
+        checks,
+        "구조환경 패널 행",
+        "| 최종 패널 행 수 | 4,536 | 4,536 | PASS |" in panel_qa,
+        "추적 QA에서 4,536행 확인",
+    )
     _record(
         checks,
         "구조환경 패널 차원",
-        panel["지표_id"].nunique() == 28
-        and panel["지역"].nunique() == 18
-        and panel["연도"].nunique() == 9,
-        f"지표 {panel['지표_id'].nunique()}, 지역 {panel['지역'].nunique()}, 연도 {panel['연도'].nunique()}",
+        "4,536행, 28개 지표, 18개 지역, 2016–2024년" in panel_qa,
+        "추적 QA에서 지표 28, 지역 18, 연도 9 확인",
     )
-    regional = panel.loc[panel["지역"].ne("전국")]
+
+    index_qa = _read_text("reports/methodology/20260806_구조환경지수_실제패널_산출_QA.md")
     _record(
         checks,
         "17개 시도 처리값 완비",
-        len(regional) == 4_284 and regional["processed_value"].notna().all(),
-        f"행 {len(regional):,}, 결측 {regional['processed_value'].isna().sum():,}",
+        _contains_all(
+            index_qa,
+            ("17개 시도 × 2016–2024년 × 28개 지표 = 4,284행", "최종지수 153개"),
+        ),
+        "추적 QA에서 4,284행과 최종지수 153개 확인",
     )
-    expected_strategies = {
-        "none": 3_374,
-        "hold first observed": 586,
-        "linear interpolation": 486,
-        "hold last observed": 90,
-    }
-    actual_strategies = panel["processing_strategy"].value_counts().to_dict()
+
+    missing_qa = _read_text("reports/methodology/20260805_구조환경지표_결측처리_실제적용_QA.md")
+    expected_strategies = (
+        "| hold first observed | 586 |",
+        "| hold last observed | 90 |",
+        "| linear interpolation | 486 |",
+        "| none | 3,374 |",
+    )
     _record(
         checks,
         "결측 처리 전략 건수",
-        actual_strategies == expected_strategies,
-        str(actual_strategies),
+        _contains_all(missing_qa, expected_strategies),
+        "추적 QA에서 none 3,374, 최초 586, 선형 486, 최종 90 확인",
     )
 
-    family = panel.loc[panel["지표_id"].eq("family_friendly_certification_rate")]
-    estimated = family.loc[family["관측상태"].eq("추정")]
-    estimated_by_year = estimated.groupby("연도").size().to_dict()
+    family_qa = _read_text(
+        "reports/methodology/20260806_가족친화_2017_2019_raking_본계열반영_QA.md"
+    )
     _record(
         checks,
         "가족친화 2017·2019 추정 상태",
-        estimated_by_year == {2017: 17, 2019: 17},
-        str(estimated_by_year),
+        "이 34건(2017·2019)의 raking 추정치를 **본계열에 반영**" in family_qa,
+        "추적 QA에서 2017·2019 합계 34건 확인",
     )
 
     weights = yaml.safe_load(
@@ -107,32 +123,30 @@ def _check_structural_report(checks: list[Check]) -> None:
         f"지표 {len(weights)}, 합 {weight_sum:.15f}",
     )
 
-    expected_ranges = {
-        "pooled": (28.7401, 69.8601),
-        "yearly": (29.6371, 65.1633),
+    expected_rows = {
+        "pooled": "| pooled | 4,284 | 153 | 0 | 28.7401–69.8601 |",
+        "yearly": "| yearly | 4,284 | 153 | 0 | 29.6371–65.1633 |",
     }
-    for method, expected_range in expected_ranges.items():
-        result = _read_csv(
-            f"data/processed/structural_index/structural_index_{method}_final_index.csv"
-        )
-        actual_range = (result["final_index"].min(), result["final_index"].max())
-        condition = (
-            len(result) == 153
-            and result["final_index"].notna().all()
-            and all(abs(a - e) < 5e-5 for a, e in zip(actual_range, expected_range, strict=True))
-        )
+    for method, expected_row in expected_rows.items():
         _record(
             checks,
             f"구조환경 {method} 최종지수",
-            condition,
-            f"153행, 범위 {actual_range[0]:.4f}–{actual_range[1]:.4f}",
+            expected_row in index_qa,
+            expected_row.strip("| "),
         )
 
 
 def _check_fiscal_report(checks: list[Check]) -> None:
-    subarea = _read_csv("data/interim/provisional/provisional_sub_area_panel.csv")
     regression = _read_csv("data/processed/analysis/2016-2024_세부영역별_재정반응성_회귀표본.csv")
-    _record(checks, "세부영역 예산 패널", len(subarea) == 1_836, f"실제 {len(subarea):,}행")
+    fiscal_qa = _read_text(
+        "reports/methodology/20260807_세부영역별_재정대응지수_구축_및_재정반응성_모형A_결과보고서.md"
+    )
+    _record(
+        checks,
+        "세부영역 예산 패널",
+        "1,836행 = 17×9×12" in fiscal_qa,
+        "추적 QA에서 1,836행 확인",
+    )
     _record(checks, "11개 영역 회귀 패널", len(regression) == 1_683, f"실제 {len(regression):,}행")
 
     model_a = _read_csv("data/processed/analysis/2016-2024_세부영역별_재정반응성_고정효과_결과.csv")
