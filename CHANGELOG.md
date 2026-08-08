@@ -77,6 +77,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([4b8ae5b](https://github.com/JungYeoni/da-template/commit/4b8ae5b235b334344c2aec80a454f748d57030c2))
 - 변화량 기반 재정대응성 결과 시각화와 보고서 추가 (#108) ([cc37a41](https://github.com/JungYeoni/da-template/commit/cc37a418d03114d5a954464279563524563b5047))
 - CHANGELOG 자동 업데이트 [skip ci] ([5d02142](https://github.com/JungYeoni/da-template/commit/5d0214270c2d08bf64cf9cd8f4380b8c181f63fb))
 - CHANGELOG 자동 업데이트 [skip ci] ([d4e1fd0](https://github.com/JungYeoni/da-template/commit/d4e1fd0903a76be92f2ee3dffe973d24842169dd))
@@ -330,6 +331,7 @@
 
 ### 새 기능
 
+- 구조환경 군집별 전체예산과 후행 TFR 관계 분석 (#110) ([b597c6b](https://github.com/JungYeoni/da-template/commit/b597c6bed1cbc06d2ef8613d8c32fa5693cc338a))
 - 구조환경 변화와 예산비중 대응성 분석 추가 (#108) ([765e146](https://github.com/JungYeoni/da-template/commit/765e14618589d8064c89270b3b26d264333b6256))
 - 구조환경 재정대응 TFR 시각화 보강 (#107) ([04888c4](https://github.com/JungYeoni/da-template/commit/04888c4be745595fbc769759558b038d485b2a21))
 - 영역별 계획예산 구성 시각화 추가 (#107) ([498b0cf](https://github.com/JungYeoni/da-template/commit/498b0cf99f4a6dcc7fa7b467b4d71cdb60f30fdc))
