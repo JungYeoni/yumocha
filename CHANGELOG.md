@@ -77,6 +77,8 @@
 
 ### 문서
 
+- 군집 분석 재현성 정보와 검증 보강 (#103) ([845f0b4](https://github.com/JungYeoni/da-template/commit/845f0b4ecbb33a5646888b1541d2bae40d50330e))
+- CHANGELOG 자동 업데이트 [skip ci] ([c7d2425](https://github.com/JungYeoni/da-template/commit/c7d2425687961517450ec88e7cf06e0e4bb821ae))
 - 재정반응성의 역인과성 해석 명확화 (#102) ([edae711](https://github.com/JungYeoni/da-template/commit/edae711dec134abfadeacb7bc6eec3b58b0d8588))
 - TFR 회귀 결과와 대영역 보조분석 정리 (#98) ([9903e8b](https://github.com/JungYeoni/da-template/commit/9903e8bc16043f79e5618c5f40a91a69129ea8b6))
 - CHANGELOG 자동 업데이트 [skip ci] ([2b7c9dc](https://github.com/JungYeoni/da-template/commit/2b7c9dc726441ba64cfa435aae9111f826e810d8))
@@ -218,6 +220,7 @@
 
 ### 버그 수정
 
+- 군집별 회귀 분석 검증 보강 (#103) ([9e45389](https://github.com/JungYeoni/da-template/commit/9e45389c8f672cec4efdf417d1f8b5486a750bce))
 - CodeRabbit 리뷰의 분석 검증 보강 (#98) ([4f0c101](https://github.com/JungYeoni/da-template/commit/4f0c101f10a22cc64ec48212cc3120699ab85a9b))
 - CodeRabbit PR #104 리뷰 반영 (#98) ([b4e7d69](https://github.com/JungYeoni/da-template/commit/b4e7d69ff5380f90fbfb50f01cbb7f2badf1a9f3))
 - 보고서 기본/민감도 라벨을 팀 결정(예산액 기준)에 맞게 정정 (#98) ([b7ed3c5](https://github.com/JungYeoni/da-template/commit/b7ed3c59db6cc7590a6fd5b2763bbd5a6a6ec1c0))
@@ -323,6 +326,8 @@
 
 ### 새 기능
 
+- 3개 군집 탐색계수와 추세 시각화 추가 (#103) ([ac3a9b2](https://github.com/JungYeoni/da-template/commit/ac3a9b22fa31606e86831a7f13884a4a54ec5346))
+- 구조환경 유형별 예산 TFR 관계 분석 (#103) ([a453cd9](https://github.com/JungYeoni/da-template/commit/a453cd92a1e9167fffe79eb75cb23ae97c313b5e))
 - 돌봄예산 TFR 관계 검증 시각화 추가 (#98) ([d24d995](https://github.com/JungYeoni/da-template/commit/d24d9956cea95956da210db7efd2d81d68f05ba7))
 - 3개년 이동평균 재정대응예산 TFR 분석 추가 (#98) ([7fbfb1b](https://github.com/JungYeoni/da-template/commit/7fbfb1b6fd0a87757addbea009d5456edb1d84f6))
 - 구조환경과 후행예산 관계 시각화 추가 (#102) ([0795f1e](https://github.com/JungYeoni/da-template/commit/0795f1edba9608c7b48ac682e8b0ee1ec5676643))
