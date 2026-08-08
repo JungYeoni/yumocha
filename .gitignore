@@ -36,6 +36,8 @@ data/processed/*
 !data/processed/analysis/
 !data/processed/analysis/*.csv
 !data/processed/analysis/README.md
+!data/processed/analysis/keyword_tfidf/
+!data/processed/analysis/keyword_tfidf/**
 data/processed/analysis/2016-2024_지역별고용조사_청년층_정규직_근로자_비율.csv
 
 # 로컬 라벨 검토 원본
@@ -70,6 +72,8 @@ reports/figures/*
 !reports/figures/cluster_total_fiscal_tfr/**
 !reports/figures/decline_budget_share_response/
 !reports/figures/decline_budget_share_response/**
+!reports/figures/keyword_tfidf/
+!reports/figures/keyword_tfidf/**
 
 # 노트북 체크포인트
 .ipynb_checkpoints/
