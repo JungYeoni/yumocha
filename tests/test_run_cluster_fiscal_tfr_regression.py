@@ -116,15 +116,17 @@ def test_two_region_subgroup_returns_coefficients_without_inference():
 def test_interaction_model_records_missing_cluster_diagnostic():
     sample = pd.DataFrame(
         {
-            "지역": ["가", "나"],
-            "연도": [2020, 2020],
-            "세부영역": ["A", "A"],
-            "군집_2개": [1, 1],
-            "합계출산율_t+1": [1.0, 1.1],
-            "합계출산율_t+2": [0.9, 1.0],
-            "인구1인당_실질예산_3개년평균": [10.0, 20.0],
+            "지역": ["가", "나", "가", "나"],
+            "연도": [2020, 2020, 2020, 2020],
+            "세부영역": ["A", "A", "B", "B"],
+            "군집_2개": [1, 1, 1, 1],
+            "합계출산율_t+1": [1.0, 1.1, 1.0, 1.1],
+            "합계출산율_t+2": [0.9, 1.0, 0.9, 1.0],
+            "인구1인당_실질예산_3개년평균": [10.0, 20.0, 30.0, 40.0],
         }
     )
     result = run_interaction_models(sample)
+    assert len(result) == 4
+    assert result["시차"].value_counts().to_dict() == {"t+1": 2, "t+2": 2}
     assert (~result["추정가능"]).all()
     assert result["추정불가사유"].str.contains("2개 군집").all()
