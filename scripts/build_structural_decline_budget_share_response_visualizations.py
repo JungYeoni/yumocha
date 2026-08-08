@@ -20,6 +20,8 @@ DEFAULT_OUTPUT_DIR = REPO_ROOT / "reports/figures/decline_budget_share_response"
 STRUCTURAL_CHANGE = "구조환경지수_변화_t_t1"
 BUDGET_SHARE_CHANGE = "계획예산비중_변화_t2_t3_pp"
 
+np.random.seed(42)
+
 
 def subarea_sort_key(label: object) -> tuple[int, int, str]:
     """`대영역-세부영역` 번호 순으로 세부영역을 정렬한다."""
@@ -53,7 +55,14 @@ def validate_sample(sample: pd.DataFrame) -> None:
 
 def build_decline_events(sample: pd.DataFrame) -> pd.DataFrame:
     """구조환경이 하락한 관측치만 남기고 후행 예산비중 증가 여부를 표시한다."""
+    # #108의 전체 변화량 표본은 재사용하되, `src/features/`·`notebooks/`·
+    # `reports/`에는 하락 사건만의 후행 증가 여부를 분류한 기존 구현이 없어 여기서 파생한다.
     decline = sample.loc[sample[STRUCTURAL_CHANGE].lt(0)].copy()
+    decline["지역"] = pd.Categorical(
+        decline["지역"],
+        categories=list(dict.fromkeys(sample["지역"])),
+        ordered=True,
+    )
     decline["세부영역"] = pd.Categorical(
         decline["세부영역"],
         categories=list(dict.fromkeys(sample["세부영역"])),
@@ -114,16 +123,16 @@ def summarize_region_subarea(decline: pd.DataFrame) -> pd.DataFrame:
 
 def plot_subarea_response(summary: pd.DataFrame) -> plt.Figure:
     """세부영역별 구조환경 하락 후 예산비중 증가 비율을 비교한다."""
-    plot = summary.assign(표시비율=summary["후행예산비중_증가비율_pct"].fillna(-1))
-    plot = plot.sort_values("표시비율", ascending=True)
-    plot["표시비율"] = plot["표시비율"].clip(lower=0)
+    plot = summary.sort_values("후행예산비중_증가비율_pct", ascending=True).reset_index(drop=True)
+    positions = np.arange(len(plot))
+    valid = plot["구조환경_하락사례수"].gt(0)
     fig, ax = plt.subplots(figsize=(11, 7.2))
     bars = ax.barh(
-        plot["세부영역"],
-        plot["표시비율"],
+        positions[valid],
+        plot.loc[valid, "후행예산비중_증가비율_pct"],
         color=YOMOCHA_WEB_COLORS["accent"],
     )
-    for bar, (_, row) in zip(bars, plot.iterrows(), strict=True):
+    for bar, (_, row) in zip(bars, plot.loc[valid].iterrows(), strict=True):
         ax.text(
             min(bar.get_width() + 1.2, 98),
             bar.get_y() + bar.get_height() / 2,
@@ -131,6 +140,9 @@ def plot_subarea_response(summary: pd.DataFrame) -> plt.Figure:
             va="center",
             fontsize=9,
         )
+    for position in positions[~valid]:
+        ax.text(1.2, position, "— (0/0)", va="center", fontsize=9, color="#6B7280")
+    ax.set_yticks(positions, labels=plot["세부영역"])
     ax.set_xlim(0, 105)
     ax.set_xlabel("구조환경 하락 사례 중 후행 예산비중 증가 비율(%)")
     ax.set_ylabel("")
