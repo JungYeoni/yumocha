@@ -77,6 +77,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([f9c91de](https://github.com/JungYeoni/da-template/commit/f9c91dec85d79f70e770e028b5d03599f9c63fa6))
 - CHANGELOG 자동 업데이트 [skip ci] ([4b8ae5b](https://github.com/JungYeoni/da-template/commit/4b8ae5b235b334344c2aec80a454f748d57030c2))
 - 변화량 기반 재정대응성 결과 시각화와 보고서 추가 (#108) ([cc37a41](https://github.com/JungYeoni/da-template/commit/cc37a418d03114d5a954464279563524563b5047))
 - CHANGELOG 자동 업데이트 [skip ci] ([5d02142](https://github.com/JungYeoni/da-template/commit/5d0214270c2d08bf64cf9cd8f4380b8c181f63fb))
@@ -224,6 +225,7 @@
 
 ### 버그 수정
 
+- 구조환경 하락 시각화의 무사례 표기 보완 (#114) ([15a17f1](https://github.com/JungYeoni/da-template/commit/15a17f1c79d20b74dcdce7b0abbb0dfaa2840bf6))
 - 시각화 입력 검증과 재현성 정보 보강 (#107) ([e937dde](https://github.com/JungYeoni/da-template/commit/e937dde8e6600d2ed335de084d651ae35fd2cf3e))
 - 군집별 회귀 분석 검증 보강 (#103) ([9e45389](https://github.com/JungYeoni/da-template/commit/9e45389c8f672cec4efdf417d1f8b5486a750bce))
 - CodeRabbit 리뷰의 분석 검증 보강 (#98) ([4f0c101](https://github.com/JungYeoni/da-template/commit/4f0c101f10a22cc64ec48212cc3120699ab85a9b))
@@ -331,6 +333,8 @@
 
 ### 새 기능
 
+- 구조환경 하락 대응 방향의 지역 순위 추가 (#114) ([e0730d2](https://github.com/JungYeoni/da-template/commit/e0730d21a87e7beca98b2165cad8a1bf43dfc067))
+- 구조환경 하락 후 예산비중 증가 시각화 추가 (#114) ([81e80aa](https://github.com/JungYeoni/da-template/commit/81e80aa34271fe926fd0fa56b647736d37f28ec3))
 - 구조환경 군집별 전체예산과 후행 TFR 관계 분석 (#110) ([b597c6b](https://github.com/JungYeoni/da-template/commit/b597c6bed1cbc06d2ef8613d8c32fa5693cc338a))
 - 구조환경 변화와 예산비중 대응성 분석 추가 (#108) ([765e146](https://github.com/JungYeoni/da-template/commit/765e14618589d8064c89270b3b26d264333b6256))
 - 구조환경 재정대응 TFR 시각화 보강 (#107) ([04888c4](https://github.com/JungYeoni/da-template/commit/04888c4be745595fbc769759558b038d485b2a21))
