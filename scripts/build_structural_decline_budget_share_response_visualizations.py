@@ -121,6 +121,29 @@ def summarize_region_subarea(decline: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def summarize_by_region(decline: pd.DataFrame) -> pd.DataFrame:
+    """시도별 전체 하락 사례의 후행 예산비중 증가 비율과 순위를 요약한다."""
+    summary = (
+        decline.groupby("지역", as_index=False, sort=False, observed=False)
+        .agg(
+            구조환경_하락사례수=(STRUCTURAL_CHANGE, "size"),
+            후행예산비중_증가건수=("후행예산비중_증가", "sum"),
+            예산누락주의_사례수=("예산누락주의_두연도", "sum"),
+        )
+        .assign(
+            후행예산비중_증가비율_pct=lambda x: (
+                100 * x["후행예산비중_증가건수"] / x["구조환경_하락사례수"].replace(0, np.nan)
+            )
+        )
+    )
+    summary["지역순위"] = (
+        summary["후행예산비중_증가비율_pct"].rank(method="min", ascending=False).astype("Int64")
+    )
+    return summary.sort_values(
+        ["지역순위", "구조환경_하락사례수", "지역"], ascending=[True, False, True]
+    ).reset_index(drop=True)
+
+
 def plot_subarea_response(summary: pd.DataFrame) -> plt.Figure:
     """세부영역별 구조환경 하락 후 예산비중 증가 비율을 비교한다."""
     plot = summary.sort_values("후행예산비중_증가비율_pct", ascending=True).reset_index(drop=True)
@@ -157,6 +180,51 @@ def plot_subarea_response(summary: pd.DataFrame) -> plt.Figure:
         fontsize=10,
     )
     fig.tight_layout(rect=[0, 0, 1, 0.91])
+    return fig
+
+
+def plot_region_ranking(summary: pd.DataFrame) -> plt.Figure:
+    """대응 방향 일치율이 높은 시도가 위에 보이도록 순위를 표시한다."""
+    plot = summary.dropna(subset=["후행예산비중_증가비율_pct"]).sort_values(
+        ["후행예산비중_증가비율_pct", "구조환경_하락사례수"], ascending=[True, True]
+    )
+    labels = plot.apply(lambda row: f"{int(row['지역순위'])}위  {row['지역']}", axis=1)
+    fig, ax = plt.subplots(figsize=(10.5, 8.5))
+    bars = ax.barh(
+        labels,
+        plot["후행예산비중_증가비율_pct"],
+        color=YOMOCHA_WEB_COLORS["accent"],
+    )
+    for bar, (_, row) in zip(bars, plot.iterrows(), strict=True):
+        ax.text(
+            min(bar.get_width() + 0.8, 98),
+            bar.get_y() + bar.get_height() / 2,
+            f"{int(row['후행예산비중_증가건수'])}/{int(row['구조환경_하락사례수'])}",
+            va="center",
+            fontsize=9,
+        )
+    ax.axvline(
+        100 * summary["후행예산비중_증가건수"].sum() / summary["구조환경_하락사례수"].sum(),
+        color="#6B7280",
+        linestyle="--",
+        linewidth=1.3,
+        label="17개 시도 전체",
+    )
+    ax.set_xlim(0, 105)
+    ax.set_xlabel("구조환경 하락 사례 중 후행 예산비중 증가 비율(%)")
+    ax.set_ylabel("")
+    ax.legend(loc="lower right")
+    ax.grid(axis="y", visible=False)
+    fig.suptitle("시도별 구조환경 하락 후 예산비중 증가 순위", y=0.99, fontsize=16)
+    fig.text(
+        0.5,
+        0.955,
+        "전체 세부영역 하락 사례 합산 · 막대 옆은 증가 건수/하락 사례 수 · 동률은 공동 순위",
+        ha="center",
+        color="#4B5563",
+        fontsize=10,
+    )
+    fig.tight_layout(rect=[0, 0, 1, 0.93])
     return fig
 
 
@@ -225,9 +293,11 @@ def main() -> None:
     validate_sample(sample)
     decline = build_decline_events(sample)
     subarea = summarize_by_subarea(decline)
+    region = summarize_by_region(decline)
     region_subarea = summarize_region_subarea(decline)
     figures = {
         "2016-2024_세부영역별_구조환경하락_후행예산비중증가비율": plot_subarea_response(subarea),
+        "2016-2024_시도별_구조환경하락_후행예산비중증가_순위": plot_region_ranking(region),
         "2016-2024_시도세부영역별_구조환경하락_후행예산비중증가_히트맵": (
             plot_region_subarea_heatmap(region_subarea)
         ),
@@ -242,6 +312,11 @@ def main() -> None:
     )
     subarea.to_csv(
         ANALYSIS_DIR / "2016-2024_세부영역별_구조환경하락_후행예산비중증가_요약.csv",
+        index=False,
+        encoding="utf-8-sig",
+    )
+    region.to_csv(
+        ANALYSIS_DIR / "2016-2024_시도별_구조환경하락_후행예산비중증가_순위.csv",
         index=False,
         encoding="utf-8-sig",
     )

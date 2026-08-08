@@ -3,6 +3,7 @@ import pytest
 
 from scripts.build_structural_decline_budget_share_response_visualizations import (
     build_decline_events,
+    summarize_by_region,
     summarize_by_subarea,
     summarize_region_subarea,
 )
@@ -33,6 +34,14 @@ def test_subarea_summary_reports_numerator_denominator_and_clean_rate() -> None:
     assert result.loc["A", "후행예산비중_증가건수"] == 1
     assert result.loc["A", "후행예산비중_증가비율_pct"] == pytest.approx(50)
     assert result.loc["A", "누락주의제외_증가비율_pct"] == pytest.approx(100)
+
+
+def test_region_summary_ranks_higher_response_rate_first() -> None:
+    result = summarize_by_region(build_decline_events(_sample())).set_index("지역")
+    assert result.loc["가", "후행예산비중_증가비율_pct"] == pytest.approx(50)
+    assert result.loc["나", "후행예산비중_증가비율_pct"] == pytest.approx(0)
+    assert result.loc["가", "지역순위"] == 1
+    assert result.loc["나", "지역순위"] == 2
 
 
 def test_region_subarea_summary_keeps_all_regions_and_subareas() -> None:
