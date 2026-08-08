@@ -6,6 +6,7 @@ import argparse
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import unquote
 
 import pandas as pd
 import yaml
@@ -23,22 +24,27 @@ class Check:
 
 
 def _record(checks: list[Check], name: str, condition: bool, detail: str) -> None:
+    """검사 결과 하나를 표준 형식으로 추가한다."""
     checks.append(Check(name=name, passed=bool(condition), detail=detail))
 
 
 def _read_csv(relative_path: str) -> pd.DataFrame:
+    """저장소 기준 상대 경로의 CSV를 읽는다."""
     return pd.read_csv(REPO_ROOT / relative_path)
 
 
 def _read_text(relative_path: str) -> str:
+    """저장소 기준 상대 경로의 UTF-8 문서를 읽는다."""
     return (REPO_ROOT / relative_path).read_text(encoding="utf-8")
 
 
 def _contains_all(text: str, snippets: tuple[str, ...]) -> bool:
+    """문서가 기대 문자열을 모두 포함하는지 확인한다."""
     return all(snippet in text for snippet in snippets)
 
 
 def _row_by_label(frame: pd.DataFrame, column: str, label: str) -> pd.Series:
+    """라벨과 정확히 일치하는 단일 행을 반환한다."""
     rows = frame.loc[frame[column].eq(label)]
     if len(rows) != 1:
         raise ValueError(f"{column}={label!r} 행이 정확히 1개가 아닙니다: {len(rows)}")
@@ -46,13 +52,14 @@ def _row_by_label(frame: pd.DataFrame, column: str, label: str) -> pd.Series:
 
 
 def _check_markdown_links(checks: list[Check]) -> None:
+    """공식 문서의 저장소 내부 링크가 실제 파일을 가리키는지 검사한다."""
     link_pattern = re.compile(r"\[[^]]+\]\(([^)]+)\)")
     for path in sorted(OFFICIAL_DIR.glob("*.md")):
         missing = []
         for target in link_pattern.findall(path.read_text(encoding="utf-8")):
             if "://" in target or target.startswith("#"):
                 continue
-            if not (path.parent / target).resolve().exists():
+            if not (path.parent / unquote(target)).resolve().exists():
                 missing.append(target)
         _record(
             checks,
@@ -63,17 +70,20 @@ def _check_markdown_links(checks: list[Check]) -> None:
 
 
 def _check_structural_report(checks: list[Check]) -> None:
+    """구조환경 기준 산출물과 공식 문서 본문의 핵심 주장을 함께 대조한다."""
+    official = _read_text("reports/official/구조환경지표_구조환경지수_공식_종합.md")
     panel_qa = _read_text("reports/20260804_구조환경지표_28개_보간전_통합패널_QA.md")
     _record(
         checks,
         "구조환경 패널 행",
-        "| 최종 패널 행 수 | 4,536 | 4,536 | PASS |" in panel_qa,
+        "| 최종 패널 행 수 | 4,536 | 4,536 | PASS |" in panel_qa and "**4,536행**" in official,
         "추적 QA에서 4,536행 확인",
     )
     _record(
         checks,
         "구조환경 패널 차원",
-        "4,536행, 28개 지표, 18개 지역, 2016–2024년" in panel_qa,
+        "4,536행, 28개 지표, 18개 지역, 2016–2024년" in panel_qa
+        and "18개 지역(전국+17개 시도) × 9개 연도 × 28개 지표" in official,
         "추적 QA에서 지표 28, 지역 18, 연도 9 확인",
     )
 
@@ -84,7 +94,8 @@ def _check_structural_report(checks: list[Check]) -> None:
         _contains_all(
             index_qa,
             ("17개 시도 × 2016–2024년 × 28개 지표 = 4,284행", "최종지수 153개"),
-        ),
+        )
+        and "**4,284행**" in official,
         "추적 QA에서 4,284행과 최종지수 153개 확인",
     )
 
@@ -98,7 +109,15 @@ def _check_structural_report(checks: list[Check]) -> None:
     _record(
         checks,
         "결측 처리 전략 건수",
-        _contains_all(missing_qa, expected_strategies),
+        _contains_all(missing_qa, expected_strategies)
+        and _contains_all(
+            official,
+            (
+                "| 선형보간 | 486 |",
+                "| 최초 관측값 과거 유지 | 586 |",
+                "| 최종 관측값 이후 유지 | 90 |",
+            ),
+        ),
         "추적 QA에서 none 3,374, 최초 586, 선형 486, 최종 90 확인",
     )
 
@@ -108,7 +127,8 @@ def _check_structural_report(checks: list[Check]) -> None:
     _record(
         checks,
         "가족친화 2017·2019 추정 상태",
-        "이 34건(2017·2019)의 raking 추정치를 **본계열에 반영**" in family_qa,
+        "이 34건(2017·2019)의 raking 추정치를 **본계열에 반영**" in family_qa
+        and "34개 추정값은 `관측상태=추정`으로 보존" in official,
         "추적 QA에서 2017·2019 합계 34건 확인",
     )
 
@@ -119,7 +139,9 @@ def _check_structural_report(checks: list[Check]) -> None:
     _record(
         checks,
         "AHP 가중치",
-        len(weights) == 28 and abs(weight_sum - 1.0) < 1e-12,
+        len(weights) == 28
+        and abs(weight_sum - 1.0) < 1e-12
+        and "28개 합이 1이 되도록 정규화" in official,
         f"지표 {len(weights)}, 합 {weight_sum:.15f}",
     )
 
@@ -131,12 +153,14 @@ def _check_structural_report(checks: list[Check]) -> None:
         _record(
             checks,
             f"구조환경 {method} 최종지수",
-            expected_row in index_qa,
+            expected_row in index_qa and expected_row.split(" | ")[-2] in official,
             expected_row.strip("| "),
         )
 
 
 def _check_fiscal_report(checks: list[Check]) -> None:
+    """재정 분석 산출물과 공식 문서 본문의 핵심 주장을 함께 대조한다."""
+    official = _read_text("reports/official/재정대응지수_재정반응성_공식_종합.md")
     regression = _read_csv("data/processed/analysis/2016-2024_세부영역별_재정반응성_회귀표본.csv")
     fiscal_qa = _read_text(
         "reports/methodology/20260807_세부영역별_재정대응지수_구축_및_재정반응성_모형A_결과보고서.md"
@@ -144,10 +168,15 @@ def _check_fiscal_report(checks: list[Check]) -> None:
     _record(
         checks,
         "세부영역 예산 패널",
-        "1,836행 = 17×9×12" in fiscal_qa,
+        "1,836행 = 17×9×12" in fiscal_qa and "1,836행(17×9×12)" in official,
         "추적 QA에서 1,836행 확인",
     )
-    _record(checks, "11개 영역 회귀 패널", len(regression) == 1_683, f"실제 {len(regression):,}행")
+    _record(
+        checks,
+        "11개 영역 회귀 패널",
+        len(regression) == 1_683 and "1,683행(17×9×11)" in official,
+        f"실제 {len(regression):,}행",
+    )
 
     model_a = _read_csv("data/processed/analysis/2016-2024_세부영역별_재정반응성_고정효과_결과.csv")
     care_a = _row_by_label(model_a, "모형", "2-1. 돌봄 여건")
@@ -157,7 +186,8 @@ def _check_fiscal_report(checks: list[Check]) -> None:
         len(model_a) == 11
         and int(care_a["관측치"]) == 119
         and abs(float(care_a["계수"]) - 1.588) < 1e-3
-        and abs(float(care_a["p값"]) - 0.051) < 1e-3,
+        and abs(float(care_a["p값"]) - 0.051) < 1e-3
+        and "`p=0.051`" in official,
         f"계수 {care_a['계수']:.4f}, p={care_a['p값']:.4f}, n={int(care_a['관측치'])}",
     )
 
@@ -169,7 +199,10 @@ def _check_fiscal_report(checks: list[Check]) -> None:
     _record(
         checks,
         "모형 C 기본결과",
-        len(model_c) == 11 and set(model_c["관측치"]) == {136} and ci_contains_zero.all(),
+        len(model_c) == 11
+        and set(model_c["관측치"]) == {136}
+        and ci_contains_zero.all()
+        and "11개 영역 모두 95% 신뢰구간이 0을 포함" in official,
         f"영역 {len(model_c)}, 0 포함 신뢰구간 {int(ci_contains_zero.sum())}/11",
     )
 
@@ -194,7 +227,8 @@ def _check_fiscal_report(checks: list[Check]) -> None:
         and significant_t2 == ["2-1. 돌봄 여건"]
         and int(care_t2["관측치"]) == 85
         and abs(float(care_t2["계수"]) - 0.0454) < 5e-5
-        and abs(float(care_t2["FDR_q값"]) - 0.000103) < 5e-7,
+        and abs(float(care_t2["FDR_q값"]) - 0.000103) < 5e-7
+        and _contains_all(official, ("`β=0.0454`", "`q=0.000103`")),
         f"계수 {care_t2['계수']:.4f}, q={care_t2['FDR_q값']:.6f}, n={int(care_t2['관측치'])}",
     )
 
@@ -231,7 +265,10 @@ def _check_fiscal_report(checks: list[Check]) -> None:
     _record(
         checks,
         "구조환경 하락 대응 방향",
-        declines == 295 and increases == 147 and abs(rate - 49.8) < 0.05,
+        declines == 295
+        and increases == 147
+        and abs(rate - 49.8) < 0.05
+        and "295건 중 후행 예산비중 증가가 147건(49.8%)" in official,
         f"{increases}/{declines}={rate:.1f}%",
     )
 
@@ -261,6 +298,7 @@ def _check_fiscal_report(checks: list[Check]) -> None:
 
 
 def run_checks() -> list[Check]:
+    """공식 종합 문서 전체 검사를 실행한다."""
     checks: list[Check] = []
     _check_markdown_links(checks)
     _check_structural_report(checks)
@@ -269,6 +307,7 @@ def run_checks() -> list[Check]:
 
 
 def main() -> int:
+    """검사 결과를 출력하고 실패 여부를 종료 코드로 반환한다."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--quiet", action="store_true", help="성공 상세 출력을 생략합니다.")
     args = parser.parse_args()
