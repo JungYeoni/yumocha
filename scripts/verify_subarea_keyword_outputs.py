@@ -34,6 +34,7 @@ def run_checks() -> list[Check]:
         ranking = pd.read_csv(ranking_path)
         sensitivity = pd.read_csv(sensitivity_path)
         counts = ranking.groupby("세부영역").size()
+        minimum_terms = int(counts.min()) if not counts.empty else 0
         generic = sorted(set(ranking["단어"]) & set(DEFAULT_STOPWORDS))
         checks.extend(
             [
@@ -45,7 +46,7 @@ def run_checks() -> list[Check]:
                 Check(
                     f"{field}:영역당 상위어",
                     len(counts) == EXPECTED_GROUPS and counts.ge(MIN_TERMS_PER_GROUP).all(),
-                    f"최소 {int(counts.min())}개",
+                    f"최소 {minimum_terms}개",
                 ),
                 Check(f"{field}:불용어 제외", not generic, f"잔존 {generic}"),
                 Check(

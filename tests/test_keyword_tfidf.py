@@ -22,7 +22,13 @@ def test_prepare_text_column_falls_back_and_counts_missing() -> None:
     frame = pd.DataFrame({"정제": ["돌봄 교실", None, None], "원문": ["x", "청년 고용", None]})
     text, stats = prepare_text_column(frame, preferred_column="정제", fallback_column="원문")
     assert text.tolist() == ["돌봄 교실", "청년 고용", ""]
-    assert stats == {"전체행": 3, "우선텍스트사용": 1, "원문대체": 1, "분석제외": 1}
+    assert stats == {
+        "전체행": 3,
+        "우선텍스트사용": 1,
+        "원문대체": 1,
+        "분석제외": 1,
+        "원문열존재": True,
+    }
 
 
 def test_rank_group_keywords_is_deterministic_and_supports_deduplication() -> None:

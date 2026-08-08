@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from kiwipiepy import Kiwi
 from wordcloud import WordCloud
@@ -32,6 +33,8 @@ FONT_CANDIDATES = (
     Path("/usr/share/fonts/truetype/nanum/NanumGothic.ttf"),
 )
 
+np.random.seed(42)
+
 
 def file_sha256(path: Path) -> str:
     """파일 SHA-256을 반환한다."""
@@ -40,6 +43,14 @@ def file_sha256(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def display_input_path(path: Path) -> str:
+    """저장소 내부 경로는 상대경로로, 외부 경로는 절대경로로 기록한다."""
+    try:
+        return str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
 
 
 def resolve_korean_font(explicit: Path | None = None) -> Path:
@@ -107,6 +118,11 @@ def plot_bar_grid(ranking: pd.DataFrame, *, title: str, output_path: Path) -> No
 
 
 def _write_report(metadata: dict[str, object]) -> None:
+    fallback_note = (
+        f"{metadata['주요내용_원문대체']:,}행"
+        if metadata["주요내용_원문열존재"]
+        else f"{metadata['주요내용_원문대체']:,}행(입력 워크북에 원문 열이 없어 대체 미적용)"
+    )
     report = f"""# 세부영역별 세부사업명·주요내용 핵심 단어 시각화 결과
 
 - 기준일: 2026-08-09
@@ -120,6 +136,8 @@ def _write_report(metadata: dict[str, object]) -> None:
 
 각 세부사업 행을 문서 하나로 보고 `kiwipiepy`의 일반명사·고유명사 중 두 글자 이상을 추출했다. 세부사업명과 주요내용은 서로 섞지 않고 별도의 말뭉치로 TF-IDF를 계산했다. 설정은 `min_df=2`, `max_df=0.95`, `sublinear_tf=True`, L2 정규화다. 사업별 TF-IDF를 세부영역별 평균으로 집계하고 상위 20개 단어를 제시했다.
 
+이 작업은 2016–2024년 전체 적격 말뭉치의 특징을 요약하는 기술 분석이며 예측 실험이 아니다. 따라서 train/validation/test 분할, 예측 평가지표 및 교차검증(CV) fold는 적용하지 않았다.
+
 정적 불용어는 예산 문서 전반에 반복되는 {metadata["불용어수"]}개 단어만 사용했다. 목록은 다음과 같다.
 
 `{", ".join(metadata["불용어"])}`
@@ -128,7 +146,7 @@ def _write_report(metadata: dict[str, object]) -> None:
 
 - 세부사업명: 전체 {metadata["전체행"]:,}행 분석
 - 주요내용_정제 사용: {metadata["주요내용_우선텍스트사용"]:,}행
-- 원문 대체: {metadata["주요내용_원문대체"]:,}행(입력 워크북에 원문 열이 없어 대체 미적용)
+- 원문 대체: {fallback_note}
 - 주요내용 분석 제외: {metadata["주요내용_분석제외"]:,}행
 
 ## 산출물
@@ -170,6 +188,8 @@ def build_outputs(workbook_path: Path, *, font_path: Path) -> dict[str, object]:
     plt.rcParams["font.family"] = KOREAN_FONT
     kiwi = Kiwi()
     summaries = []
+    # 예측이 아닌 2016–2024년 기술적 TF-IDF 요약이므로 분할 없이 전체 적격 말뭉치를 쓴다.
+    # 반복 사업과 영역별 표본 수 차이는 아래 중복 제거 민감도 및 보고서 한계에 기록한다.
     for field, column, label in (
         ("세부사업명", "세부사업명_분석", "세부사업명"),
         ("주요내용", "주요내용_분석", "주요내용_정제"),
@@ -213,13 +233,14 @@ def build_outputs(workbook_path: Path, *, font_path: Path) -> dict[str, object]:
     )
     label_counts = labeled["라벨출처"].value_counts()
     metadata = {
-        "입력파일": str(workbook_path.relative_to(REPO_ROOT)),
+        "입력파일": display_input_path(workbook_path),
         "입력_SHA256": file_sha256(workbook_path),
         "전체행": len(labeled),
         "검토_확정수정": int(label_counts.get("검토_확정수정", 0)),
         "검토_비고기반확정": int(label_counts.get("검토_비고기반확정", 0)),
         "주요내용_우선텍스트사용": content_stats["우선텍스트사용"],
         "주요내용_원문대체": content_stats["원문대체"],
+        "주요내용_원문열존재": content_stats["원문열존재"],
         "주요내용_분석제외": content_stats["분석제외"],
         "불용어수": len(DEFAULT_STOPWORDS),
         "불용어": sorted(DEFAULT_STOPWORDS),

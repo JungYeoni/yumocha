@@ -75,7 +75,7 @@ def prepare_text_column(
     *,
     preferred_column: str,
     fallback_column: str | None = None,
-) -> tuple[pd.Series, dict[str, int]]:
+) -> tuple[pd.Series, dict[str, int | bool]]:
     """우선 텍스트를 사용하고 결측일 때만 선택적 원문으로 대체한다."""
     if preferred_column not in frame.columns:
         raise ValueError(f"텍스트 열 누락: {preferred_column}")
@@ -90,6 +90,7 @@ def prepare_text_column(
         "우선텍스트사용": int(preferred.ne("").sum()),
         "원문대체": int(fallback_mask.sum()),
         "분석제외": int(output.eq("").sum()),
+        "원문열존재": bool(fallback_column and fallback_column in frame.columns),
     }
     return output.astype("string"), stats
 
