@@ -77,6 +77,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([c7d41b2](https://github.com/JungYeoni/da-template/commit/c7d41b2a79497815843065d829ccbc9d7d886758))
 - CHANGELOG 자동 업데이트 [skip ci] ([c049f9d](https://github.com/JungYeoni/da-template/commit/c049f9d4593c84eecea973411461de6595f05868))
 - CHANGELOG 자동 업데이트 [skip ci] ([f9c91de](https://github.com/JungYeoni/da-template/commit/f9c91dec85d79f70e770e028b5d03599f9c63fa6))
 - CHANGELOG 자동 업데이트 [skip ci] ([4b8ae5b](https://github.com/JungYeoni/da-template/commit/4b8ae5b235b334344c2aec80a454f748d57030c2))
@@ -226,6 +227,7 @@
 
 ### 버그 수정
 
+- CodeRabbit 핵심어 분석 리뷰 반영 #116 ([ce31e23](https://github.com/JungYeoni/da-template/commit/ce31e2397697315098f804abc9ede496cf2bc1cd))
 - 공식 종합 문서 리뷰 반영 #111 ([901f650](https://github.com/JungYeoni/da-template/commit/901f65085a08d007f9464cf009633f24a5dbeaef))
 - 공식 종합 검증 CI 입력 경로 수정 #111 ([31f9967](https://github.com/JungYeoni/da-template/commit/31f9967ea6a9528c674f5299d925007cc4956bdf))
 - 구조환경 하락 시각화의 무사례 표기 보완 (#114) ([15a17f1](https://github.com/JungYeoni/da-template/commit/15a17f1c79d20b74dcdce7b0abbb0dfaa2840bf6))
@@ -336,6 +338,7 @@
 
 ### 새 기능
 
+- 세부영역별 세부사업명·주요내용 핵심 단어 시각화 #116 ([b57aa69](https://github.com/JungYeoni/da-template/commit/b57aa6955237e55ee91115f00d73c18b8f4219c0))
 - Reports 주제별 공식 종합 문서 생성 #111 ([9d38ce1](https://github.com/JungYeoni/da-template/commit/9d38ce16f7bb643fde67b506c6fb6805e654dc1b))
 - 구조환경 하락 대응 방향의 지역 순위 추가 (#114) ([e0730d2](https://github.com/JungYeoni/da-template/commit/e0730d21a87e7beca98b2165cad8a1bf43dfc067))
 - 구조환경 하락 후 예산비중 증가 시각화 추가 (#114) ([81e80aa](https://github.com/JungYeoni/da-template/commit/81e80aa34271fe926fd0fa56b647736d37f28ec3))
