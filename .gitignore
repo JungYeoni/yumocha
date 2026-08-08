@@ -66,6 +66,8 @@ reports/figures/*
 !reports/figures/final_analysis/**
 !reports/figures/change_responsiveness/
 !reports/figures/change_responsiveness/**
+!reports/figures/cluster_total_fiscal_tfr/
+!reports/figures/cluster_total_fiscal_tfr/**
 
 # 노트북 체크포인트
 .ipynb_checkpoints/
