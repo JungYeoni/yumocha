@@ -77,6 +77,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([d4e1fd0](https://github.com/JungYeoni/da-template/commit/d4e1fd0903a76be92f2ee3dffe973d24842169dd))
 - 군집 분석 재현성 정보와 검증 보강 (#103) ([845f0b4](https://github.com/JungYeoni/da-template/commit/845f0b4ecbb33a5646888b1541d2bae40d50330e))
 - CHANGELOG 자동 업데이트 [skip ci] ([c7d2425](https://github.com/JungYeoni/da-template/commit/c7d2425687961517450ec88e7cf06e0e4bb821ae))
 - 재정반응성의 역인과성 해석 명확화 (#102) ([edae711](https://github.com/JungYeoni/da-template/commit/edae711dec134abfadeacb7bc6eec3b58b0d8588))
@@ -220,6 +221,7 @@
 
 ### 버그 수정
 
+- 시각화 입력 검증과 재현성 정보 보강 (#107) ([e937dde](https://github.com/JungYeoni/da-template/commit/e937dde8e6600d2ed335de084d651ae35fd2cf3e))
 - 군집별 회귀 분석 검증 보강 (#103) ([9e45389](https://github.com/JungYeoni/da-template/commit/9e45389c8f672cec4efdf417d1f8b5486a750bce))
 - CodeRabbit 리뷰의 분석 검증 보강 (#98) ([4f0c101](https://github.com/JungYeoni/da-template/commit/4f0c101f10a22cc64ec48212cc3120699ab85a9b))
 - CodeRabbit PR #104 리뷰 반영 (#98) ([b4e7d69](https://github.com/JungYeoni/da-template/commit/b4e7d69ff5380f90fbfb50f01cbb7f2badf1a9f3))
@@ -326,6 +328,9 @@
 
 ### 새 기능
 
+- 구조환경 재정대응 TFR 시각화 보강 (#107) ([04888c4](https://github.com/JungYeoni/da-template/commit/04888c4be745595fbc769759558b038d485b2a21))
+- 영역별 계획예산 구성 시각화 추가 (#107) ([498b0cf](https://github.com/JungYeoni/da-template/commit/498b0cf99f4a6dcc7fa7b467b4d71cdb60f30fdc))
+- 계획예산 비중 변화 시각화 추가 (#107) ([55c242b](https://github.com/JungYeoni/da-template/commit/55c242b7c98504780c763c044437beff253a9cdb))
 - 3개 군집 탐색계수와 추세 시각화 추가 (#103) ([ac3a9b2](https://github.com/JungYeoni/da-template/commit/ac3a9b22fa31606e86831a7f13884a4a54ec5346))
 - 구조환경 유형별 예산 TFR 관계 분석 (#103) ([a453cd9](https://github.com/JungYeoni/da-template/commit/a453cd92a1e9167fffe79eb75cb23ae97c313b5e))
 - 돌봄예산 TFR 관계 검증 시각화 추가 (#98) ([d24d995](https://github.com/JungYeoni/da-template/commit/d24d9956cea95956da210db7efd2d81d68f05ba7))
