@@ -58,6 +58,12 @@ results/
 reports/figures/*
 !reports/figures/cluster_fiscal_tfr/
 !reports/figures/cluster_fiscal_tfr/**
+!reports/figures/budget_share_change/
+!reports/figures/budget_share_change/**
+!reports/figures/budget_composition/
+!reports/figures/budget_composition/**
+!reports/figures/final_analysis/
+!reports/figures/final_analysis/**
 
 # 노트북 체크포인트
 .ipynb_checkpoints/
