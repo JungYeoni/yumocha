@@ -11,6 +11,8 @@ import pandas as pd
 
 from src.visualization.plots import save_figure
 
+np.random.seed(42)
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ANALYSIS_DIR = REPO_ROOT / "data/processed/analysis"
 DEFAULT_INPUT = ANALYSIS_DIR / "2016-2024_세부영역별_인구1인당_실질예산액.csv"
@@ -79,6 +81,12 @@ def validate_input(data: pd.DataFrame) -> None:
         raise ValueError("입력은 17개 시도의 2016~2024년 패널이어야 합니다.")
     if set(data["세부영역"].unique()) != set(INPUT_SUBAREAS):
         raise ValueError("입력에 11개 세부영역과 지표체계 외 분류가 모두 필요합니다.")
+    keys = ["지역", "연도", "세부영역"]
+    if data.duplicated(keys).any():
+        raise ValueError("지역×연도×세부영역 키가 중복됩니다.")
+    group_sets = data.groupby(["지역", "연도"])["세부영역"].agg(set)
+    if not group_sets.map(lambda values: values == set(INPUT_SUBAREAS)).all():
+        raise ValueError("모든 지역×연도에 12개 기준 분류가 정확히 한 번씩 필요합니다.")
     if data[REAL_BUDGET].isna().any() or (data[REAL_BUDGET] < 0).any():
         raise ValueError("실질 계획예산에 결측 또는 음수가 있습니다.")
 

@@ -34,6 +34,18 @@ def test_structural_tfr_panel_is_complete_and_standardized() -> None:
     assert result["절대순위차이"].between(0, 16).all()
 
 
+def test_structural_tfr_panel_rejects_wrong_year_set() -> None:
+    structural = pd.DataFrame(
+        [(f"지역{r}", year, r + year) for r in range(17) for year in range(2015, 2024)],
+        columns=["region", "year", "pooled_index"],
+    )
+    tfr = structural.rename(
+        columns={"region": "지역", "year": "연도", "pooled_index": "합계출산율"}
+    )
+    with pytest.raises(ValueError, match="완전 패널"):
+        build_structural_tfr_panel(structural, tfr)
+
+
 def _fiscal_panel() -> pd.DataFrame:
     rows = []
     areas = [f"영역{index}" for index in range(11)] + ["지표체계 외"]
@@ -62,6 +74,17 @@ def test_composite_fiscal_panel_excludes_outside_and_builds_ranks() -> None:
     assert first["지표체계내_실질인구1인당예산_원"] == expected
 
 
+def test_composite_fiscal_panel_rejects_duplicate_and_constant_totals() -> None:
+    fiscal = _fiscal_panel()
+    with pytest.raises(ValueError, match="키가 중복"):
+        build_composite_fiscal_panel(pd.concat([fiscal, fiscal.iloc[[0]]], ignore_index=True))
+
+    constant = fiscal.copy()
+    constant[REAL_PC] = 1.0
+    with pytest.raises(ValueError, match="변동이 있어야"):
+        build_composite_fiscal_panel(constant)
+
+
 def test_validate_moving_results_requires_both_lags_and_11_areas() -> None:
     rows = []
     for version in ["3개년평균_t+1", "3개년평균_t+2"]:
@@ -82,3 +105,9 @@ def test_validate_moving_results_requires_both_lags_and_11_areas() -> None:
     validate_moving_results(result)
     with pytest.raises(ValueError, match="총 22행"):
         validate_moving_results(result.iloc[:-1])
+    mismatched = result.copy()
+    mismatched.loc[
+        mismatched["모형버전"].eq("3개년평균_t+2") & mismatched["모형"].eq("영역10"), "모형"
+    ] = "다른영역"
+    with pytest.raises(ValueError, match="모형 집합"):
+        validate_moving_results(mismatched)

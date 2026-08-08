@@ -36,6 +36,17 @@ def test_validate_budget_panel_rejects_missing_category() -> None:
         validate_budget_panel(panel)
 
 
+@pytest.mark.parametrize("case", ["substituted", "duplicate"])
+def test_validate_budget_panel_rejects_invalid_group_keys(case: str) -> None:
+    panel = _panel()
+    if case == "substituted":
+        panel.loc[0, "세부영역"] = "대체영역"
+    else:
+        panel = pd.concat([panel, panel.iloc[[0]]], ignore_index=True)
+    with pytest.raises(ValueError):
+        validate_budget_panel(panel)
+
+
 def test_budget_shares_sum_to_100_by_region_year() -> None:
     shares = build_budget_share_panel(_panel())
     totals = shares.groupby(["지역", "연도"])["계획예산비중_pct"].sum()

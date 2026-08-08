@@ -12,6 +12,8 @@ import seaborn as sns
 
 from src.visualization.plots import YOMOCHA_WEB_COLORS, save_figure
 
+np.random.seed(42)
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ANALYSIS_DIR = REPO_ROOT / "data/processed/analysis"
 DEFAULT_STRUCTURAL = REPO_ROOT / "result/구조환경지수_시각화/구조환경지수_지역연도_요약.csv"
@@ -24,6 +26,19 @@ DEFAULT_FIGURE_DIR = REPO_ROOT / "reports/figures/final_analysis"
 REAL_PC = "인구1인당_실질예산_원"
 YEARS = set(range(2016, 2025))
 REGION_COUNT = 17
+
+
+def _validate_region_year_panel(data: pd.DataFrame, *, label: str) -> None:
+    """17개 시도 모두가 2016~2024년을 정확히 포함하는지 검증한다."""
+    expected_years = set(YEARS)
+    region_years = data.groupby("지역")["연도"].agg(set)
+    if (
+        data["지역"].nunique() != REGION_COUNT
+        or set(data["연도"].unique()) != expected_years
+        or len(data) != REGION_COUNT * len(expected_years)
+        or not region_years.map(lambda values: values == expected_years).all()
+    ):
+        raise ValueError(f"{label}은 17개 시도 각각의 2016~2024년 완전 패널이어야 합니다.")
 
 
 def _within_z(series: pd.Series) -> pd.Series:
@@ -47,8 +62,7 @@ def build_structural_tfr_panel(structural: pd.DataFrame, tfr: pd.DataFrame) -> p
     left = left[["지역", "연도", "구조환경종합지수"]]
     right = tfr[["지역", "연도", "합계출산율"]].drop_duplicates(["지역", "연도"])
     result = left.merge(right, on=["지역", "연도"], how="inner", validate="one_to_one")
-    if len(result) != REGION_COUNT * len(YEARS):
-        raise ValueError("구조환경–TFR 결합표는 17개 시도×9개년의 153행이어야 합니다.")
+    _validate_region_year_panel(result, label="구조환경–TFR 결합표")
     result["구조환경_연도별순위"] = result.groupby("연도")["구조환경종합지수"].rank(
         ascending=False, method="min"
     )
@@ -84,6 +98,8 @@ def build_composite_fiscal_panel(fiscal: pd.DataFrame) -> pd.DataFrame:
     if missing := required - set(fiscal.columns):
         raise KeyError(f"재정대응 필수 컬럼 누락: {sorted(missing)}")
     included = fiscal.loc[fiscal["세부영역"].ne("지표체계 외")].copy()
+    if included.duplicated(["지역", "연도", "세부영역"]).any():
+        raise ValueError("재정대응 입력의 지역×연도×세부영역 키가 중복됩니다.")
     counts = included.groupby(["지역", "연도"])["세부영역"].nunique()
     if len(counts) != REGION_COUNT * len(YEARS) or not counts.eq(11).all():
         raise ValueError("모든 지역×연도에 지표체계 내 11개 세부영역이 필요합니다.")
@@ -99,10 +115,16 @@ def build_composite_fiscal_panel(fiscal: pd.DataFrame) -> pd.DataFrame:
     result["log1p_지표체계내_실질인구1인당예산"] = np.log1p(
         result["지표체계내_실질인구1인당예산_원"]
     )
+    _validate_region_year_panel(result, label="종합 재정대응 패널")
     logged = result["log1p_지표체계내_실질인구1인당예산"]
     result["종합재정대응지수_z"] = (logged - logged.mean()) / logged.std(ddof=0)
     zscore = result["종합재정대응지수_z"]
-    result["종합재정대응점수_0_100"] = (zscore - zscore.min()) / (zscore.max() - zscore.min()) * 100
+    score_range = zscore.max() - zscore.min()
+    if not np.isfinite(score_range) or score_range == 0:
+        raise ValueError(
+            "종합 재정대응점수는 지역·연도별 예산 합계에 변동이 있어야 산출할 수 있습니다."
+        )
+    result["종합재정대응점수_0_100"] = (zscore - zscore.min()) / score_range * 100
     result["연도별_종합재정대응순위"] = result.groupby("연도")["종합재정대응점수_0_100"].rank(
         ascending=False, method="min"
     )
@@ -128,6 +150,9 @@ def validate_moving_results(results: pd.DataFrame) -> None:
     counts = results.groupby("모형버전")["모형"].nunique()
     if set(counts.index) != expected or not counts.eq(11).all() or len(results) != 22:
         raise ValueError("이동평균 결과는 t+1·t+2 각 11개 영역, 총 22행이어야 합니다.")
+    model_sets = results.groupby("모형버전")["모형"].agg(set)
+    if model_sets["3개년평균_t+1"] != model_sets["3개년평균_t+2"]:
+        raise ValueError("이동평균 t+1·t+2 결과의 세부영역 모형 집합이 일치해야 합니다.")
 
 
 def plot_structural_tfr_trends(data: pd.DataFrame) -> plt.Figure:

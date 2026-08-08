@@ -36,6 +36,19 @@ def test_validate_input_rejects_unknown_subarea() -> None:
         validate_input(panel)
 
 
+@pytest.mark.parametrize("case", ["missing", "substituted", "duplicate"])
+def test_validate_input_rejects_incomplete_group_keys(case: str) -> None:
+    panel = _panel()
+    if case == "missing":
+        panel = panel.drop(index=0)
+    elif case == "substituted":
+        panel.loc[0, "세부영역"] = "지표체계 외"
+    else:
+        panel = pd.concat([panel, panel.iloc[[0]]], ignore_index=True)
+    with pytest.raises(ValueError):
+        validate_input(panel)
+
+
 def test_composition_tables_have_expected_rows_and_shares() -> None:
     detail, major = build_composition_tables(_panel())
     assert len(detail) == 9 * len(SUBAREA_ORDER)

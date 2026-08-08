@@ -12,6 +12,8 @@ import seaborn as sns
 
 from src.visualization.plots import YOMOCHA_WEB_COLORS, save_figure
 
+np.random.seed(42)
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ANALYSIS_DIR = REPO_ROOT / "data/processed/analysis"
 DEFAULT_INPUT = ANALYSIS_DIR / "2016-2024_세부영역별_인구1인당_실질예산액.csv"
@@ -32,8 +34,19 @@ def validate_budget_panel(panel: pd.DataFrame) -> None:
         raise ValueError("지역×연도×세부영역 키가 중복됩니다.")
     if panel["지역"].nunique() != 17 or set(panel["연도"].unique()) != YEARS:
         raise ValueError("예산비중 입력은 17개 시도의 2016~2024년 패널이어야 합니다.")
+    keys = ["지역", "연도", SUBAREA]
+    if panel.duplicated(keys).any():
+        raise ValueError("지역×연도×세부영역 키가 중복됩니다.")
+    reference_set = set(panel[SUBAREA].unique())
+    if len(reference_set) != 12:
+        raise ValueError("예산비중 입력에는 정확히 12개 기준 분류가 필요합니다.")
     category_counts = panel.groupby(["지역", "연도"])[SUBAREA].nunique()
-    if category_counts.nunique() != 1 or category_counts.iloc[0] != 12:
+    group_sets = panel.groupby(["지역", "연도"])[SUBAREA].agg(set)
+    if (
+        category_counts.nunique() != 1
+        or category_counts.iloc[0] != 12
+        or not group_sets.map(lambda values: values == reference_set).all()
+    ):
         raise ValueError("모든 지역×연도에 12개 세부영역(지표체계 외 포함)이 필요합니다.")
     if panel[BUDGET].isna().any() or (panel[BUDGET] < 0).any():
         raise ValueError("계획예산에 결측 또는 음수가 있습니다.")
